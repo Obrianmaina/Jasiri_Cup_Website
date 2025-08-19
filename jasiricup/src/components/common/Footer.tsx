@@ -14,28 +14,48 @@ export const Footer = () => {
             height={40}
             className="mb-2 mx-auto md:mx-0"
           />
-          <p className="text-sm text-gray-400">All rights reserved © 2025</p>
+          <p className="text-sm text-white">All rights reserved © 2025</p>
         </div>
 
         <div className="mb-6 md:mb-0">
           <p className="text-gray-300 mb-3">Connect with JasiriCup on:</p>
           <div className="flex justify-center md:justify-start space-x-4">
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+            <a
+              href="https://www.facebook.com/JasiriCup" // Example Facebook link
+              className="text-white hover:text-blue-600 transition-colors" // Hover color for Facebook
+              target="_blank" // Opens in a new tab
+              rel="noopener noreferrer" // Security best practice
+            >
               <FaFacebookF size={20} />
             </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+            <a
+              href="https://www.instagram.com/JasiriCup" // Example Instagram link
+              className="text-white hover:text-pink-600 transition-colors" // Hover color for Instagram
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <FaInstagram size={20} />
             </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+            <a
+              href="https://www.linkedin.com/company/JasiriCup" // Example LinkedIn link
+              className="text-white hover:text-blue-700 transition-colors" // Hover color for LinkedIn
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <FaLinkedinIn size={20} />
             </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+            <a
+              href="https://www.youtube.com/JasiriCup" // Example YouTube link
+              className="text-white hover:text-red-600 transition-colors" // Hover color for YouTube
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <FaYoutube size={20} />
             </a>
           </div>
         </div>
 
-        <div className="max-w-xs text-gray-400 text-sm">
+        <div className="max-w-xs text-gray-300 text-sm">
           <p>
             Menstrual products and adequate education. This initiative targets girls in rural areas (ASAL Regions that remain inadequately served) products and adequate.
           </p>

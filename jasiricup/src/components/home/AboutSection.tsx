@@ -13,7 +13,7 @@ export const AboutSection = ({ imageUrl }: AboutSectionProps) => {
           alt="About JasiriCup"
           width={250}
           height={250}
-          className="rounded-full shadow-lg"
+          className="rounded-full"
         />
       </div>
       <div className="md:w-2/3 md:pl-8">

@@ -1,39 +1,35 @@
-import mongoose from 'mongoose';
+// This file establishes and manages the MongoDB connection using Mongoose.
 
-const MONGODB_URI = process.env.MONGODB_URI;
+import mongoose from 'mongoose'; // Use import for ES Modules
 
-if (!MONGODB_URI) {
-  throw new Error(
-    
-  );
-}
-
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially during API Route usage.
- */
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn;
+const connectDB = async () => {
+  // Check if already connected or connecting to prevent multiple connections
+  if (mongoose.connections[0].readyState) {
+    console.log('Already connected to MongoDB.');
+    return;
   }
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
+  try {
+    // Ensure DB_CONNECTION_STRING is defined
+    if (!process.env.DB_CONNECTION_STRING) {
+      throw new Error('Please define the DB_CONNECTION_STRING environment variable inside .env.local');
+    }
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
+    // Log for debugging (optional, remove in production if sensitive)
+    console.log('Attempting to connect to DB_CONNECTION_STRING...');
+
+    await mongoose.connect(process.env.DB_CONNECTION_STRING, {
+      // useNewUrlParser and useUnifiedTopology are deprecated and no longer needed in Mongoose 6+
+      // If you are using an older Mongoose version, keep them.
+      // For Mongoose 6.x and above, these options are default.
     });
+    console.log('Successfully connected to MongoDB Atlas.');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    // In a serverless environment, throwing an error is often sufficient.
+    // Next.js will catch this and handle the response.
+    throw new Error('Could not connect to the database.');
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
-}
+};
 
-export default dbConnect;
+export default connectDB; // Use export default for ES Modules

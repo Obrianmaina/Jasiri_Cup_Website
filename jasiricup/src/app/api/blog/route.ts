@@ -1,28 +1,30 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
-import BlogPost from '@/lib/models/BlogPost';
+import { NextResponse } from "next/server";
+import connectDB from "@/lib/dbConnect";
+import BlogPost from "@/lib/models/BlogPost";
+import { revalidateTag } from "next/cache";
 
-export async function GET(req: Request) {
-  await dbConnect();
-
+// GET all blog posts
+export async function GET() {
   try {
-    const blogPosts = await BlogPost.find({});
-    return NextResponse.json({ data: blogPosts }, { status: 200 });
+    await connectDB();
+    const blogs = await BlogPost.find().sort({ publishedDate: -1 });
+    return NextResponse.json({ success: true, data: blogs }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching blog posts:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    console.error("Error fetching blogs:", error);
+    return NextResponse.json({ success: false, error: "Failed to fetch blogs" }, { status: 500 });
   }
 }
 
+// CREATE new blog post
 export async function POST(req: Request) {
-  await dbConnect();
-
   try {
+    await connectDB();
     const body = await req.json();
-    const newBlogPost = await BlogPost.create(body);
-    return NextResponse.json({ message: 'Blog post created successfully!', data: newBlogPost }, { status: 201 });
+    const blog = await BlogPost.create(body);
+    revalidateTag("blog-posts");
+    return NextResponse.json({ success: true, data: blog }, { status: 201 });
   } catch (error) {
-    console.error('Error creating blog post:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    console.error("Error creating blog:", error);
+    return NextResponse.json({ success: false, error: "Failed to create blog" }, { status: 500 });
   }
 }

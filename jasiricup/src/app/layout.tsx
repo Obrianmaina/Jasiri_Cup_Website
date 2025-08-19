@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google"; // Correct import for the font function
-import "./globals.css"; // This line is crucial for global styles
+import { Montserrat } from "next/font/google";
+import "./globals.css";
 import { Header } from "@/components/common/Header";
 import { Footer } from "@/components/common/Footer";
 
-// Renamed the font instance variable to avoid conflict
 const montserrat = Montserrat({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -19,8 +18,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* Apply the font to the body using the corrected variable name */}
-      <body className={montserrat.className}>
+      {/* Added overflow-x-hidden to prevent horizontal scrolling */}
+      <body className={`${montserrat.className} overflow-x-hidden`}>
         <div className="flex flex-col min-h-screen">
           <Header />
           <main className="flex-grow">

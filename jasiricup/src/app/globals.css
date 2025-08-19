@@ -1,1 +1,33 @@
 @import "tailwindcss";
+
+/* Your custom styles */
+body {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.is-active {
+  background-color: #e4d8ff; /* a light gray */
+  color: #2e003a;
+  padding: 10px; 
+  border-radius: 10%;
+}
+
+/* Optional: Add hover styles for a better user experience 
+button:hover:not(.is-active) {
+  background-color: #f1f5f9;
+  color: #2e003a;
+  padding: 10px;
+  border-radius: 32px;
+}*/
+
+.ProseMirror a {
+  @apply text-blue-500 underline cursor-pointer;
+}
+
+.ProseMirror a:hover {
+  @apply text-blue-700;
+}
+
+.ProseMirror a:visited {
+  @apply text-purple-600;
+}
