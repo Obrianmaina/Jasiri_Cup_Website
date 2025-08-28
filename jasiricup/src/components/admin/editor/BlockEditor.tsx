@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Montserrat } from 'next/font/google';
 const montserrat = Montserrat({ subsets: ['latin'], weight: '400' });
 
@@ -27,54 +27,80 @@ interface BlockEditorProps {
 
 const BlockEditor: React.FC<BlockEditorProps> = ({ initialContent, onChange }) => {
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
+  // Initialize blocks only once when component mounts or initialContent changes
   useEffect(() => {
-    console.log('BlockEditor initialContent:', initialContent); // Debug log
-    if (initialContent) {
+    console.log('BlockEditor initializing with content:', initialContent);
+    
+    if (initialContent && initialContent.trim() !== '') {
       try {
         const parsedBlocks = htmlToBlocks(initialContent);
-        console.log('Parsed blocks:', parsedBlocks); // Debug log
-        setBlocks((prevBlocks) => {
-          if (JSON.stringify(prevBlocks) !== JSON.stringify(parsedBlocks)) {
-            console.log('Setting new blocks:', parsedBlocks); // Debug log
-            return parsedBlocks;
-          }
-          return prevBlocks;
-        });
+        console.log('Parsed blocks:', parsedBlocks);
+        // Ensure type is BlockType
+        const typedBlocks: Block[] = parsedBlocks.map((b: any) => ({
+          ...b,
+          type: b.type as BlockType,
+        }));
+        setBlocks(typedBlocks);
       } catch (error) {
         console.error('Error parsing initialContent:', error);
         setBlocks([{ id: Date.now().toString(), type: 'text', content: '' }]);
-        onChange('<p></p>');
       }
     } else {
-      console.log('No initialContent, setting default block'); // Debug log
       setBlocks([{ id: Date.now().toString(), type: 'text', content: '' }]);
-      onChange('<p></p>');
     }
-  }, [initialContent]);
+    
+    setInitialized(true);
+  }, [initialContent]); // Only depend on initialContent, NOT onChange
+
+  // Separate function to handle content updates
+  const updateContent = useCallback((newBlocks: Block[]) => {
+    const html = convertBlocksToHtml(newBlocks);
+    onChange(html);
+  }, [onChange]);
 
   const addBlock = (type: BlockType) => {
-    const newBlock: Block = {
-      id: Date.now().toString(),
-      type,
-      content: type === 'image' ? { src: '', alt: '' } : type === 'list' ? { type: 'bullet', items: [] } : type === 'heading' ? { level: 2, text: '' } : '',
+    const defaultContent = {
+      text: '',
+      heading: { level: 2, text: '' },
+      image: { src: '', alt: '' },
+      list: { type: 'bullet', items: [''] },
+      quote: ''
     };
+
+    const newBlock: Block = {
+      id: Date.now().toString() + Math.random(),
+      type,
+      content: defaultContent[type] || '',
+    };
+    
     const newBlocks = [...blocks, newBlock];
     setBlocks(newBlocks);
-    onChange(convertBlocksToHtml(newBlocks));
+    updateContent(newBlocks);
   };
 
   const updateBlock = (id: string, newContent: any) => {
     const newBlocks = blocks.map((b) => (b.id === id ? { ...b, content: newContent } : b));
     setBlocks(newBlocks);
-    onChange(convertBlocksToHtml(newBlocks));
+    updateContent(newBlocks);
   };
 
   const removeBlock = (id: string) => {
+    if (blocks.length <= 1) return; // Don't allow removing the last block
+    
     const newBlocks = blocks.filter((b) => b.id !== id);
     setBlocks(newBlocks);
-    onChange(convertBlocksToHtml(newBlocks));
+    updateContent(newBlocks);
   };
+
+  if (!initialized) {
+    return (
+      <div className={`border border-gray-300 rounded-lg bg-white min-h-[300px] flex items-center justify-center ${montserrat.className}`}>
+        <p className="text-gray-500">Loading editor...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`border border-gray-300 rounded-lg bg-white min-h-[300px] ${montserrat.className}`}>
@@ -83,7 +109,6 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ initialContent, onChange }) =
         <p className="p-4 text-gray-500">Add a block to start editing...</p>
       )}
       {blocks.map((block) => {
-        console.log('Rendering block:', block); // Debug log
         switch (block.type) {
           case 'text':
             return <TextBlock key={block.id} content={block.content} onChange={(c) => updateBlock(block.id, c)} onRemove={() => removeBlock(block.id)} />;

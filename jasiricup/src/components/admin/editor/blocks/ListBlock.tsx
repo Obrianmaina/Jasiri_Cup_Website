@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Montserrat } from 'next/font/google';
 const montserrat = Montserrat({ subsets: ['latin'], weight: '400' });
 import { Trash2 } from 'lucide-react';
@@ -10,11 +10,26 @@ interface ListBlockProps {
 }
 
 const ListBlock: React.FC<ListBlockProps> = ({ content = { type: 'bullet', items: [] }, onChange, onRemove }) => {
-  const [type, setType] = useState(content.type);
-  const [items, setItems] = useState(content.items.join('\n'));
+  const [type, setType] = useState(content.type || 'bullet');
+  const [items, setItems] = useState((content.items || ['']).join('\n'));
 
-  const handleChange = () => {
+  // Sync with prop changes
+  useEffect(() => {
+    if (content.type !== type) setType(content.type || 'bullet');
+    
+    const newItemsText = (content.items || ['']).join('\n');
+    if (newItemsText !== items) setItems(newItemsText);
+  }, [content]);
+
+  const handleTypeChange = (newType: 'bullet' | 'ordered') => {
+    setType(newType);
     const itemArray = items.split('\n').filter(Boolean);
+    onChange({ type: newType, items: itemArray });
+  };
+
+  const handleItemsChange = (newItems: string) => {
+    setItems(newItems);
+    const itemArray = newItems.split('\n').filter(Boolean);
     onChange({ type, items: itemArray });
   };
 
@@ -22,10 +37,7 @@ const ListBlock: React.FC<ListBlockProps> = ({ content = { type: 'bullet', items
     <div className={`p-4 border-b border-gray-200 flex flex-col gap-2 ${montserrat.className}`}>
       <select
         value={type}
-        onChange={(e) => {
-          setType(e.target.value as 'bullet' | 'ordered');
-          handleChange();
-        }}
+        onChange={(e) => handleTypeChange(e.target.value as 'bullet' | 'ordered')}
         className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="bullet">Bullet List</option>
@@ -33,10 +45,7 @@ const ListBlock: React.FC<ListBlockProps> = ({ content = { type: 'bullet', items
       </select>
       <textarea
         value={items}
-        onChange={(e) => {
-          setItems(e.target.value);
-          handleChange();
-        }}
+        onChange={(e) => handleItemsChange(e.target.value)}
         className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         placeholder="Enter list items, one per line..."
       />

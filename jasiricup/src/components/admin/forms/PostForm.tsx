@@ -14,24 +14,27 @@ interface PostFormProps {
   isCreating: boolean;
 }
 
+
+
 const PostForm: React.FC<PostFormProps> = ({ post, onSave, onCancel, isCreating }) => {
   const [formData, setFormData] = useState<Omit<BlogPost, '_id'>>({
-    title: post.title || '',
-    slug: post.slug || '',
-    author: post.author || '',
-    heroImage: post.heroImage || '',
-    content: post.content || '',
-    publishedDate: post.publishedDate || new Date().toISOString(),
-    tags: post.tags || [],
-    status: post.status || 'draft',
+    title: '',
+    slug: '',
+    author: '',
+    heroImage: '',
+    content: '',
+    publishedDate: new Date().toISOString(),
+    tags: [],
+    status: 'draft',
   });
-  const [tags, setTags] = useState<string>(post.tags?.join(', ') || '');
+  const [tags, setTags] = useState<string>('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  // Initialize form data when post changes
   useEffect(() => {
-    console.log('PostForm post:', post); // Debug log
-    console.log('PostForm formData.content:', formData.content); // Debug content
-    setFormData({
+    console.log('PostForm post changed:', post);
+    
+    const newFormData = {
       title: post.title || '',
       slug: post.slug || '',
       author: post.author || '',
@@ -40,9 +43,12 @@ const PostForm: React.FC<PostFormProps> = ({ post, onSave, onCancel, isCreating 
       publishedDate: post.publishedDate || new Date().toISOString(),
       tags: post.tags || [],
       status: post.status || 'draft',
-    });
+    };
+    
+    setFormData(newFormData);
     setTags(post.tags?.join(', ') || '');
-  }, [post]);
+    setErrors({});
+  }, [post._id, post.title, post.slug, post.author, post.heroImage, post.content, post.publishedDate, post.status]); // Specific dependencies
 
   const handleChange = useCallback((field: keyof Omit<BlogPost, '_id'>, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
