@@ -11,12 +11,11 @@ const BlogPostSchema = new mongoose.Schema(
     },
     slug: {
       type: String,
-      unique: true,
+      unique: true, // This line implicitly creates the unique index
       trim: true,
       lowercase: true,
     },
     author: {
-      // Made flexible - can be either a string or leave it as string for simplicity
       type: String,
       default: 'Anonymous',
       trim: true,
@@ -112,8 +111,7 @@ BlogPostSchema.virtual('readingTime').get(function() {
   return readingTime;
 });
 
-// 🔥 Index for better performance
-BlogPostSchema.index({ slug: 1 });
+// 🔥 Indexes for better performance
 BlogPostSchema.index({ status: 1, publishedDate: -1 });
 BlogPostSchema.index({ tags: 1 });
 BlogPostSchema.index({ featured: -1, publishedDate: -1 });

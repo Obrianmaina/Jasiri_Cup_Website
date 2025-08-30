@@ -1,4 +1,4 @@
-'use client'; // This component uses client-side hooks like useState and useEffect
+'use client';
 
 import Image from "next/image";
 import Link from "next/link";
@@ -15,16 +15,13 @@ const stripHtmlTags = (html: string): string => {
 
 // Helper function to truncate a string to the nearest word boundary
 const truncateDescription = (text: string, maxLength: number): string => {
-  // First strip HTML tags, then truncate
   const plainText = stripHtmlTags(text);
   
   if (plainText.length <= maxLength) {
     return plainText;
   }
-  // Find the last space within the limit
   const truncatedText = plainText.substring(0, maxLength);
   const lastSpaceIndex = truncatedText.lastIndexOf(' ');
-  // Return the truncated string up to the last space, plus an ellipsis
   return lastSpaceIndex > -1
     ? truncatedText.substring(0, lastSpaceIndex) + '...'
     : truncatedText + '...';
@@ -53,6 +50,7 @@ export default function HomePage() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false); // Add mounted state
 
   // Fallback banner data in case no blog posts are available
   const fallbackBannerData = [
@@ -82,8 +80,15 @@ export default function HomePage() {
     }
   ];
 
+  // Set mounted to true after component mounts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Fetch blog posts on component mount
   useEffect(() => {
+    if (!mounted) return; // Don't fetch until mounted
+    
     const fetchBlogPosts = async () => {
       try {
         setLoading(true);
@@ -98,16 +103,15 @@ export default function HomePage() {
 
         const data = await response.json();
         
-        // Sort by publishedDate (most recent first) and take only the first 3
         const sortedPosts = data.data
           .sort((a: BlogPostResponse, b: BlogPostResponse) => {
             return new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime();
           })
-          .slice(0, 3); // Get only the 3 most recent posts
+          .slice(0, 3);
 
         const formattedPosts = sortedPosts.map((post: BlogPostResponse) => ({
           id: post._id,
-          imageSrc: post.heroImage || fallbackBannerData[0].imageSrc, // Fallback image if no heroImage
+          imageSrc: post.heroImage || fallbackBannerData[0].imageSrc,
           title: post.title,
           description: truncateDescription(post.content, 150),
           linkHref: `/blog/${post.slug}`,
@@ -117,7 +121,6 @@ export default function HomePage() {
       } catch (err) {
         console.error('Error fetching blog posts:', err);
         setError('Failed to load blog posts');
-        // Use fallback data if fetch fails
         setBlogPosts(fallbackBannerData.map(banner => ({
           id: banner.id.toString(),
           imageSrc: banner.imageSrc,
@@ -131,24 +134,49 @@ export default function HomePage() {
     };
 
     fetchBlogPosts();
-  }, []);
+  }, [mounted]);
 
-  // Set up banner rotation
+  // Set up banner rotation only after component is mounted
   useEffect(() => {
-    if (blogPosts.length === 0) return;
+    if (!mounted || blogPosts.length === 0) return;
 
     const intervalId = setInterval(() => {
       setCurrentBannerIndex((prevIndex) => (prevIndex + 1) % blogPosts.length);
-    }, 5000); // Change banner every 5 seconds
+    }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [blogPosts.length]);
+  }, [mounted, blogPosts.length]);
 
   // Get current banner (blog post or fallback)
   const currentBanner = blogPosts.length > 0 ? blogPosts[currentBannerIndex] : fallbackBannerData[currentBannerIndex];
 
   // Define breadcrumb items for the Home page
   const homeBreadcrumbs = [{ label: 'Home', href: '/' }];
+
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="container mx-auto px-16 py-4">
+        <div className="flex py-4">
+          <nav className="flex py-4" aria-label="Breadcrumb">
+            <ol className="inline-flex items-center space-x-1 md:space-x-2">
+              <li className="inline-flex items-center">
+                <span className="text-sm font-medium text-gray-500">
+                  Home
+                </span>
+              </li>
+            </ol>
+          </nav>
+        </div>
+        <div className="relative bg-gray-100 rounded-lg p-6 mb-6 flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading latest stories...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -166,7 +194,6 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto px-16 py-4">
-      {/* Add Breadcrumbs component here */}
       <Breadcrumbs items={homeBreadcrumbs} />
 
       {/* Hero Section - Dynamic Banner with Recent Blog Posts */}
@@ -186,7 +213,6 @@ export default function HomePage() {
             </Link>
           </div>
           
-          {/* Image Container */}
           <div className="md:w-1/2 mt-4 md:mt-0 flex justify-end">
             <div className="relative w-full max-w-xs aspect-square rounded-lg shadow-lg overflow-hidden">
               <Image
@@ -196,18 +222,12 @@ export default function HomePage() {
                 style={{ objectFit: 'cover' }}
                 priority={currentBannerIndex === 0}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 320px"
-                onError={(e) => {
-                  console.error(`Error loading image: ${currentBanner.imageSrc}`, e);
-                }}
-                onLoad={() => {
-                  console.log(`Image loaded successfully: ${currentBanner.imageSrc}`);
-                }}
               />
             </div>
           </div>
         </div>
         
-        {/* Centered Pagination Dots at Bottom */}
+        {/* Pagination Dots */}
         {blogPosts.length > 1 && (
           <div className="flex justify-center space-x-2 pb-6">
             {blogPosts.map((_, index) => (
