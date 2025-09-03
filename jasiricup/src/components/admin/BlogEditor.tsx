@@ -41,6 +41,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
 
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
@@ -74,27 +75,53 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File size must be less than 5MB');
+      return;
+    }
+
     setUploading(true);
+    setUploadError('');
+
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload', {
+      // Use the correct admin upload endpoint
+      const response = await fetch('/api/admin/upload', {
         method: 'POST',
         body: formData,
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Upload failed: ${response.status}`);
+      }
+
       const data = await response.json();
-      if (data.success) {
+      
+      if (data.success && data.url) {
         setFormData(prev => ({ ...prev, heroImage: data.url }));
+        setUploadError('');
       } else {
-        alert('Failed to upload image');
+        throw new Error(data.error || 'Upload failed - no URL returned');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image');
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
     } finally {
       setUploading(false);
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -144,6 +171,11 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
   const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'published') => {
     e.preventDefault();
     await onSave({ ...formData, status });
+  };
+
+  const removeCurrentImage = () => {
+    setFormData(prev => ({ ...prev, heroImage: '' }));
+    setUploadError('');
   };
 
   return (
@@ -213,16 +245,46 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+              disabled={uploading}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
             />
-            {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
-            {formData.heroImage && (
+            
+            {/* Upload Status */}
+            {uploading && (
+              <div className="flex items-center text-sm text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Uploading to Cloudinary...
+              </div>
+            )}
+            
+            {/* Upload Error */}
+            {uploadError && (
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                {uploadError}
+              </div>
+            )}
+            
+            {/* Current Image Preview */}
+            {formData.heroImage && formData.heroImage.trim() && (
               <div className="mt-2">
-                <img
-                  src={formData.heroImage}
-                  alt="Hero preview"
-                  className="max-w-xs h-32 object-cover rounded border"
-                />
+                <div className="relative inline-block">
+                  <img
+                    src={formData.heroImage}
+                    alt="Hero preview"
+                    className="max-w-xs h-32 object-cover rounded border"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeCurrentImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    title="Remove image"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Image uploaded successfully
+                </p>
               </div>
             )}
           </div>

@@ -4,47 +4,67 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BlogEditor } from '@/components/admin/BlogEditor';
+import { use } from 'react';
 
 interface EditBlogPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditBlogPage({ params }: EditBlogPageProps) {
+  // Use React.use() to unwrap the params Promise
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
+
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [blogData, setBlogData] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const fetchBlog = async () => {
+      if (!id) return;
+      
       try {
-        const response = await fetch(`/api/admin/blog/${params.id}`);
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch(`/api/admin/blog/${id}`);
         const data = await response.json();
         
-        if (data.success) {
+        if (response.ok && data.success) {
           setBlogData(data.data);
         } else {
-          alert('Blog post not found');
-          router.push('/admin/blog');
+          setError(data.error || 'Blog post not found');
+          setTimeout(() => {
+            router.push('/admin/blog');
+          }, 2000);
         }
       } catch (error) {
         console.error('Error fetching blog:', error);
-        alert('Failed to load blog post');
-        router.push('/admin/blog');
+        setError('Failed to load blog post');
+        setTimeout(() => {
+          router.push('/admin/blog');
+        }, 2000);
       } finally {
         setLoading(false);
       }
     };
 
     fetchBlog();
-  }, [params.id, router]);
+  }, [id, router]);
 
   const handleSave = async (data: any) => {
+    if (!id) {
+      alert('Blog ID is missing');
+      return;
+    }
+
     setSaving(true);
     try {
-      const response = await fetch(`/api/admin/blog/${params.id}`, {
+      const response = await fetch(`/api/admin/blog/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -53,6 +73,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
       });
 
       if (response.ok) {
+        const result = await response.json();
         alert(data.status === 'published' ? 'Blog post published successfully!' : 'Blog post updated successfully!');
         router.push('/admin/blog');
       } else {
@@ -70,7 +91,22 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading blog post...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 max-w-md mx-auto">
+          <p className="font-bold">Error</p>
+          <p>{error}</p>
+        </div>
+        <p className="text-gray-500 text-sm">Redirecting to blog list...</p>
       </div>
     );
   }
@@ -79,12 +115,18 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 text-lg">Blog post not found.</p>
+        <button 
+          onClick={() => router.push('/admin/blog')}
+          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+        >
+          Back to Blog List
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-16">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Edit Blog Post</h1>
         <p className="mt-2 text-gray-600">Update your blog post content</p>

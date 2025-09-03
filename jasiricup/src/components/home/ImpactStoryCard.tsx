@@ -1,18 +1,23 @@
+// src/components/home/ImpactStoryCard.tsx
 import Image from "next/image";
 import Link from "next/link";
 
 interface ImpactStoryCardProps {
-  imageSrc: string; // This will now be a Cloudinary URL
+  imageSrc: string;
   title: string;
   description: string;
   linkHref: string;
 }
 
+const DEFAULT_STORY_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/happy_girl-5_ljvnx3.png";
+
 export const ImpactStoryCard = ({ imageSrc, title, description, linkHref }: ImpactStoryCardProps) => {
+  const imageSource = imageSrc && imageSrc.trim() ? imageSrc : DEFAULT_STORY_IMAGE;
+  
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-300 hover:scale-105">
       <Image
-        src={imageSrc} // Use the imageSrc prop here, which will be a Cloudinary URL
+        src={imageSource}
         alt={title}
         width={400}
         height={250}

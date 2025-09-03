@@ -1,3 +1,4 @@
+// src/app/page.tsx
 'use client';
 
 import Image from "next/image";
@@ -45,12 +46,14 @@ interface BlogPostResponse {
   publishedDate: string;
 }
 
+const DEFAULT_BANNER_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082805/impact-story-hero_ilth4o.png";
+
 export default function HomePage() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false); // Add mounted state
+  const [mounted, setMounted] = useState(false);
 
   // Fallback banner data in case no blog posts are available
   const fallbackBannerData = [
@@ -87,7 +90,7 @@ export default function HomePage() {
 
   // Fetch blog posts on component mount
   useEffect(() => {
-    if (!mounted) return; // Don't fetch until mounted
+    if (!mounted) return;
     
     const fetchBlogPosts = async () => {
       try {
@@ -111,7 +114,7 @@ export default function HomePage() {
 
         const formattedPosts = sortedPosts.map((post: BlogPostResponse) => ({
           id: post._id,
-          imageSrc: post.heroImage || fallbackBannerData[0].imageSrc,
+          imageSrc: (post.heroImage && post.heroImage.trim()) ? post.heroImage : DEFAULT_BANNER_IMAGE,
           title: post.title,
           description: truncateDescription(post.content, 150),
           linkHref: `/blog/${post.slug}`,
@@ -192,6 +195,11 @@ export default function HomePage() {
     );
   }
 
+  // Ensure current banner has a valid image
+  const bannerImageSrc = (currentBanner?.imageSrc && currentBanner.imageSrc.trim()) 
+    ? currentBanner.imageSrc 
+    : DEFAULT_BANNER_IMAGE;
+
   return (
     <div className="container mx-auto px-16 py-4">
       <Breadcrumbs items={homeBreadcrumbs} />
@@ -201,12 +209,12 @@ export default function HomePage() {
         <div className="p-8 flex flex-col md:flex-row items-center justify-between">
           <div className="md:w-2/3 pr-12">
             <h1 className="text-3xl font-bold mb-2 text-gray-800">
-              {currentBanner.title}
+              {currentBanner?.title || "Welcome to JasiriCup"}
             </h1>
             <p className="text-base text-gray-600 mb-4">
-              {currentBanner.description}
+              {currentBanner?.description || "Empowering women through education and sustainable menstrual products."}
             </p>
-            <Link href={currentBanner.linkHref} passHref>
+            <Link href={currentBanner?.linkHref || "/blog"} passHref>
               <button className="bg-violet-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-colors">
                 Read More
               </button>
@@ -216,8 +224,8 @@ export default function HomePage() {
           <div className="md:w-1/2 mt-4 md:mt-0 flex justify-end">
             <div className="relative w-full max-w-xs aspect-square rounded-lg shadow-lg overflow-hidden">
               <Image
-                src={currentBanner.imageSrc}
-                alt={currentBanner.title}
+                src={bannerImageSrc}
+                alt={currentBanner?.title || "JasiriCup Banner"}
                 fill
                 style={{ objectFit: 'cover' }}
                 priority={currentBannerIndex === 0}

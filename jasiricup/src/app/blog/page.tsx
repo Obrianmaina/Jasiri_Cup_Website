@@ -1,3 +1,4 @@
+// src/app/blog/page.tsx
 import Image from "next/image";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
@@ -37,6 +38,9 @@ interface BlogPostResponse {
   isFeatured?: boolean;
 }
 
+const DEFAULT_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/forest_ganolr.png";
+const DEFAULT_HERO_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082805/impact-story-hero_ilth4o.png";
+
 export default async function BlogPage() {
   const breadcrumbs = [
     { label: 'Home', href: '/' },
@@ -58,7 +62,7 @@ export default async function BlogPage() {
     const data = await response.json();
     const allPosts = data.data.map((post: BlogPostResponse) => ({
       id: post._id,
-      imageSrc: post.heroImage,
+      imageSrc: (post.heroImage && post.heroImage.trim()) ? post.heroImage : DEFAULT_IMAGE,
       title: post.title,
       description: truncateDescription(post.content, 150),
       linkHref: `/blog/${post.slug}`,
@@ -77,7 +81,7 @@ export default async function BlogPage() {
       if (mostRecentPost) {
         featuredPost = {
           id: mostRecentPost._id,
-          imageSrc: mostRecentPost.heroImage,
+          imageSrc: (mostRecentPost.heroImage && mostRecentPost.heroImage.trim()) ? mostRecentPost.heroImage : DEFAULT_HERO_IMAGE,
           title: mostRecentPost.title,
           description: truncateDescription(mostRecentPost.content, 200),
           linkHref: `/blog/${mostRecentPost.slug}`,
@@ -99,7 +103,7 @@ export default async function BlogPage() {
   const defaultHero = {
     title: "Sustainable Periods",
     description: "This initiative targets girls in rural areas (ASAL Regions that remain inadequately served), who often lack access to affordable menstrual products and adequate education.",
-    imageSrc: "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/forest_ganolr.png",
+    imageSrc: DEFAULT_HERO_IMAGE,
     linkHref: "#"
   };
 
