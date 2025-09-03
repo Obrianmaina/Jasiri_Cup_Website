@@ -44,6 +44,8 @@ interface BlogPostResponse {
   slug: string;
   author?: string;
   publishedDate: string;
+  featured?: boolean;
+  status: string;
 }
 
 const DEFAULT_BANNER_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082805/impact-story-hero_ilth4o.png";
@@ -58,7 +60,7 @@ export default function HomePage() {
   // Fallback banner data in case no blog posts are available
   const fallbackBannerData = [
     {
-      id: 1,
+      id: "fallback-1",
       imageSrc: "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082805/impact-story-hero_ilth4o.png",
       alt: "Empowering Girls Through Education Banner",
       title: "Empowering Girls Through Education",
@@ -66,7 +68,7 @@ export default function HomePage() {
       linkHref: "/blog"
     },
     {
-      id: 2,
+      id: "fallback-2",
       imageSrc: "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/happy_girl-5_ljvnx3.png",
       alt: "Building Sustainable Futures Banner",
       title: "Building Sustainable Futures",
@@ -74,7 +76,7 @@ export default function HomePage() {
       linkHref: "/blog"
     },
     {
-      id: 3,
+      id: "fallback-3",
       imageSrc: "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/happy_girl-1_dmdt6w.png",
       alt: "Community Engagement & Support Banner",
       title: "Community Engagement & Support",
@@ -106,31 +108,56 @@ export default function HomePage() {
 
         const data = await response.json();
         
-        const sortedPosts = data.data
+        console.log('Home page: API returned', data.data?.length || 0, 'posts');
+
+        // Filter published posts and get top 3 most recent
+        const publishedPosts = data.data
+          .filter((post: BlogPostResponse) => post.status === 'published')
           .sort((a: BlogPostResponse, b: BlogPostResponse) => {
             return new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime();
           })
-          .slice(0, 3);
+          .slice(0, 3); // Take only top 3 for banner rotation
 
-        const formattedPosts = sortedPosts.map((post: BlogPostResponse) => ({
+        console.log('Home page: Using', publishedPosts.length, 'published posts for banner');
+
+        const formattedPosts = publishedPosts.map((post: BlogPostResponse) => ({
           id: post._id,
           imageSrc: (post.heroImage && post.heroImage.trim()) ? post.heroImage : DEFAULT_BANNER_IMAGE,
           title: post.title,
-          description: truncateDescription(post.content, 150),
+          description: truncateDescription(post.content, 180),
           linkHref: `/blog/${post.slug}`,
         }));
 
-        setBlogPosts(formattedPosts);
+        // Use blog posts if we have them, otherwise use fallback
+        if (formattedPosts.length > 0) {
+          setBlogPosts(formattedPosts);
+          console.log('Home page: Set banner posts:', formattedPosts.map(p => p.title));
+        } else {
+          // Convert fallback data to BlogPost format
+          const fallbackPosts = fallbackBannerData.map(banner => ({
+            id: banner.id,
+            imageSrc: banner.imageSrc,
+            title: banner.title,
+            description: banner.description,
+            linkHref: banner.linkHref,
+          }));
+          setBlogPosts(fallbackPosts);
+          console.log('Home page: Using fallback banner data');
+        }
+
       } catch (err) {
         console.error('Error fetching blog posts:', err);
-        setError('Failed to load blog posts');
-        setBlogPosts(fallbackBannerData.map(banner => ({
-          id: banner.id.toString(),
+        setError('Failed to load latest posts');
+        
+        // Use fallback data on error
+        const fallbackPosts = fallbackBannerData.map(banner => ({
+          id: banner.id,
           imageSrc: banner.imageSrc,
           title: banner.title,
           description: banner.description,
           linkHref: banner.linkHref,
-        })));
+        }));
+        setBlogPosts(fallbackPosts);
       } finally {
         setLoading(false);
       }
@@ -139,19 +166,28 @@ export default function HomePage() {
     fetchBlogPosts();
   }, [mounted]);
 
-  // Set up banner rotation only after component is mounted
+  // Set up banner rotation only after component is mounted and we have posts
   useEffect(() => {
-    if (!mounted || blogPosts.length === 0) return;
+    if (!mounted || blogPosts.length <= 1) return;
+
+    console.log(`Home page: Starting banner rotation with ${blogPosts.length} posts`);
 
     const intervalId = setInterval(() => {
-      setCurrentBannerIndex((prevIndex) => (prevIndex + 1) % blogPosts.length);
+      setCurrentBannerIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % blogPosts.length;
+        console.log(`Banner rotating from ${prevIndex} to ${nextIndex}: ${blogPosts[nextIndex]?.title}`);
+        return nextIndex;
+      });
     }, 5000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      console.log('Home page: Clearing banner rotation interval');
+      clearInterval(intervalId);
+    };
   }, [mounted, blogPosts.length]);
 
-  // Get current banner (blog post or fallback)
-  const currentBanner = blogPosts.length > 0 ? blogPosts[currentBannerIndex] : fallbackBannerData[currentBannerIndex];
+  // Get current banner
+  const currentBanner = blogPosts.length > 0 ? blogPosts[currentBannerIndex] : null;
 
   // Define breadcrumb items for the Home page
   const homeBreadcrumbs = [{ label: 'Home', href: '/' }];
@@ -196,7 +232,7 @@ export default function HomePage() {
   }
 
   // Ensure current banner has a valid image
-  const bannerImageSrc = (currentBanner?.imageSrc && currentBanner.imageSrc.trim()) 
+  const bannerImageSrc = currentBanner?.imageSrc && currentBanner.imageSrc.trim()
     ? currentBanner.imageSrc 
     : DEFAULT_BANNER_IMAGE;
 
@@ -235,13 +271,16 @@ export default function HomePage() {
           </div>
         </div>
         
-        {/* Pagination Dots */}
+        {/* Pagination Dots - Show only if we have multiple posts */}
         {blogPosts.length > 1 && (
           <div className="flex justify-center space-x-2 pb-6">
             {blogPosts.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentBannerIndex(index)}
+                onClick={() => {
+                  console.log(`Manual banner switch to index ${index}: ${blogPosts[index]?.title}`);
+                  setCurrentBannerIndex(index);
+                }}
                 className={`w-2 h-2 rounded-full transition-colors ${
                   index === currentBannerIndex ? 'bg-violet-600' : 'bg-gray-400'
                 }`}
@@ -251,6 +290,18 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* Debug info - Remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 text-sm">
+          <p><strong>Home Page Debug:</strong></p>
+          <p>Banner posts: {blogPosts.length}</p>
+          <p>Current banner index: {currentBannerIndex}</p>
+          <p>Current banner: {currentBanner?.title || 'None'}</p>
+          <p>Current banner link: {currentBanner?.linkHref || 'None'}</p>
+          {error && <p>Error: {error}</p>}
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (

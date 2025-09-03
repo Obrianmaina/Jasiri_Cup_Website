@@ -35,7 +35,8 @@ interface BlogPostResponse {
   slug: string;
   author?: string;
   publishedDate: string;
-  isFeatured?: boolean;
+  featured?: boolean;
+  status: string;
 }
 
 const DEFAULT_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/forest_ganolr.png";
@@ -60,7 +61,24 @@ export default async function BlogPage() {
     if (!response.ok) throw new Error('Failed to fetch blog posts');
 
     const data = await response.json();
-    const allPosts = data.data.map((post: BlogPostResponse) => ({
+    
+    // Filter only published posts and sort by publishedDate (most recent first)
+    const publishedPosts = data.data
+      .filter((post: BlogPostResponse) => post.status === 'published')
+      .sort((a: BlogPostResponse, b: BlogPostResponse) => {
+        const dateA = new Date(a.publishedDate).getTime();
+        const dateB = new Date(b.publishedDate).getTime();
+        return dateB - dateA; // Most recent first
+      });
+
+    console.log(`Found ${publishedPosts.length} published posts`);
+
+    if (publishedPosts.length === 0) {
+      console.log('No published posts found');
+    }
+
+    // Convert to BlogPost format
+    const allPosts = publishedPosts.map((post: BlogPostResponse) => ({
       id: post._id,
       imageSrc: (post.heroImage && post.heroImage.trim()) ? post.heroImage : DEFAULT_IMAGE,
       title: post.title,
@@ -68,43 +86,58 @@ export default async function BlogPage() {
       linkHref: `/blog/${post.slug}`,
     }));
 
-    featuredPost = allPosts.find((post: any) => {
-      const originalPost = data.data.find((p: BlogPostResponse) => p._id === post.id);
-      return originalPost?.isFeatured;
-    }) || null;
-
-    if (!featuredPost && allPosts.length > 0) {
-      const sortedPosts = data.data.sort((a: BlogPostResponse, b: BlogPostResponse) => {
-        return new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime();
-      });
-      const mostRecentPost = sortedPosts[0];
-      if (mostRecentPost) {
-        featuredPost = {
-          id: mostRecentPost._id,
-          imageSrc: (mostRecentPost.heroImage && mostRecentPost.heroImage.trim()) ? mostRecentPost.heroImage : DEFAULT_HERO_IMAGE,
-          title: mostRecentPost.title,
-          description: truncateDescription(mostRecentPost.content, 200),
-          linkHref: `/blog/${mostRecentPost.slug}`,
-        };
-      }
+    // 1. First, try to find a featured post
+    const featuredPostData = publishedPosts.find((post: BlogPostResponse) => post.featured === true);
+    
+    if (featuredPostData) {
+      console.log('Using featured post:', featuredPostData.title);
+      featuredPost = {
+        id: featuredPostData._id,
+        imageSrc: (featuredPostData.heroImage && featuredPostData.heroImage.trim()) 
+          ? featuredPostData.heroImage 
+          : DEFAULT_HERO_IMAGE,
+        title: featuredPostData.title,
+        description: truncateDescription(featuredPostData.content, 200),
+        linkHref: `/blog/${featuredPostData.slug}`,
+      };
+    } 
+    // 2. If no featured post, use the most recent published post
+    else if (publishedPosts.length > 0) {
+      const latestPost = publishedPosts[0]; // Already sorted by most recent
+      console.log('Using latest post:', latestPost.title);
+      featuredPost = {
+        id: latestPost._id,
+        imageSrc: (latestPost.heroImage && latestPost.heroImage.trim()) 
+          ? latestPost.heroImage 
+          : DEFAULT_HERO_IMAGE,
+        title: latestPost.title,
+        description: truncateDescription(latestPost.content, 200),
+        linkHref: `/blog/${latestPost.slug}`,
+      };
     }
 
+    // 3. Remove the featured/latest post from the regular posts list to avoid duplication
     if (featuredPost) {
       blogPosts = allPosts.filter((post: BlogPost) => post.id !== featuredPost!.id);
     } else {
       blogPosts = allPosts;
     }
 
+    console.log('Featured post:', featuredPost?.title || 'None');
+    console.log(`Regular posts: ${blogPosts.length}`);
+    console.log('All published posts found:', publishedPosts.length);
+
   } catch (err) {
     console.error('Error fetching blog posts:', err);
     error = 'Failed to load blog posts. Please try again later.';
   }
 
+  // Fallback hero content if no posts are available
   const defaultHero = {
     title: "Sustainable Periods",
     description: "This initiative targets girls in rural areas (ASAL Regions that remain inadequately served), who often lack access to affordable menstrual products and adequate education.",
     imageSrc: DEFAULT_HERO_IMAGE,
-    linkHref: "#"
+    linkHref: "/blog"
   };
 
   const heroContent = featuredPost || defaultHero;
@@ -113,7 +146,7 @@ export default async function BlogPage() {
     <div className="container mx-auto px-4 sm:px-8 md:px-16 py-8">
       <Breadcrumbs items={breadcrumbs} />
 
-      {/* Dynamic Hero Section */}
+      {/* Dynamic Hero Section - Shows Latest/Featured Blog Post */}
       <section className="relative bg-gray-100 rounded-lg p-6 sm:p-8 mb-12 flex flex-col md:flex-row items-center justify-between">
         <div className="w-full md:w-1/2 pr-0 md:pr-8 text-center md:text-left">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
@@ -136,9 +169,20 @@ export default async function BlogPage() {
             width={250}
             height={400}
             className="rounded-lg shadow-lg max-w-full h-auto"
+            priority
           />
         </div>
       </section>
+
+      {/* Debug info - Remove this in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 text-sm">
+          <p><strong>Debug Info:</strong></p>
+          <p>Featured/Latest post: {featuredPost ? featuredPost.title : 'None found'}</p>
+          <p>Regular posts count: {blogPosts.length}</p>
+          {error && <p>Error: {error}</p>}
+        </div>
+      )}
 
       {/* Blog Posts Grid */}
       <section>
@@ -146,7 +190,14 @@ export default async function BlogPage() {
           Latest Posts
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-          {error && <p className="text-red-500 text-center col-span-full">{error}</p>}
+          {error && (
+            <div className="col-span-full">
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center">
+                <p>{error}</p>
+              </div>
+            </div>
+          )}
+          
           {blogPosts.length > 0 ? (
             blogPosts.map(post => (
               <BlogPostCard
@@ -158,7 +209,14 @@ export default async function BlogPage() {
               />
             ))
           ) : (
-            !error && <p className="text-gray-500 text-center col-span-full">No blog posts found.</p>
+            !error && (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-500 text-lg">No blog posts found.</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Create and publish your first blog post in the admin panel.
+                </p>
+              </div>
+            )
           )}
         </div>
       </section>
