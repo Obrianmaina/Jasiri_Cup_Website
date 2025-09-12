@@ -65,7 +65,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <Breadcrumbs items={breadcrumbs} />
 
       {/* Debug info in development */}
-      {process.env.NODE_ENV === 'development' && articleData && (
+      {/*process.env.NODE_ENV === 'development' && articleData && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 text-sm">
           <p><strong>Article Debug:</strong></p>
           <p>Slug: {articleSlug}</p>
@@ -75,7 +75,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <p>Has content: {!!articleData.content}</p>
           <p>Content length: {articleData.content?.length || 0} characters</p>
         </div>
-      )}
+      )*/}
 
       {/* Article */}
       <div className="w-full max-w-4xl mx-auto">

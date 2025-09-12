@@ -175,14 +175,14 @@ export default async function BlogPage() {
       </section>
 
       {/* Debug info - Remove this in production */}
-      {process.env.NODE_ENV === 'development' && (
+      {/*process.env.NODE_ENV === 'development' && (
         <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 text-sm">
           <p><strong>Debug Info:</strong></p>
           <p>Featured/Latest post: {featuredPost ? featuredPost.title : 'None found'}</p>
           <p>Regular posts count: {blogPosts.length}</p>
           {error && <p>Error: {error}</p>}
         </div>
-      )}
+      )*/}
 
       {/* Blog Posts Grid */}
       <section>

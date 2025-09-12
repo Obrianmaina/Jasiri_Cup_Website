@@ -68,7 +68,7 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
       />
 
       {/* Debug info in development */}
-      {process.env.NODE_ENV === 'development' && (
+      {/*process.env.NODE_ENV === 'development' && (
         <div className="mt-8 p-4 bg-gray-100 rounded text-sm">
           <h4 className="font-bold">Content Debug:</h4>
           <p>Raw HTML length: {article.content?.length || 0}</p>
@@ -79,7 +79,7 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
             </pre>
           </details>
         </div>
-      )}
+      )*/}
     </article>
   );
 };

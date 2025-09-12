@@ -292,7 +292,7 @@ export default function HomePage() {
       </section>
 
       {/* Debug info - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
+      {/*process.env.NODE_ENV === 'development' && (
         <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 text-sm">
           <p><strong>Home Page Debug:</strong></p>
           <p>Banner posts: {blogPosts.length}</p>
@@ -301,7 +301,7 @@ export default function HomePage() {
           <p>Current banner link: {currentBanner?.linkHref || 'None'}</p>
           {error && <p>Error: {error}</p>}
         </div>
-      )}
+      )*/}
 
       {/* Error Message */}
       {error && (
