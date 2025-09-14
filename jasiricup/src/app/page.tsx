@@ -195,7 +195,7 @@ export default function HomePage() {
   // Don't render until mounted to prevent hydration mismatch
   if (!mounted) {
     return (
-      <div className="container mx-auto px-16 py-4">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-4">
         <div className="flex py-4">
           <nav className="flex py-4" aria-label="Breadcrumb">
             <ol className="inline-flex items-center space-x-1 md:space-x-2">
@@ -207,10 +207,10 @@ export default function HomePage() {
             </ol>
           </nav>
         </div>
-        <div className="relative bg-gray-100 rounded-lg p-6 mb-6 flex items-center justify-center h-64">
+        <div className="relative bg-gray-100 rounded-lg p-6 mb-6 flex items-center justify-center h-48 sm:h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading latest stories...</p>
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-sm sm:text-base">Loading latest stories...</p>
           </div>
         </div>
       </div>
@@ -219,12 +219,12 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-16 py-8">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-8">
         <Breadcrumbs items={homeBreadcrumbs} />
-        <div className="relative bg-gray-100 rounded-lg p-6 mb-6 flex items-center justify-center h-64">
+        <div className="relative bg-gray-100 rounded-lg p-6 mb-6 flex items-center justify-center h-48 sm:h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading latest stories...</p>
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-sm sm:text-base">Loading latest stories...</p>
           </div>
         </div>
       </div>
@@ -237,35 +237,38 @@ export default function HomePage() {
     : DEFAULT_BANNER_IMAGE;
 
   return (
-    <div className="container mx-auto px-16 py-4">
+    <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-4">
       <Breadcrumbs items={homeBreadcrumbs} />
 
-      {/* Hero Section - Dynamic Banner with Recent Blog Posts */}
+      {/* Hero Section - Dynamic Banner with Recent Blog Posts - Mobile Optimized */}
       <section className="relative bg-gray-100 rounded-lg mb-6 overflow-hidden">
-        <div className="p-8 flex flex-col md:flex-row items-center justify-between">
-          <div className="md:w-2/3 pr-12">
-            <h1 className="text-3xl font-bold mb-2 text-gray-800">
+        <div className="p-4 sm:p-6 md:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+          {/* Text Content */}
+          <div className="w-full lg:w-2/3 text-center lg:text-left order-2 lg:order-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 text-gray-800 leading-tight">
               {currentBanner?.title || "Welcome to JasiriCup"}
             </h1>
-            <p className="text-base text-gray-600 mb-4">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
               {currentBanner?.description || "Empowering women through education and sustainable menstrual products."}
             </p>
             <Link href={currentBanner?.linkHref || "/blog"} passHref>
-              <button className="bg-violet-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-colors">
+              <button className="bg-violet-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-purple-700 transition-colors text-sm sm:text-base">
                 Read More
               </button>
             </Link>
           </div>
           
-          <div className="md:w-1/2 mt-4 md:mt-0 flex justify-end">
-            <div className="relative w-full max-w-xs aspect-square rounded-lg shadow-lg overflow-hidden">
+          {/* Image */}
+          <div className="w-full lg:w-1/3 flex justify-center lg:justify-end order-1 lg:order-2">
+            <div className="relative w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[280px] aspect-square rounded-lg shadow-lg overflow-hidden">
               <Image
                 src={bannerImageSrc}
                 alt={currentBanner?.title || "JasiriCup Banner"}
                 fill
                 style={{ objectFit: 'cover' }}
                 priority={currentBannerIndex === 0}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 320px"
+                sizes="(max-width: 768px) 280px, (max-width: 1024px) 320px, 280px"
+                className="rounded-lg"
               />
             </div>
           </div>
@@ -273,7 +276,7 @@ export default function HomePage() {
         
         {/* Pagination Dots - Show only if we have multiple posts */}
         {blogPosts.length > 1 && (
-          <div className="flex justify-center space-x-2 pb-6">
+          <div className="flex justify-center space-x-2 pb-4 sm:pb-6">
             {blogPosts.map((_, index) => (
               <button
                 key={index}
@@ -291,29 +294,17 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Debug info - Remove in production */}
-      {/*process.env.NODE_ENV === 'development' && (
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 text-sm">
-          <p><strong>Home Page Debug:</strong></p>
-          <p>Banner posts: {blogPosts.length}</p>
-          <p>Current banner index: {currentBannerIndex}</p>
-          <p>Current banner: {currentBanner?.title || 'None'}</p>
-          <p>Current banner link: {currentBanner?.linkHref || 'None'}</p>
-          {error && <p>Error: {error}</p>}
-        </div>
-      )*/}
-
       {/* Error Message */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 text-sm sm:text-base">
           <p>{error}. Showing default content.</p>
         </div>
       )}
 
-      {/* About JasiriCup Section */}
+      {/* About JasiriCup Section - Mobile Optimized */}
       <AboutSection imageUrl="https://res.cloudinary.com/dsvexizbx/image/upload/v1754082804/about-jasiricup_y8uq1m.png" />
 
-      {/* Vision & Mission Section */}
+      {/* Vision & Mission Section - Already mobile responsive */}
       <VisionMissionCards />
     </div>
   );

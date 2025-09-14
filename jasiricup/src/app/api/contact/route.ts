@@ -1,15 +1,89 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import ContactMessage from '@/lib/models/ContactMessage';
 import nodemailer from 'nodemailer';
 
-// Add debug logging
-console.log('Environment check:');
-console.log('DB_CONNECTION_STRING exists:', !!process.env.DB_CONNECTION_STRING);
-console.log('NODE_ENV:', process.env.NODE_ENV);
+// Simple in-memory rate limiting (consider Redis for production)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_IP = 3; // Max 3 requests per minute per IP
 
-// Configure Nodemailer transporter
-const transporter = nodemailer.createTransport({
+// HTML sanitization function (enhanced)
+function sanitizeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .replace(/\n/g, '<br>')
+    .trim();
+}
+
+// Enhanced email validation
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return emailRegex.test(email.trim()) && email.length <= 254;
+}
+
+// Rate limiting function
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userRequests = rateLimitMap.get(ip) || [];
+  
+  // Remove requests outside the time window
+  const validRequests = userRequests.filter((timestamp: number) => now - timestamp < RATE_LIMIT_WINDOW);
+  
+  if (validRequests.length >= MAX_REQUESTS_PER_IP) {
+    return false; // Rate limit exceeded
+  }
+  
+  // Add current request
+  validRequests.push(now);
+  rateLimitMap.set(ip, validRequests);
+  
+  // Clean up old entries periodically
+  if (rateLimitMap.size > 1000) {
+    rateLimitMap.clear();
+  }
+  
+  return true;
+}
+
+// Input validation function
+function validateInput(data: any): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  
+  if (!data.name || typeof data.name !== 'string') {
+    errors.push('Name is required');
+  } else if (data.name.trim().length < 2 || data.name.trim().length > 100) {
+    errors.push('Name must be between 2 and 100 characters');
+  }
+  
+  if (!data.email || typeof data.email !== 'string') {
+    errors.push('Email is required');
+  } else if (!isValidEmail(data.email)) {
+    errors.push('Please provide a valid email address');
+  }
+  
+  if (!data.topic || typeof data.topic !== 'string') {
+    errors.push('Topic is required');
+  } else if (data.topic.trim().length < 3 || data.topic.trim().length > 200) {
+    errors.push('Topic must be between 3 and 200 characters');
+  }
+  
+  if (!data.message || typeof data.message !== 'string') {
+    errors.push('Message is required');
+  } else if (data.message.trim().length < 10 || data.message.trim().length > 1000) {
+    errors.push('Message must be between 10 and 1000 characters');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+// Configure Nodemailer transporter with better security
+const transporter = nodemailer.createTransporter({
   host: process.env.EMAIL_SERVER_HOST,
   port: parseInt(process.env.EMAIL_SERVER_PORT || '587', 10),
   secure: process.env.EMAIL_SERVER_SECURE === 'true',
@@ -20,149 +94,126 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 10000,
   greetingTimeout: 5000,
   socketTimeout: 10000,
+  // Additional security options
+  requireTLS: true,
+  tls: {
+    rejectUnauthorized: process.env.NODE_ENV === 'production'
+  }
 });
 
-// HTML sanitization function
-function sanitizeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\n/g, '<br>');
-}
-
-// Email validation function
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
-}
-
-export async function POST(req: Request) {
-  console.log('POST request received at /api/contact');
-
+export async function POST(request: NextRequest) {
   try {
-    // Test database connection first
-    console.log('Attempting database connection...');
-    await dbConnect();
-    console.log('Database connected successfully');
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const clientIp = Array.isArray(ip) ? ip[0] : ip.split(',')[0];
+    
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json(
+        { message: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
 
-    // Parse request body
+    // Connect to database
+    await dbConnect();
+
+    // Parse and validate request body
     let body;
     try {
-      body = await req.json();
-      console.log('Request body parsed:', { 
-        ...body, 
-        message: body.message?.substring(0, 50) + '...' 
-      });
+      body = await request.json();
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
       return NextResponse.json(
-        { message: 'Invalid JSON in request body' },
+        { message: 'Invalid request format' },
         { status: 400 }
       );
     }
 
-    const { name, email, topic, message } = body;
-
-    // Validate required fields
-    if (!name?.trim() || !email?.trim() || !topic?.trim() || !message?.trim()) {
-      console.log('Validation failed: missing required fields');
+    // Validate input
+    const validation = validateInput(body);
+    if (!validation.isValid) {
       return NextResponse.json(
-        { message: 'All fields are required and cannot be empty' },
+        { message: 'Validation failed', errors: validation.errors },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    if (!isValidEmail(email)) {
-      console.log('Validation failed: invalid email format');
-      return NextResponse.json(
-        { message: 'Please provide a valid email address' },
-        { status: 400 }
-      );
-    }
+    // Sanitize inputs
+    const sanitizedData = {
+      name: sanitizeHtml(body.name.trim()),
+      email: body.email.trim().toLowerCase(),
+      topic: sanitizeHtml(body.topic.trim()),
+      message: sanitizeHtml(body.message.trim())
+    };
 
-    // Validate field lengths
-    const validations = [
-      { field: name.trim(), max: 100, name: 'Name' },
-      { field: email.trim(), max: 254, name: 'Email' },
-      { field: topic.trim(), max: 200, name: 'Topic' },
-      { field: message.trim(), max: 1000, name: 'Message' }
+    // Check for suspicious content (basic spam detection)
+    const suspiciousPatterns = [
+      /https?:\/\/[^\s]+/gi, // URLs in message
+      /\b(viagra|casino|lottery|winner|congratulations)\b/gi, // Spam keywords
     ];
-
-    for (const { field, max, name: fieldName } of validations) {
-      if (field.length > max) {
-        return NextResponse.json(
-          { message: `${fieldName} must be less than ${max + 1} characters` },
-          { status: 400 }
-        );
-      }
+    
+    const fullText = `${sanitizedData.name} ${sanitizedData.topic} ${sanitizedData.message}`;
+    const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(fullText));
+    
+    if (hasSuspiciousContent) {
+      // Log suspicious activity
+      console.warn(`Suspicious contact form submission from IP: ${clientIp}`);
+      return NextResponse.json(
+        { message: 'Message could not be processed. Please contact us directly.' },
+        { status: 400 }
+      );
     }
 
     // Create new contact message in database
-    console.log('Creating new contact message...');
-    const newContactMessage = await ContactMessage.create({
-      name: name.trim(),
-      email: email.trim(),
-      topic: topic.trim(),
-      message: message.trim(),
-    });
-    console.log('Contact message created successfully:', newContactMessage._id);
+    const newContactMessage = await ContactMessage.create(sanitizedData);
 
-    // Send email notification
-    console.log('Attempting to send email...');
+    // Send email notification with better error handling
     let emailSent = false;
     try {
       await transporter.sendMail({
-        from: `"JasiriCup Contact" <${process.env.EMAIL_SERVER_USER}>`, // Use your verified sender
-        replyTo: email, // User can reply to this address
+        from: `"JasiriCup Contact" <${process.env.EMAIL_SERVER_USER}>`,
+        replyTo: sanitizedData.email,
         to: process.env.EMAIL_TO,
-        subject: `New Contact Message: ${topic}`,
+        subject: `New Contact Message: ${sanitizedData.topic}`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
               New Contact Message from JasiriCup Website
             </h1>
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-              <p><strong>Name:</strong> ${sanitizeHtml(name)}</p>
-              <p><strong>Email:</strong> ${sanitizeHtml(email)}</p>
-              <p><strong>Topic:</strong> ${sanitizeHtml(topic)}</p>
+              <p><strong>Name:</strong> ${sanitizedData.name}</p>
+              <p><strong>Email:</strong> ${sanitizedData.email}</p>
+              <p><strong>Topic:</strong> ${sanitizedData.topic}</p>
             </div>
             <div style="margin: 20px 0;">
               <h3 style="color: #333;">Message:</h3>
               <div style="background-color: #fff; border-left: 4px solid #007bff; padding: 15px; margin: 10px 0;">
-                ${sanitizeHtml(message)}
+                ${sanitizedData.message}
               </div>
             </div>
             <hr style="border: none; height: 1px; background-color: #dee2e6; margin: 30px 0;">
             <p style="color: #6c757d; font-size: 12px;">
-              This message has been saved to your MongoDB database with ID: ${newContactMessage._id}
+              Sent from IP: ${clientIp}<br>
+              Database ID: ${newContactMessage._id}
             </p>
           </div>
         `,
         text: `
 New Contact Message from JasiriCup Website
 
-Name: ${name}
-Email: ${email}
-Topic: ${topic}
+Name: ${sanitizedData.name}
+Email: ${sanitizedData.email}
+Topic: ${sanitizedData.topic}
 
 Message:
-${message}
+${sanitizedData.message}
 
-This message has been saved to your MongoDB database with ID: ${newContactMessage._id}
+Sent from IP: ${clientIp}
+Database ID: ${newContactMessage._id}
         `.trim(),
       });
-      console.log('Email sent successfully!');
       emailSent = true;
     } catch (emailError: any) {
-      console.error('Failed to send email:', {
-        name: emailError.name,
-        message: emailError.message,
-        code: emailError.code,
-      });
+      console.error('Failed to send email:', emailError.message);
       // Continue without failing the request
     }
 
@@ -179,11 +230,7 @@ This message has been saved to your MongoDB database with ID: ${newContactMessag
     );
 
   } catch (error: any) {
-    console.error('Detailed error in contact API:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Contact API error:', error.message);
 
     // Handle specific error types
     if (error.name === 'ValidationError') {
@@ -199,43 +246,31 @@ This message has been saved to your MongoDB database with ID: ${newContactMessag
       );
     }
 
-    if (error.name === 'MongooseError' || 
-        error.message?.includes('MongoDB') || 
-        error.message?.includes('connection')) {
-      return NextResponse.json(
-        { message: 'Database connection error. Please try again later.' },
-        { status: 503 }
-      );
-    }
-
     return NextResponse.json(
-      { 
-        message: 'Internal Server Error', 
-        ...(process.env.NODE_ENV === 'development' && { error: error.message })
-      },
+      { message: 'Internal server error. Please try again later.' },
       { status: 500 }
     );
   }
 }
 
-// Handle other HTTP methods
+// Handle other HTTP methods securely
 export async function GET() {
   return NextResponse.json(
-    { message: 'Method not allowed. Use POST to submit contact messages.' },
-    { status: 405 }
+    { message: 'Method not allowed' },
+    { status: 405, headers: { 'Allow': 'POST' } }
   );
 }
 
 export async function PUT() {
   return NextResponse.json(
-    { message: 'Method not allowed. Use POST to submit contact messages.' },
-    { status: 405 }
+    { message: 'Method not allowed' },
+    { status: 405, headers: { 'Allow': 'POST' } }
   );
 }
 
 export async function DELETE() {
   return NextResponse.json(
-    { message: 'Method not allowed. Use POST to submit contact messages.' },
-    { status: 405 }
+    { message: 'Method not allowed' },
+    { status: 405, headers: { 'Allow': 'POST' } }
   );
 }

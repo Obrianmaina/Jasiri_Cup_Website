@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     // Send email
     await transporter.sendMail({
-      from: `"Order App" <${process.env.EMAIL_SERVER_USER}>`,
+      from: `"Jasiricup Orders" <${process.env.EMAIL_SERVER_USER}>`,
       to: process.env.EMAIL_TO,
       subject: 'New Order Received',
       text: `

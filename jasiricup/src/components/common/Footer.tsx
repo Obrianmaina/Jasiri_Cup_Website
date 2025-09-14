@@ -56,9 +56,9 @@ export const Footer = () => {
         </div>
 
         <div className="max-w-xs text-gray-300 text-sm">
-          <p>
-            Menstrual products and adequate education. This initiative targets girls in rural areas (ASAL Regions that remain inadequately served) products and adequate.
-          </p>
+            <p>
+            JasiriCup is committed to providing menstrual products, health resources, and opportunities for youth development. Join us in making a positive impact!
+            </p>
         </div>
       </div>
     </footer>
