@@ -126,7 +126,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
   }
 
   return (
-    <div className="space-y-6 px-16">
+    <div className="space-y-6 px-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Edit Blog Post</h1>
         <p className="mt-2 text-gray-600">Update your blog post content</p>

@@ -42,6 +42,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
+  const [showToolbar, setShowToolbar] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
@@ -179,8 +180,8 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
-      <form className="space-y-6">
+    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-4 sm:p-6">
+      <form className="space-y-4 sm:space-y-6">
         {/* Title */}
         <div>
           <Input
@@ -205,13 +206,13 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             placeholder="url-friendly-slug"
             required
           />
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             URL: /blog/{formData.slug}
           </p>
         </div>
 
-        {/* Author and Meta */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Author and Meta - Mobile stacked */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             id="author"
             name="author"
@@ -220,16 +221,16 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             onChange={handleInputChange}
             placeholder="Author name"
           />
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 pt-6 sm:pt-6">
             <label className="flex items-center">
               <input
                 type="checkbox"
                 name="featured"
                 checked={formData.featured}
                 onChange={handleInputChange}
-                className="mr-2"
+                className="mr-2 h-4 w-4"
               />
-              Featured Post
+              <span className="text-sm sm:text-base">Featured Post</span>
             </label>
           </div>
         </div>
@@ -246,20 +247,20 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               accept="image/*"
               onChange={handleImageUpload}
               disabled={uploading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+              className="block w-full text-sm text-gray-500 file:mr-2 sm:file:mr-4 file:py-2 file:px-2 sm:file:px-4 file:rounded-full file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
             />
             
             {/* Upload Status */}
             {uploading && (
-              <div className="flex items-center text-sm text-blue-600">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+              <div className="flex items-center text-xs sm:text-sm text-blue-600">
+                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-blue-600 mr-2"></div>
                 Uploading to Cloudinary...
               </div>
             )}
             
             {/* Upload Error */}
             {uploadError && (
-              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              <div className="text-xs sm:text-sm text-red-600 bg-red-50 p-2 rounded">
                 {uploadError}
               </div>
             )}
@@ -271,7 +272,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                   <img
                     src={formData.heroImage}
                     alt="Hero preview"
-                    className="max-w-xs h-32 object-cover rounded border"
+                    className="w-full sm:max-w-xs h-32 object-cover rounded border"
                   />
                   <button
                     type="button"
@@ -282,7 +283,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                     ×
                   </button>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">
                   Image uploaded successfully
                 </p>
               </div>
@@ -292,61 +293,72 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
 
         {/* Content Editor */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Content*
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Content*
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowToolbar(!showToolbar)}
+              className="text-xs text-purple-600 hover:text-purple-800 sm:hidden"
+            >
+              {showToolbar ? 'Hide Tools' : 'Show Tools'}
+            </button>
+          </div>
           
-          {/* Formatting Toolbar */}
-          <div className="border border-gray-300 rounded-t-lg p-2 bg-gray-50 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => insertFormatting('<h2>', '</h2>')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-100"
-            >
-              H2
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('<h3>', '</h3>')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-100"
-            >
-              H3
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('<strong>', '</strong>')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-100 font-bold"
-            >
-              B
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('<em>', '</em>')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-100 italic"
-            >
-              I
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('<p>', '</p>')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-100"
-            >
-              P
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('<ul>\n<li>', '</li>\n</ul>')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-100"
-            >
-              UL
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('<a href="">', '</a>')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-100"
-            >
-              Link
-            </button>
+          {/* Formatting Toolbar - Responsive */}
+          <div className={`border border-gray-300 rounded-t-lg p-2 bg-gray-50 ${showToolbar ? 'block' : 'hidden sm:block'}`}>
+            <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-1 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => insertFormatting('<h2>', '</h2>')}
+                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
+              >
+                H2
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('<h3>', '</h3>')}
+                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
+              >
+                H3
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('<strong>', '</strong>')}
+                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100 font-bold"
+              >
+                B
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('<em>', '</em>')}
+                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100 italic"
+              >
+                I
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('<p>', '</p>')}
+                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
+              >
+                P
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('<ul>\n<li>', '</li>\n</ul>')}
+                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
+              >
+                UL
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('<a href="">', '</a>')}
+                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
+              >
+                Link
+              </button>
+            </div>
           </div>
 
           <textarea
@@ -354,12 +366,12 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             name="content"
             value={formData.content}
             onChange={handleInputChange}
-            rows={20}
-            className="w-full border border-t-0 border-gray-300 rounded-b-lg p-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+            rows={15}
+            className={`w-full border ${showToolbar ? 'border-t-0 rounded-b-lg' : 'rounded-lg'} border-gray-300 p-3 sm:p-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-xs sm:text-sm`}
             placeholder="Write your blog content here using HTML tags..."
             required
           />
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Use HTML tags for formatting. Preview will be available after saving.
           </p>
         </div>
@@ -375,40 +387,40 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             placeholder="Brief description for SEO (recommended: 150-160 characters)"
             rows={3}
           />
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             {formData.metaDescription.length}/160 characters
           </p>
         </div>
 
-        {/* Tags */}
+        {/* Tags - Mobile optimized */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Tags
           </label>
-          <div className="flex space-x-2 mb-2">
+          <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-2">
             <input
               type="text"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
               placeholder="Add a tag"
-              className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
             />
-            <Button type="button" onClick={addTag} variant="secondary" size="small">
-              Add
+            <Button type="button" onClick={addTag} variant="secondary" size="small" className="w-full sm:w-auto">
+              Add Tag
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
             {formData.tags.map((tag, index) => (
               <span
                 key={index}
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800"
+                className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs bg-purple-100 text-purple-800"
               >
                 {tag}
                 <button
                   type="button"
                   onClick={() => removeTag(tag)}
-                  className="ml-2 text-purple-600 hover:text-purple-800"
+                  className="ml-1 sm:ml-2 text-purple-600 hover:text-purple-800"
                 >
                   ×
                 </button>
@@ -417,13 +429,14 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
           </div>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex justify-end space-x-4 pt-6">
+        {/* Submit Buttons - Mobile optimized */}
+        <div className="flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4 sm:pt-6">
           <Button
             type="button"
             onClick={(e) => handleSubmit(e, 'draft')}
             disabled={saving}
             variant="secondary"
+            className="w-full sm:w-auto order-2 sm:order-1"
           >
             {saving ? 'Saving...' : 'Save as Draft'}
           </Button>
@@ -432,6 +445,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             onClick={(e) => handleSubmit(e, 'published')}
             disabled={saving}
             variant="primary"
+            className="w-full sm:w-auto order-1 sm:order-2"
           >
             {saving ? 'Publishing...' : 'Publish'}
           </Button>
