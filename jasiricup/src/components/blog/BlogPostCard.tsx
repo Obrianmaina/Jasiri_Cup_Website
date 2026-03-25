@@ -28,7 +28,7 @@ export const BlogPostCard = ({ imageSrc, title, description, linkHref }: BlogPos
         
         <div className="p-6">
           <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
-          <p className="text-gray-600 text-sm mb-4" dangerouslySetInnerHTML={{ __html: description }} />
+          <p className="text-gray-600 text-sm mb-4">{description}</p>
             
           <Link href={linkHref} className="inline-block bg-purple-600 text-white px-4 py-2 rounded-full text-sm hover:bg-purple-700 transition-colors">
             Read More

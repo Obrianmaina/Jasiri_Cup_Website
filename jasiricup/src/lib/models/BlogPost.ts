@@ -1,6 +1,5 @@
 import mongoose, { Document } from 'mongoose';
 import slugify from 'slugify';
-import DOMPurify from 'isomorphic-dompurify';
 
 // Document interface for typing `this` in hooks and virtuals
 interface IBlogPost extends Document {
@@ -32,16 +31,6 @@ interface BlogPostDocument {
   __v?: number;
   [key: string]: unknown;
 }
-
-// Input sanitization helper using DOMPurify exclusively
-const sanitizeHtml = (content: string): string => {
-  return DOMPurify.sanitize(content, {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'img', 'blockquote'],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target'],
-    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input'],
-    ALLOW_DATA_ATTR: false
-  });
-};
 
 const BlogPostSchema = new mongoose.Schema(
   {
@@ -95,10 +84,7 @@ const BlogPostSchema = new mongoose.Schema(
     content: {
       type: String,
       required: [true, 'Please provide content for this blog post.'],
-      maxlength: [50000, 'Content cannot be more than 50,000 characters'],
-      set: function(content: string) {
-        return sanitizeHtml(content);
-      }
+      maxlength: [50000, 'Content cannot be more than 50,000 characters']
     },
     blocks: {
       type: Array,
@@ -256,20 +242,24 @@ BlogPostSchema.pre('save', async function (this: IBlogPost, next) {
   next();
 });
 
+// Updated to clean up markdown characters for better reading time calculation
 BlogPostSchema.virtual('readingTime').get(function (this: IBlogPost) {
   if (!this.content) return 0;
 
-  const text = this.content.replace(/<[^>]*>/g, '');
+  // Stripping basic markdown characters
+  const text = this.content.replace(/[#*`>_[\]()]/g, '');
   const wordCount = text.split(/\s+/).filter((word: string) => word.length > 0).length;
   const readingTime = Math.ceil(wordCount / 200);
 
   return Math.max(1, readingTime);
 });
 
+// Updated to clean up markdown characters for plain text excerpt
 BlogPostSchema.virtual('excerpt').get(function (this: IBlogPost) {
   if (!this.content) return '';
 
-  const text = this.content.replace(/<[^>]*>/g, '');
+  // Stripping basic markdown characters for a cleaner preview
+  const text = this.content.replace(/[#*`>_[\]()]/g, '');
   return text.length > 150 ? text.substring(0, 150) + '...' : text;
 });
 

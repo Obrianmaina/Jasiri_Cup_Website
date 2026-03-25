@@ -311,49 +311,49 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-1 sm:gap-2">
               <button
                 type="button"
-                onClick={() => insertFormatting('<h2>', '</h2>')}
+                onClick={() => insertFormatting('## ', '')}
                 className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
               >
                 H2
               </button>
               <button
                 type="button"
-                onClick={() => insertFormatting('<h3>', '</h3>')}
+                onClick={() => insertFormatting('### ', '')}
                 className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
               >
                 H3
               </button>
               <button
                 type="button"
-                onClick={() => insertFormatting('<strong>', '</strong>')}
+                onClick={() => insertFormatting('**', '**')}
                 className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100 font-bold"
               >
                 B
               </button>
               <button
                 type="button"
-                onClick={() => insertFormatting('<em>', '</em>')}
+                onClick={() => insertFormatting('*', '*')}
                 className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100 italic"
               >
                 I
               </button>
               <button
                 type="button"
-                onClick={() => insertFormatting('<p>', '</p>')}
+                onClick={() => insertFormatting('> ', '')}
                 className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
               >
-                P
+                Quote
               </button>
               <button
                 type="button"
-                onClick={() => insertFormatting('<ul>\n<li>', '</li>\n</ul>')}
+                onClick={() => insertFormatting('- ', '')}
                 className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
               >
                 UL
               </button>
               <button
                 type="button"
-                onClick={() => insertFormatting('<a href="">', '</a>')}
+                onClick={() => insertFormatting('[', '](https://)')}
                 className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
               >
                 Link
@@ -368,11 +368,11 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             onChange={handleInputChange}
             rows={15}
             className={`w-full border ${showToolbar ? 'border-t-0 rounded-b-lg' : 'rounded-lg'} border-gray-300 p-3 sm:p-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-xs sm:text-sm`}
-            placeholder="Write your blog content here using HTML tags..."
+            placeholder="Write your blog content here using Markdown..."
             required
           />
           <p className="text-xs text-gray-500 mt-1">
-            Use HTML tags for formatting. Preview will be available after saving.
+            Use Markdown for formatting. For example: **bold**, ## Heading 2, - list item.
           </p>
         </div>
 

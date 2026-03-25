@@ -1,6 +1,7 @@
 // src/components/blog/ArticleContent.tsx
 import React from 'react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
 
 interface ArticleContentProps {
   article: {
@@ -62,24 +63,9 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
       </div>
 
       {/* Article Content */}
-      <div 
-        className="article-content max-w-none text-gray-700 leading-relaxed mx-auto"
-        dangerouslySetInnerHTML={{ __html: article.content }}
-      />
-
-      {/* Debug info in development */}
-      {/*process.env.NODE_ENV === 'development' && (
-        <div className="mt-8 p-4 bg-gray-100 rounded text-sm">
-          <h4 className="font-bold">Content Debug:</h4>
-          <p>Raw HTML length: {article.content?.length || 0}</p>
-          <details className="mt-2">
-            <summary className="cursor-pointer font-medium">Raw HTML Content</summary>
-            <pre className="mt-2 p-2 bg-gray-200 rounded text-xs overflow-auto max-h-48">
-              {article.content}
-            </pre>
-          </details>
-        </div>
-      )*/}
+      <div className="article-content max-w-none text-gray-700 leading-relaxed mx-auto prose">
+        <ReactMarkdown>{article.content}</ReactMarkdown>
+      </div>
     </article>
   );
 };

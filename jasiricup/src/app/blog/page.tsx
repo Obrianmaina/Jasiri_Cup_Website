@@ -3,14 +3,20 @@ import Image from "next/image";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 
-// Helper function to strip HTML tags from content
-const stripHtmlTags = (html: string): string => {
-  return html.replace(/<[^>]*>/g, '');
+// Helper function to strip HTML tags and Markdown formatting
+const stripFormatting = (text: string): string => {
+  if (!text) return '';
+  // Remove HTML tags
+  let cleanText = text.replace(/<[^>]*>/g, '');
+  // Remove basic Markdown characters (headers, bold, italic, links, etc.)
+  cleanText = cleanText.replace(/[#*`>_[\]()]/g, '');
+  // Clean up any extra whitespace left behind
+  return cleanText.replace(/\s+/g, ' ').trim();
 };
 
 // Helper function to truncate a string to the nearest word boundary
 const truncateDescription = (text: string, maxLength: number): string => {
-  const plainText = stripHtmlTags(text);
+  const plainText = stripFormatting(text);
   if (plainText.length <= maxLength) return plainText;
   const truncatedText = plainText.substring(0, maxLength);
   const lastSpaceIndex = truncatedText.lastIndexOf(' ');
@@ -173,16 +179,6 @@ export default async function BlogPage() {
           />
         </div>
       </section>
-
-      {/* Debug info - Remove this in production */}
-      {/*process.env.NODE_ENV === 'development' && (
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 text-sm">
-          <p><strong>Debug Info:</strong></p>
-          <p>Featured/Latest post: {featuredPost ? featuredPost.title : 'None found'}</p>
-          <p>Regular posts count: {blogPosts.length}</p>
-          {error && <p>Error: {error}</p>}
-        </div>
-      )*/}
 
       {/* Blog Posts Grid */}
       <section>
