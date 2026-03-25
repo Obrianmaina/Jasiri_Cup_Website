@@ -1,57 +1,65 @@
-import connectDB from "@/lib/dbConnect";
-import BlogPost from "@/lib/models/BlogPost";
-import { notFound } from "next/navigation";
-import mongoose, { Types } from "mongoose";
-import EditBlogClient from "../edit/[id]/EditBlogClient";
+// src/app/admin/blog/create/page.tsx
+'use client';
 
-// Shape of the raw lean document from MongoDB
-interface IBlogLeanDoc {
-  _id: Types.ObjectId;
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { BlogEditor } from "@/components/admin/BlogEditor";
+import toast from 'react-hot-toast';
+
+// Define the expected shape of the data coming from BlogEditor
+interface BlogPostData {
+  _id?: string;
   title: string;
   slug: string;
-  author?: string;
-  heroImage?: string;
+  author: string;
+  heroImage: string;
   content: string;
-  metaDescription?: string;
-  tags?: string[];
+  metaDescription: string;
+  tags: string[];
   status: 'draft' | 'published';
-  publishedDate?: Date | null;
-  featured?: boolean;
-  viewCount?: number;
-  lastModifiedBy?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  featured: boolean;
 }
 
-export default async function EditBlogPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default function CreateBlogPage() {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    notFound();
-  }
+  // Replace 'any' with 'BlogPostData' to satisfy TypeScript
+  const handleSave = async (data: BlogPostData) => {
+    setSaving(true);
+    const loadingToast = toast.loading('Saving post...');
 
-  await connectDB();
-  const blogData = await BlogPost.findById(id).lean<IBlogLeanDoc>();
+    try {
+      const response = await fetch('/api/admin/blog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
 
-  if (!blogData) {
-    notFound();
-  }
+      if (!response.ok) {
+        throw new Error('Failed to create post');
+      }
 
-  const serializedData = {
-    ...blogData,
-    _id: blogData._id.toString(),
-    createdAt: blogData.createdAt?.toISOString(),
-    updatedAt: blogData.updatedAt?.toISOString(),
-    publishedDate: blogData.publishedDate?.toISOString() ?? null,
+      toast.success('Post created successfully!', { id: loadingToast });
+      router.push('/admin/blog'); // Redirect back to blog list
+      router.refresh();
+    } catch (error) {
+      toast.error('Failed to create post', { id: loadingToast });
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="space-y-6 px-8 max-w-5xl mx-auto">
       <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-3xl font-bold text-gray-900">Edit Post</h1>
-        <p className="mt-2 text-gray-500">Update the contents of your existing post.</p>
+        <h1 className="text-3xl font-bold text-gray-900">Create New Post</h1>
+        <p className="mt-2 text-gray-500">
+          Fill in the details below to draft or publish a new blog post.
+        </p>
       </div>
-      <EditBlogClient initialData={serializedData} blogId={id} />
+      <BlogEditor onSave={handleSave} saving={saving} />
     </div>
   );
 }
