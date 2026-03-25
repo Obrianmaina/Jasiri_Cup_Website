@@ -24,7 +24,6 @@ export default function CreateBlogPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
-  // Replace 'any' with 'BlogPostData' to satisfy TypeScript
   const handleSave = async (data: BlogPostData) => {
     setSaving(true);
     const loadingToast = toast.loading('Saving post...');
@@ -41,7 +40,7 @@ export default function CreateBlogPage() {
       }
 
       toast.success('Post created successfully!', { id: loadingToast });
-      router.push('/admin/blog'); // Redirect back to blog list
+      router.push('/admin/blog'); 
       router.refresh();
     } catch (error) {
       toast.error('Failed to create post', { id: loadingToast });
@@ -52,10 +51,10 @@ export default function CreateBlogPage() {
   };
 
   return (
-    <div className="space-y-6 px-8 max-w-5xl mx-auto">
+    <div className="space-y-8 w-full">
       <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-3xl font-bold text-gray-900">Create New Post</h1>
-        <p className="mt-2 text-gray-500">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Create New Post</h1>
+        <p className="mt-2 text-sm text-gray-500">
           Fill in the details below to draft or publish a new blog post.
         </p>
       </div>

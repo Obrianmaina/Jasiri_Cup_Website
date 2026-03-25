@@ -1,6 +1,6 @@
+// src/app/admin/blog/page.tsx
 import Link from 'next/link';
 import { Types } from 'mongoose';
-import { Button } from '@/components/ui/Button';
 import connectDB from "@/lib/dbConnect";
 import BlogPost from "@/lib/models/BlogPost";
 import BlogListClient from "./BlogListClient";
@@ -39,29 +39,23 @@ export default async function AdminBlogPage() {
   }));
 
   return (
-    <div className="px-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="space-y-8 w-full">
+      {/* Modern Header */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Blog Posts</h1>
-          <p className="mt-2 text-gray-600">Manage your blog content and publications.</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Blog Posts</h1>
+          <p className="mt-2 text-sm text-gray-500">Manage your blog content and publications.</p>
         </div>
-        <Link href="/admin/blog/create" className="w-full sm:w-auto">
-          <Button variant="primary" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-all">
-            + Create New Post
-          </Button>
+        <Link 
+          href="/admin/blog/create" 
+          className="inline-flex items-center justify-center px-5 py-2.5 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors shadow-sm w-full sm:w-auto"
+        >
+          + Create New Post
         </Link>
       </div>
 
-      {serializedBlogs.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-lg shadow-sm border border-gray-100">
-          <p className="text-gray-500 text-lg mb-4">You haven&apos;t published any blog posts yet.</p>
-          <Link href="/admin/blog/create">
-            <Button variant="primary">Write Your First Post</Button>
-          </Link>
-        </div>
-      ) : (
-        <BlogListClient initialBlogs={serializedBlogs} />
-      )}
+      {/* Renders the list or the empty state we built earlier */}
+      <BlogListClient initialBlogs={serializedBlogs} />
     </div>
   );
 }

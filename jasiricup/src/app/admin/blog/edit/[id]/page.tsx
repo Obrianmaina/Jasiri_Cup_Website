@@ -1,10 +1,10 @@
 // src/app/admin/blog/edit/[id]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { BlogEditor } from '@/components/admin/BlogEditor';
-import { use } from 'react';
+import toast from 'react-hot-toast';
 
 interface IBlogFormData {
   title: string;
@@ -34,7 +34,6 @@ interface EditBlogPageProps {
 }
 
 export default function EditBlogPage({ params }: EditBlogPageProps) {
-  // Use React.use() to unwrap the params Promise
   const resolvedParams = use(params);
   const { id } = resolvedParams;
 
@@ -79,11 +78,13 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
 
   const handleSave = async (data: IBlogFormData) => {
     if (!id) {
-      alert('Blog ID is missing');
+      toast.error('Blog ID is missing');
       return;
     }
 
     setSaving(true);
+    const loadingToast = toast.loading('Updating post...');
+    
     try {
       const response = await fetch(`/api/admin/blog/${id}`, {
         method: 'PUT',
@@ -94,62 +95,54 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
       });
 
       if (response.ok) {
-        alert(data.status === 'published' ? 'Blog post published successfully!' : 'Blog post updated successfully!');
+        toast.success(data.status === 'published' ? 'Post published successfully!' : 'Post updated successfully!', { id: loadingToast });
         router.push('/admin/blog');
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to update blog post');
+        toast.error(error.error || 'Failed to update post', { id: loadingToast });
       }
     } catch (error) {
       console.error('Error updating blog:', error);
-      alert('Failed to update blog post');
+      toast.error('Failed to update post', { id: loadingToast });
     } finally {
       setSaving(false);
     }
   };
 
+  // Modern Loading State
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading blog post...</p>
-        </div>
+      <div className="flex flex-col justify-center items-center min-h-[400px] bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mb-4"></div>
+        <p className="text-gray-500 font-medium">Loading post data...</p>
       </div>
     );
   }
 
-  if (error) {
+  // Modern Error State
+  if (error || !blogData) {
     return (
-      <div className="text-center py-12">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 max-w-md mx-auto">
-          <p className="font-bold">Error</p>
-          <p>{error}</p>
+      <div className="flex flex-col justify-center items-center min-h-[400px] bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+          <span className="text-2xl">⚠️</span>
         </div>
-        <p className="text-gray-500 text-sm">Redirecting to blog list...</p>
-      </div>
-    );
-  }
-
-  if (!blogData) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 text-lg">Blog post not found.</p>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">Oops! Something went wrong</h3>
+        <p className="text-gray-500 mb-6">{error || 'Blog post not found.'}</p>
         <button
           onClick={() => router.push('/admin/blog')}
-          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          className="px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
         >
-          Back to Blog List
+          Return to Blog List
         </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 px-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Edit Blog Post</h1>
-        <p className="mt-2 text-gray-600">Update your blog post content</p>
+    <div className="space-y-8 w-full">
+      <div className="border-b border-gray-200 pb-4">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Edit Blog Post</h1>
+        <p className="mt-2 text-sm text-gray-500">Update your blog post content and settings.</p>
       </div>
 
       <BlogEditor

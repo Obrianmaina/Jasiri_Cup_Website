@@ -1,154 +1,72 @@
 // src/app/admin/dashboard/layout.tsx
-'use client';
+import Link from "next/link";
+import React from "react";
 
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useState } from 'react';
-import { Toaster } from 'react-hot-toast';
-
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await fetch('/api/admin/auth', {
-        method: 'DELETE',
-      });
-      router.push('/admin/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo and Brand */}
-            <div className="flex items-center">
-              <Link href="/admin/dashboard" className="text-lg sm:text-xl font-bold text-purple-600 truncate">
-                JasiriCup Admin
-              </Link>
-            </div>
-
-            {/* Desktop Navigation - Hidden on mobile */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Link 
-                href="/admin/dashboard" 
-                className="text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/admin/blog" 
-                className="text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Blog Posts
-              </Link>
-            </div>
-            
-            {/* Desktop Actions - Hidden on mobile */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Link 
-                href="/" 
-                target="_blank"
-                className="text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                View Site
-              </Link>
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                {isLoggingOut ? 'Logging out...' : 'Logout'}
-              </button>
-            </div>
-
-            {/* Mobile menu button */}
-            <button
-              onClick={toggleMobileMenu}
-              className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1.5"
-              aria-label="Toggle menu"
-            >
-              <span
-                className={`w-6 h-0.5 bg-gray-700 transition-all duration-300 ${
-                  isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''
-                }`}
-              ></span>
-              <span
-                className={`w-6 h-0.5 bg-gray-700 transition-all duration-300 ${
-                  isMobileMenuOpen ? 'opacity-0' : ''
-                }`}
-              ></span>
-              <span
-                className={`w-6 h-0.5 bg-gray-700 transition-all duration-300 ${
-                  isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''
-                }`}
-              ></span>
-            </button>
-          </div>
-
-          {/* Mobile menu - Only visible when menu is open */}
-          {isMobileMenuOpen && (
-            <div className="md:hidden border-t border-gray-200 bg-white">
-              <div className="px-2 pt-2 pb-3 space-y-1">
-                <Link
-                  href="/admin/dashboard"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-gray-50 rounded-md transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin/blog"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-gray-50 rounded-md transition-colors"
-                >
-                  Blog Posts
-                </Link>
-                <Link
-                  href="/"
-                  target="_blank"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-gray-50 rounded-md transition-colors"
-                >
-                  View Site
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  disabled={isLoggingOut}
-                  className="w-full text-left block px-3 py-2 text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
-                >
-                  {isLoggingOut ? 'Logging out...' : 'Logout'}
-                </button>
-              </div>
-            </div>
-          )}
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans">
+      {/* Sidebar */}
+      <aside className="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 shadow-sm md:min-h-screen">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+          <Link href="/admin/dashboard" className="flex items-center gap-2">
+            <span className="text-xl font-bold text-purple-700 tracking-tight">Jasiri Admin</span>
+          </Link>
         </div>
-      </nav>
+        
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+          <Link 
+            href="/admin/dashboard" 
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-purple-700 bg-purple-50 transition-colors"
+          >
+            Dashboard
+          </Link>
+          <Link 
+            href="/admin/blog" 
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-600 hover:text-purple-700 hover:bg-purple-50 transition-colors"
+          >
+            Blog Posts
+          </Link>
+          <Link 
+            href="/admin/products" 
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-600 hover:text-purple-700 hover:bg-purple-50 transition-colors"
+          >
+            Products
+          </Link>
+          <Link 
+            href="/admin/messages" 
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-600 hover:text-purple-700 hover:bg-purple-50 transition-colors"
+          >
+            Messages
+          </Link>
+        </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-        {children}
+        <div className="p-4 border-t border-gray-100">
+          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Topbar */}
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm sticky top-0 z-10">
+          <div className="text-sm font-medium text-gray-500 hidden sm:block">
+            Welcome back, Admin
+          </div>
+          <div className="flex flex-1 sm:flex-none justify-end items-center gap-4">
+            <div className="w-8 h-8 bg-purple-100 rounded-full border-2 border-purple-200 flex items-center justify-center text-purple-700 font-bold text-sm">
+              A
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content - Width restricted and mobile padded */}
+        <div className="flex-1 overflow-auto p-4 sm:p-6 md:p-8">
+          <div className="max-w-5xl mx-auto w-full">
+            {children}
+          </div>
+        </div>
       </main>
     </div>
   );

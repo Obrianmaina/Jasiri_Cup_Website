@@ -1,3 +1,4 @@
+// src/app/admin/blog/BlogListClient.tsx
 'use client';
 
 import { useState } from 'react';
@@ -61,66 +62,113 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
     }
   };
 
+  // Modern Empty State if no blogs exist
+  if (blogs.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+        <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl">📝</span>
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">No blog posts yet</h3>
+        <p className="text-gray-500 mb-6">Get started by writing your first blog post.</p>
+        <Link 
+          href="/admin/blog/create" 
+          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors shadow-sm"
+        >
+          Write New Post
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-100">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-100">
+          <thead className="bg-gray-50/50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Title</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Published</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Views</th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Post Details</th>
+              <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+              <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Views</th>
+              <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-50 bg-white">
             {blogs.map((blog) => (
-              <tr key={blog._id} className="hover:bg-purple-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900 flex items-center">
-                    {blog.title}
-                    {blog.featured && (
-                      <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        Featured
+              <tr key={blog._id} className="hover:bg-purple-50/30 transition-colors group">
+                <td className="px-6 py-5">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                        {blog.title}
                       </span>
-                    )}
+                      {blog.featured && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-700 uppercase tracking-wide">
+                          Featured
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400 mt-1 font-mono truncate max-w-[250px]">{blog.slug}</span>
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">{blog.slug}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
-                    blog.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                
+                <td className="px-6 py-5 whitespace-nowrap">
+                  <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                    blog.status === 'published' 
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                      : 'bg-gray-50 text-gray-600 border border-gray-200'
                   }`}>
-                    {blog.status}
+                    {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                
+                <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
                   {blog.status === 'published' && blog.publishedDate
-                    ? new Date(blog.publishedDate).toLocaleDateString()
+                    ? new Date(blog.publishedDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })
                     : 'Not Published'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
-                  {blog.viewCount || 0}
+                
+                <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-400">👁️</span>
+                    <span className="font-medium">{blog.viewCount || 0}</span>
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                  <Link href={`/admin/blog/edit/${blog._id}`} className="text-purple-600 hover:text-purple-900 transition-colors">
-                    Edit
-                  </Link>
-                  <button
-                    onClick={() => toggleFeatured(blog._id, blog.featured)}
-                    disabled={processingId === blog._id}
-                    className="text-blue-600 hover:text-blue-900 transition-colors disabled:opacity-50"
-                  >
-                    {blog.featured ? 'Unfeature' : 'Feature'}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(blog._id, blog.title)}
-                    disabled={processingId === blog._id}
-                    className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
+                
+                <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => toggleFeatured(blog._id, blog.featured)}
+                      disabled={processingId === blog._id}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${
+                        blog.featured 
+                          ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' 
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      {blog.featured ? '★ Unfeature' : '☆ Feature'}
+                    </button>
+                    
+                    <Link 
+                      href={`/admin/blog/edit/${blog._id}`} 
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                    >
+                      Edit
+                    </Link>
+                    
+                    <button
+                      onClick={() => handleDelete(blog._id, blog.title)}
+                      disabled={processingId === blog._id}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
