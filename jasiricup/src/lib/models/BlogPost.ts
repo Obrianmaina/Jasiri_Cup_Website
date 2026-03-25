@@ -1,26 +1,46 @@
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 import slugify from 'slugify';
 import DOMPurify from 'isomorphic-dompurify';
 
-// Input sanitization helper
+// Document interface for typing `this` in hooks and virtuals
+interface IBlogPost extends Document {
+  title: string;
+  slug: string;
+  author: string;
+  heroImage: string;
+  content: string;
+  blocks: ContentBlock[];
+  metaDescription: string;
+  tags: string[];
+  status: 'draft' | 'published';
+  publishedDate: Date | null;
+  featured: boolean;
+  viewCount: number;
+  ipAddress: string;
+  lastModifiedBy: string;
+}
+
+// Typed interfaces to replace `any`
+interface ContentBlock {
+  type: string;
+  content?: string;
+  [key: string]: unknown;
+}
+
+interface BlogPostDocument {
+  ipAddress?: string;
+  __v?: number;
+  [key: string]: unknown;
+}
+
+// Input sanitization helper using DOMPurify exclusively
 const sanitizeHtml = (content: string): string => {
-  if (typeof window === 'undefined') {
-    // Server-side: basic sanitization
-    return content
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/javascript:/gi, '')
-      .replace(/on\w+\s*=/gi, '');
-  } else {
-    // Client-side: use DOMPurify
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'img', 'blockquote'],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target'],
-      FORBID_SCRIPTS: true,
-      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input'],
-      ALLOW_DATA_ATTR: false
-    });
-  }
+  return DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'img', 'blockquote'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target'],
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input'],
+    ALLOW_DATA_ATTR: false
+  });
 };
 
 const BlogPostSchema = new mongoose.Schema(
@@ -32,7 +52,6 @@ const BlogPostSchema = new mongoose.Schema(
       trim: true,
       validate: {
         validator: function(title: string) {
-          // Prevent potential XSS in title
           return !/[<>'"&]/.test(title);
         },
         message: 'Title contains invalid characters'
@@ -45,7 +64,6 @@ const BlogPostSchema = new mongoose.Schema(
       lowercase: true,
       validate: {
         validator: function(slug: string) {
-          // Validate slug format
           return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
         },
         message: 'Invalid slug format'
@@ -68,11 +86,10 @@ const BlogPostSchema = new mongoose.Schema(
       default: '',
       validate: {
         validator: function(url: string) {
-          if (!url) return true; // Empty is allowed
-          // Only allow Cloudinary URLs or data URLs for uploads
+          if (!url) return true;
           return /^https:\/\/res\.cloudinary\.com\//.test(url) || /^data:image\//.test(url);
         },
-        message: 'Invalid image URL - only Cloudinary URLs are allowed'
+        message: 'Invalid image URL, only Cloudinary URLs are allowed'
       }
     },
     content: {
@@ -80,7 +97,6 @@ const BlogPostSchema = new mongoose.Schema(
       required: [true, 'Please provide content for this blog post.'],
       maxlength: [50000, 'Content cannot be more than 50,000 characters'],
       set: function(content: string) {
-        // Sanitize content before saving
         return sanitizeHtml(content);
       }
     },
@@ -88,8 +104,8 @@ const BlogPostSchema = new mongoose.Schema(
       type: Array,
       default: [],
       validate: {
-        validator: function(blocks: any[]) {
-          return blocks.length <= 100; // Limit number of blocks
+        validator: function(blocks: ContentBlock[]) {
+          return blocks.length <= 100;
         },
         message: 'Too many content blocks'
       }
@@ -117,9 +133,9 @@ const BlogPostSchema = new mongoose.Schema(
         },
         {
           validator: function(tags: string[]) {
-            return tags.every(tag => 
-              typeof tag === 'string' && 
-              tag.length <= 50 && 
+            return tags.every(tag =>
+              typeof tag === 'string' &&
+              tag.length <= 50 &&
               /^[a-zA-Z0-9\s-]+$/.test(tag)
             );
           },
@@ -139,7 +155,6 @@ const BlogPostSchema = new mongoose.Schema(
       type: Date,
       validate: {
         validator: function(date: Date) {
-          // Published date cannot be in the future
           return !date || date <= new Date();
         },
         message: 'Published date cannot be in the future'
@@ -154,14 +169,12 @@ const BlogPostSchema = new mongoose.Schema(
       default: 0,
       min: [0, 'View count cannot be negative']
     },
-    // Security fields
     ipAddress: {
       type: String,
       default: '',
       validate: {
         validator: function(ip: string) {
           if (!ip) return true;
-          // Basic IP validation
           const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
           const ipv6Regex = /^([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}$/i;
           return ipv4Regex.test(ip) || ipv6Regex.test(ip);
@@ -176,20 +189,19 @@ const BlogPostSchema = new mongoose.Schema(
       maxlength: [100, 'Last modified by cannot be more than 100 characters']
     }
   },
-  { 
+  {
     timestamps: true,
-    toJSON: { 
+    toJSON: {
       virtuals: true,
-      transform: function(doc, ret) {
-        // Remove sensitive fields from JSON output
+      transform: function(_doc: unknown, ret: BlogPostDocument) {
         delete ret.ipAddress;
         delete ret.__v;
         return ret;
       }
     },
-    toObject: { 
+    toObject: {
       virtuals: true,
-      transform: function(doc, ret) {
+      transform: function(_doc: unknown, ret: BlogPostDocument) {
         delete ret.ipAddress;
         delete ret.__v;
         return ret;
@@ -198,30 +210,24 @@ const BlogPostSchema = new mongoose.Schema(
   }
 );
 
-// Pre-validation middleware
-BlogPostSchema.pre('validate', function (next) {
-  // Auto-generate slug from title if not provided
+BlogPostSchema.pre('validate', function (this: IBlogPost, next) {
   if (this.title && !this.slug) {
-    let baseSlug = slugify(this.title, { 
-      lower: true, 
+    let baseSlug = slugify(this.title, {
+      lower: true,
       strict: true,
       remove: /[*+~.()'"!:@]/g
     });
-    
-    // Ensure slug is not too long
+
     if (baseSlug.length > 100) {
       baseSlug = baseSlug.substring(0, 100);
     }
-    
     this.slug = baseSlug;
   }
 
-  // Set published date for published posts
   if (this.status === 'published' && !this.publishedDate) {
     this.publishedDate = new Date();
   }
 
-  // Clear published date for drafts
   if (this.status === 'draft') {
     this.publishedDate = null;
   }
@@ -229,57 +235,50 @@ BlogPostSchema.pre('validate', function (next) {
   next();
 });
 
-// Pre-save middleware for slug uniqueness
-BlogPostSchema.pre('save', async function (next) {
+BlogPostSchema.pre('save', async function (this: IBlogPost, next) {
   if (!this.isModified('slug')) return next();
-  
-  let originalSlug = this.slug;
+
+  const originalSlug = this.slug;
   let counter = 1;
-  
-  // Ensure slug uniqueness
-  while (await mongoose.models.BlogPost.findOne({ 
-    slug: this.slug, 
-    _id: { $ne: this._id } 
+
+  while (await mongoose.models.BlogPost.findOne({
+    slug: this.slug,
+    _id: { $ne: this._id }
   })) {
     this.slug = `${originalSlug}-${counter}`;
     counter++;
-    
-    // Prevent infinite loops
+
     if (counter > 1000) {
       return next(new Error('Unable to generate unique slug'));
     }
   }
-  
+
   next();
 });
 
-// Virtual for reading time estimation
-BlogPostSchema.virtual('readingTime').get(function() {
+BlogPostSchema.virtual('readingTime').get(function (this: IBlogPost) {
   if (!this.content) return 0;
-  
+
   const text = this.content.replace(/<[^>]*>/g, '');
-  const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
-  const readingTime = Math.ceil(wordCount / 200); // 200 words per minute
-  
-  return Math.max(1, readingTime); // Minimum 1 minute
+  const wordCount = text.split(/\s+/).filter((word: string) => word.length > 0).length;
+  const readingTime = Math.ceil(wordCount / 200);
+
+  return Math.max(1, readingTime);
 });
 
-// Virtual for excerpt
-BlogPostSchema.virtual('excerpt').get(function() {
+BlogPostSchema.virtual('excerpt').get(function (this: IBlogPost) {
   if (!this.content) return '';
-  
+
   const text = this.content.replace(/<[^>]*>/g, '');
   return text.length > 150 ? text.substring(0, 150) + '...' : text;
 });
 
-// Indexes for better performance and security
 BlogPostSchema.index({ status: 1, publishedDate: -1 });
 BlogPostSchema.index({ tags: 1 });
 BlogPostSchema.index({ featured: -1, publishedDate: -1 });
 BlogPostSchema.index({ slug: 1 }, { unique: true });
 BlogPostSchema.index({ createdAt: -1 });
 
-// Static methods for safe queries
 BlogPostSchema.statics.findPublished = function() {
   return this.find({ status: 'published' })
     .sort({ publishedDate: -1 })
@@ -287,16 +286,15 @@ BlogPostSchema.statics.findPublished = function() {
 };
 
 BlogPostSchema.statics.findBySlugPublished = function(slug: string) {
-  return this.findOne({ 
-    slug: slug, 
-    status: 'published' 
+  return this.findOne({
+    slug: slug,
+    status: 'published'
   }).select('-ipAddress');
 };
 
-// Instance method to safely increment view count
 BlogPostSchema.methods.incrementViews = function() {
   this.viewCount = (this.viewCount || 0) + 1;
   return this.save({ validateBeforeSave: false });
 };
 
-export default mongoose.models.BlogPost || mongoose.model('BlogPost', BlogPostSchema);
+export default mongoose.models.BlogPost || mongoose.model<IBlogPost>('BlogPost', BlogPostSchema);

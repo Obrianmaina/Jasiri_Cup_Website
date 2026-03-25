@@ -11,6 +11,10 @@ interface BlogStats {
   drafts: number;
 }
 
+interface IBlogStatusItem {
+  status: 'draft' | 'published';
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<BlogStats>({ total: 0, published: 0, drafts: 0 });
   const [loading, setLoading] = useState(true);
@@ -20,13 +24,13 @@ export default function AdminDashboard() {
       try {
         const response = await fetch('/api/admin/blog');
         const data = await response.json();
-        
+
         if (data.success) {
-          const blogs = data.data;
+          const blogs: IBlogStatusItem[] = data.data;
           setStats({
             total: blogs.length,
-            published: blogs.filter((blog: any) => blog.status === 'published').length,
-            drafts: blogs.filter((blog: any) => blog.status === 'draft').length,
+            published: blogs.filter((blog) => blog.status === 'published').length,
+            drafts: blogs.filter((blog) => blog.status === 'draft').length,
           });
         }
       } catch (error) {

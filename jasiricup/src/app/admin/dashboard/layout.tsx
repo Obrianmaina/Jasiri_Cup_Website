@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
+import { Toaster } from 'react-hot-toast';
 
 export default function AdminLayout({
   children,

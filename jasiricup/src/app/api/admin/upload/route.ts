@@ -1,4 +1,4 @@
-// src/app/api/admin/upload/route.ts
+// src/app/api/admin/upload/route.ts - CORRECTED VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { checkAdminAuth } from '@/lib/auth-middleware';
@@ -19,66 +19,80 @@ const ALLOWED_MIME_TYPES = [
   'image/webp',
   'image/gif'
 ];
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 
-// Validate file type by checking both MIME type and file signature
-function validateFileType(buffer: Buffer, mimeType: string, fileName: string): boolean {
-  // Check MIME type
-  if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
-    return false;
+export async function POST(request: NextRequest) {
+  // Check admin authentication
+  const authCheck = checkAdminAuth(request);
+  if (!authCheck.isAuthorized) {
+    return authCheck.response;
   }
 
-  // Check file extension
-  const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-  if (!ALLOWED_EXTENSIONS.includes(extension)) {
-    return false;
-  }
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
 
-  // Check file signature (magic numbers)
-  const signatures = {
-    jpeg: [0xFF, 0xD8, 0xFF],
-    png: [0x89, 0x50, 0x4E, 0x47],
-    gif: [0x47, 0x49, 0x46, 0x38],
-    webp: [0x52, 0x49, 0x46, 0x46] // RIFF
-  };
-
-  // Check JPEG signature
-  if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
-    const jpegSig = signatures.jpeg;
-    for (let i = 0; i < jpegSig.length; i++) {
-      if (buffer[i] !== jpegSig[i]) return false;
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: 'No file provided' },
+        { status: 400 }
+      );
     }
-    return true;
-  }
 
-  // Check PNG signature
-  if (mimeType === 'image/png') {
-    const pngSig = signatures.png;
-    for (let i = 0; i < pngSig.length; i++) {
-      if (buffer[i] !== pngSig[i]) return false;
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { success: false, error: 'File size exceeds 5MB limit' },
+        { status: 400 }
+      );
     }
-    return true;
-  }
 
-  // Check GIF signature
-  if (mimeType === 'image/gif') {
-    const gifSig = signatures.gif;
-    for (let i = 0; i < gifSig.length; i++) {
-      if (buffer[i] !== gifSig[i]) return false;
+    // Validate file type
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
+        { status: 400 }
+      );
     }
-    return true;
-  }
 
-  // Check WebP signature (simplified check)
-  if (mimeType === 'image/webp') {
-    const webpSig = signatures.webp;
-    for (let i = 0; i < webpSig.length; i++) {
-      if (buffer[i] !== webpSig[i]) return false;
-    }
-    // Check for WEBP in bytes 8-11
-    const webpMarker = [0x57, 0x45, 0x42, 0x50]; // "WEBP"
-    for (let i = 0; i < webpMarker.length; i++) {
-      if (buffer[8 + i] !== webpMarker[i]) return false;
-    }
-    return true;
+    // Get file buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Convert to base64 for Cloudinary upload
+    const base64Data = `data:${file.type};base64,${buffer.toString('base64')}`;
+
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(base64Data, {
+      folder: 'jasiricup/blog',
+      resource_type: 'auto',
+      transformation: [
+        { quality: 'auto:good' },
+        { fetch_format: 'auto' }
+      ]
+    });
+
+    return NextResponse.json({
+      success: true,
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id
+    });
+
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error.message || 'Upload failed' 
+      },
+      { status: 500 }
+    );
   }
+}
+
+// Handle other methods
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method not allowed' },
+    { status: 405 }
+  );
+}

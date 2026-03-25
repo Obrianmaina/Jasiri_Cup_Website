@@ -6,6 +6,27 @@ import { useRouter } from 'next/navigation';
 import { BlogEditor } from '@/components/admin/BlogEditor';
 import { use } from 'react';
 
+interface IBlogFormData {
+  title: string;
+  slug?: string;
+  author?: string;
+  heroImage?: string;
+  content: string;
+  blocks?: unknown[];
+  metaDescription?: string;
+  tags?: string[];
+  status: 'draft' | 'published';
+  featured?: boolean;
+}
+
+interface IBlogData extends IBlogFormData {
+  _id: string;
+  publishedDate?: string | Date | null;
+  viewCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 interface EditBlogPageProps {
   params: Promise<{
     id: string;
@@ -19,21 +40,21 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [blogData, setBlogData] = useState(null);
+  const [blogData, setBlogData] = useState<IBlogData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const fetchBlog = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
         setError(null);
-        
+
         const response = await fetch(`/api/admin/blog/${id}`);
         const data = await response.json();
-        
+
         if (response.ok && data.success) {
           setBlogData(data.data);
         } else {
@@ -56,7 +77,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
     fetchBlog();
   }, [id, router]);
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: IBlogFormData) => {
     if (!id) {
       alert('Blog ID is missing');
       return;
@@ -73,7 +94,6 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
       });
 
       if (response.ok) {
-        const result = await response.json();
         alert(data.status === 'published' ? 'Blog post published successfully!' : 'Blog post updated successfully!');
         router.push('/admin/blog');
       } else {
@@ -115,7 +135,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 text-lg">Blog post not found.</p>
-        <button 
+        <button
           onClick={() => router.push('/admin/blog')}
           className="mt-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
         >
@@ -132,10 +152,10 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
         <p className="mt-2 text-gray-600">Update your blog post content</p>
       </div>
 
-      <BlogEditor 
-        initialData={blogData} 
-        onSave={handleSave} 
-        saving={saving} 
+      <BlogEditor
+        initialData={blogData}
+        onSave={handleSave}
+        saving={saving}
       />
     </div>
   );
