@@ -41,7 +41,7 @@ const FALLBACK_CONTENT: ProductContent = {
       id: 2,
       title: 'Step 2: Insertion',
       description: 'Fold the cup using your preferred folding technique. Insert the cup into your vagina at a 45-degree angle towards your tailbone.',
-      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1754084087/4487122-uhd_3840_2160_25fps_tlpncg.mp4',
+      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1777720696/Step_2_lojgkz.mp4',
     },
     {
       id: 3,
