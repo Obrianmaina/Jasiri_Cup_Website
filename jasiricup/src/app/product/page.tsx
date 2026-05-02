@@ -5,7 +5,7 @@ import { DownloadCard } from "@/components/product/DownloadCard";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 
 export default function ProductPage() {
-  const menstrualCupImage = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754083512/cotton-mermaid-menstrual-cup-firm-plum-the-nappy-period-lady-removebg-preview_1_d8ltxm.png";
+  const menstrualCupImage = "https://res.cloudinary.com/dsvexizbx/image/upload/v1774461335/jasiricup/blog/arkg1r8epiy11wfu1zrw.png";
 
   const howToUseSteps = [
     {
