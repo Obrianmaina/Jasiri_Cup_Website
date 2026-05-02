@@ -35,7 +35,7 @@ const FALLBACK_CONTENT: ProductContent = {
       id: 1,
       title: 'Step 1: Preparation',
       description: 'Wash your hands thoroughly with soap and water. Sterilize the menstrual cup by boiling it in water for 5-10 minutes before first use.',
-      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1754084087/4487122-uhd_3840_2160_25fps_tlpncg.mp4',
+      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1777722001/Step_1_mrs2fz.mp4',
     },
     {
       id: 2,
@@ -47,7 +47,7 @@ const FALLBACK_CONTENT: ProductContent = {
       id: 3,
       title: 'Step 3: Removal',
       description: 'Wash your hands, then gently pull the stem while bearing down with your pelvic muscles. Empty, rinse, and reinsert as needed.',
-      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1754084087/4487122-uhd_3840_2160_25fps_tlpncg.mp4',
+      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1777725550/Step_3_yzhvou.mp4',
     },
   ],
   downloadCards: [
