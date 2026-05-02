@@ -1,25 +1,50 @@
+// src/components/team/TeamMemberCard.tsx
 import Image from "next/image";
 import React from "react";
+import { FaLinkedinIn, FaTwitter, FaFacebookF, FaInstagram, FaGlobe } from "react-icons/fa";
+
+interface SocialLink {
+  platform: string;
+  url: string;
+}
 
 interface TeamMemberCardProps {
   imageSrc: string;
   name: string;
+  role: string;
   description: string;
   cardColor: string;
   sqcardColor: string;
   reverseOrder?: boolean;
+  socials?: SocialLink[];
 }
 
 export const TeamMemberCard = ({
   imageSrc,
   name,
+  role,
   description,
   cardColor,
   sqcardColor,
   reverseOrder = false,
+  socials,
 }: TeamMemberCardProps) => {
+  
+  // Helper to render the correct icon
+  const getIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'facebook': return <FaFacebookF size={18} />;
+      case 'instagram': return <FaInstagram size={18} />;
+      case 'x': 
+      case 'twitter': return <FaTwitter size={18} />;
+      case 'linkedin': return <FaLinkedinIn size={18} />;
+      case 'website':
+      default: return <FaGlobe size={18} />;
+    }
+  };
+
   return (
-    <div className="px-4 md:px-32"> {/* Smaller horizontal padding on mobile */}
+    <div className="px-4 md:px-32">
       <div
         className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 ${
           reverseOrder ? "md:flex-row-reverse" : ""
@@ -32,7 +57,7 @@ export const TeamMemberCard = ({
             alt={name}
             width={250}
             height={250}
-            className="rounded-lg shadow-lg object-cover"
+            className="rounded-lg shadow-lg object-cover aspect-square"
           />
         </div>
 
@@ -40,8 +65,34 @@ export const TeamMemberCard = ({
         <div
           className={`w-full md:w-2/3 ${cardColor} text-white rounded-lg p-6 md:p-8 shadow-md relative`}
         >
-          <h3 className="text-xl md:text-2xl font-bold mb-2">{name}</h3>
-          <p className="text-base md:text-lg">{description}</p>
+          <h3 className="text-xl md:text-2xl font-bold mb-1">{name}</h3>
+          <p className="text-sm md:text-base font-semibold opacity-90 mb-4">
+            {role}
+          </p>
+          <p className="text-base md:text-lg mb-6 leading-relaxed">
+            {description}
+          </p>
+
+          {/* Dynamic Social Links */}
+          {socials && socials.length > 0 && (
+            <div className="flex gap-4 items-center">
+              {socials.map((social, idx) => {
+                if (!social.url) return null;
+                return (
+                  <a
+                    key={idx}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/20 hover:bg-white/30 w-10 h-10 flex items-center justify-center rounded-full transition-colors"
+                    aria-label={`${name}'s ${social.platform}`}
+                  >
+                    {getIcon(social.platform)}
+                  </a>
+                );
+              })}
+            </div>
+          )}
 
           {/* Decorative square */}
           <div

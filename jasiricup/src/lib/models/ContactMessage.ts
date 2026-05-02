@@ -24,11 +24,18 @@ const ContactMessageSchema = new mongoose.Schema({
     trim: true,
     maxlength: [200, 'Topic cannot be more than 200 characters.']
   },
+  // Inside your ContactMessageSchema...
   message: {
     type: String,
     required: [true, 'Message is required.'],
     trim: true,
     maxlength: [1000, 'Message cannot be more than 1000 characters.']
+  },
+  // ADD THIS FIELD:
+  status: {
+    type: String,
+    enum: ['new', 'read', 'archived'],
+    default: 'new'
   },
   createdAt: {
     type: Date,

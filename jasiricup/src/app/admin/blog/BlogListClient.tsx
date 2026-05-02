@@ -29,27 +29,41 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
   const [blogs, setBlogs] = useState<IBlogListItem[]>(initialBlogs);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Core filter states that drive the database fetch
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+
+  // UI state for the search bar (allows typing without immediate fetching)
+  const [searchInput, setSearchInput] = useState('');
   
-  // FIXED: Added undefined to the type union and passed undefined as the initial value
+  const [loading, setLoading] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isFirstRender = useRef(true);
 
-  const fetchBlogs = useCallback(async (opts: { search?: string; status?: string; page?: number } = {}) => {
+  // Fetch function relies purely on current state
+  const fetchBlogs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        page:   String(opts.page   ?? page),
-        limit:  '20',
-        search: opts.search ?? search,
-        status: opts.status ?? statusFilter,
+        page: String(page),
+        limit: '20',
+        search: search,
+        status: statusFilter,
         sortBy: 'createdAt',
         sortDir: 'desc',
       });
-      const res = await fetch(`/api/admin/blog?${params}`);
+
+      // Added cache prevention to guarantee fresh data
+      const res = await fetch(`/api/admin/blog?${params}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setBlogs(data.data);
@@ -61,32 +75,34 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
     }
   }, [page, search, statusFilter]);
 
-  // Skip the very first render (we already have SSR data)
+  // Single source of truth for triggering data fetches
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isFirstRender.current) { 
+      isFirstRender.current = false; 
+      return; 
+    }
     fetchBlogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [fetchBlogs]);
 
+  // UI Handlers
   const handleSearchChange = (value: string) => {
-    setSearch(value);
+    setSearchInput(value);
     clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
+      setSearch(value);
       setPage(1);
-      fetchBlogs({ search: value, page: 1 });
     }, 400);
   };
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
     setPage(1);
-    fetchBlogs({ status: value, page: 1 });
   };
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
     setProcessingId(id);
-    const tid = toast.loading('Deleting…');
+    const tid = toast.loading('Deleting...');
     try {
       const res = await fetch(`/api/admin/blog/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
@@ -138,8 +154,8 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
-          placeholder="Search by title, author, tag…"
-          value={search}
+          placeholder="Search by title, author, tag..."
+          value={searchInput}
           onChange={e => handleSearchChange(e.target.value)}
           className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
         />
@@ -161,9 +177,11 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
           </div>
         )}
+        
         {!loading && blogs.length === 0 && (
           <div className="text-center py-12 text-gray-400 text-sm">No posts match your filters.</div>
         )}
+        
         {!loading && blogs.length > 0 && (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">
@@ -211,7 +229,7 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
                           disabled={processingId === blog._id}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${blog.featured ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
                         >
-                          {blog.featured ? '★ Unfeature' : '☆ Feature'}
+                          {blog.featured ? '⭐ Unfeature' : '⭐ Feature'}
                         </button>
                         <Link href={`/admin/blog/edit/${blog._id}`} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
                           Edit
@@ -243,7 +261,7 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
               disabled={!pagination.hasPrev || loading}
               className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              ← Prev
+              Prev
             </button>
             <span className="px-3 py-1.5 font-medium text-gray-700">{page} / {pagination.totalPages}</span>
             <button
@@ -251,7 +269,7 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
               disabled={!pagination.hasNext || loading}
               className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Next →
+              Next
             </button>
           </div>
         </div>

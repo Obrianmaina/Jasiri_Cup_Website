@@ -47,7 +47,7 @@ const FALLBACK_CONTENT: ProductContent = {
       id: 3,
       title: 'Step 3: Removal',
       description: 'Wash your hands, then gently pull the stem while bearing down with your pelvic muscles. Empty, rinse, and reinsert as needed.',
-      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1777725550/Step_3_yzhvou.mp4',
+      videoUrl: 'https://res.cloudinary.com/dsvexizbx/video/upload/v1777739139/Timeline_1_i1s08c.mp4',
     },
   ],
   downloadCards: [
@@ -197,7 +197,7 @@ export default async function ProductPage() {
       </section>
 
       {/* ── CTA Banner ───────────────────────────────────────── */}
-      <section className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-8 sm:p-12 text-center text-white mb-4">
+      <section className="bg-gradient-to-r from-green-600 to-purple-800 rounded-2xl p-8 sm:p-12 text-center text-white mb-4">
         <h2 className="text-2xl sm:text-3xl font-bold mb-3">Ready to Make a Change?</h2>
         <p className="text-purple-100 mb-6 max-w-md mx-auto text-sm sm:text-base">
           Join thousands of girls and women who have switched to JasiriCup for a healthier, more sustainable period experience.

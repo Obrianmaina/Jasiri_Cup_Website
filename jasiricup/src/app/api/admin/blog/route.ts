@@ -1,42 +1,136 @@
-// src/app/api/blog/route.ts
+// src/app/api/admin/blog/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/dbConnect";
 import BlogPost from "@/lib/models/BlogPost";
 import { revalidateTag } from "next/cache";
+import { checkAdminAuth } from "@/lib/auth-middleware";
 
-// GET all published blog posts (for public blog page and home page)
-export async function GET() {
+// Force Next.js to always fetch fresh data, bypassing the static route cache
+export const dynamic = 'force-dynamic';
+
+// Define a strict type for our MongoDB query to avoid 'any'
+interface BlogQuery {
+  status?: string;
+  $or?: Array<{ [key: string]: { $regex: string; $options: string } }>;
+}
+
+export async function GET(req: NextRequest) {
+  const authCheck = checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
+
   try {
     await connectDB();
     
-    const blogs = await BlogPost.find({ 
-      status: 'published' 
-    })
-    .sort({ publishedDate: -1 })
-    .select('-blocks');
+    // Use nextUrl.searchParams for reliable query parsing in Next.js App Router
+    const searchParams = req.nextUrl.searchParams;
     
-    return NextResponse.json({ 
-      success: true, 
-      data: blogs 
-    }, { 
-      status: 200,
-      headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
-      }
-    });
+    const page    = Math.max(1, parseInt(searchParams.get("page") || "1",  10));
+    const limit   = Math.min(50, parseInt(searchParams.get("limit") || "20", 10));
+    const search  = searchParams.get("search") || "";
+    const status  = searchParams.get("status") || ""; 
+    const sortBy  = searchParams.get("sortBy") || "createdAt";
+    const sortDir = searchParams.get("sortDir") || "desc";
+
+    const query: BlogQuery = {};
+
+    // Strictly apply the status filter to the database query
+    if (status === "draft" || status === "published") {
+      query.status = status;
+    }
+
+    // Apply text search logic
+    if (search.trim()) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { author: { $regex: search, $options: "i" } },
+        { metaDescription: { $regex: search, $options: "i" } },
+        { tags: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const allowedSortFields = ["createdAt", "updatedAt", "publishedDate", "title", "viewCount"];
+    const safeSortBy  = allowedSortFields.includes(sortBy) ? sortBy : "createdAt";
+    const safeSortDir = sortDir === "asc" ? 1 : -1;
+    const skip = (page - 1) * limit;
+
+    const [blogs, total] = await Promise.all([
+      BlogPost.find(query)
+        .sort({ [safeSortBy]: safeSortDir })
+        .skip(skip)
+        .limit(limit)
+        .select("-blocks")
+        .lean(),
+      BlogPost.countDocuments(query),
+    ]);
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: blogs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page * limit < total,
+          hasPrev: page > 1,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Error fetching published blogs:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: "Failed to fetch blogs" 
-    }, { status: 500 });
+    console.error("Error fetching admin blog list:", error);
+    return NextResponse.json({ success: false, error: "Failed to fetch blogs" }, { status: 500 });
   }
 }
 
-// Disable public POST - all blog creation goes through /api/admin/blog
-export async function POST() {
-  return NextResponse.json(
-    { success: false, error: "Method not allowed" },
-    { status: 405 }
-  );
+export async function POST(req: NextRequest) {
+  const authCheck = checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
+
+  try {
+    await connectDB();
+    const body = await req.json();
+
+    if (!body.title?.trim()) {
+      return NextResponse.json({ success: false, error: "Title is required" }, { status: 400 });
+    }
+    if (!body.content?.trim()) {
+      return NextResponse.json({ success: false, error: "Content is required" }, { status: 400 });
+    }
+
+    if (body.status === "published" && !body.publishedDate) {
+      body.publishedDate = new Date();
+    }
+
+    const blog = await BlogPost.create(body);
+    revalidateTag("blog-posts");
+
+    return NextResponse.json({ success: true, data: blog }, { status: 201 });
+  } catch (error: unknown) {
+    console.error("Error creating blog:", error);
+    
+    // Type-safe error handling for Mongoose
+    if (error && typeof error === "object") {
+      const err = error as Record<string, unknown>;
+      
+      if (err.name === "ValidationError" && err.errors) {
+        const errors = err.errors as Record<string, { message: string }>;
+        const messages = Object.values(errors).map(e => e.message);
+        return NextResponse.json(
+          { success: false, error: "Validation failed", details: messages },
+          { status: 422 }
+        );
+      }
+      
+      if (err.code === 11000) {
+        return NextResponse.json(
+          { success: false, error: "A post with this slug already exists" },
+          { status: 409 }
+        );
+      }
+    }
+    
+    return NextResponse.json({ success: false, error: "Failed to create blog" }, { status: 500 });
+  }
 }
