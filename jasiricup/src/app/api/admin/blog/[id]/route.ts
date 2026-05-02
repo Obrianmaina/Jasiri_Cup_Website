@@ -1,28 +1,27 @@
 // src/app/api/admin/blog/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/dbConnect";
 import BlogPost from "@/lib/models/BlogPost";
 import { revalidateTag } from "next/cache";
 import mongoose from 'mongoose';
+import { checkAdminAuth } from "@/lib/auth-middleware";
 
 /**
  * GET a single blog post by its _id (for admin viewing, without incrementing views).
  */
-export async function GET(req, { params }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authCheck = checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
+
   try {
     await connectDB();
-    
-    // Await params to ensure it is resolved before using its properties
     const { id } = await params;
     
-    // Validate if the id is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ success: false, error: "Invalid blog post ID" }, { status: 400 });
     }
     
-    // Find the blog post by its _id (not slug) for admin routes
     const blog = await BlogPost.findById(id);
-    
     if (!blog) {
       return NextResponse.json({ success: false, error: "Blog post not found" }, { status: 404 });
     }
@@ -37,21 +36,25 @@ export async function GET(req, { params }) {
 /**
  * UPDATE a blog post by its _id.
  */
-export async function PUT(req, { params }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authCheck = checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
+
   try {
     await connectDB();
-    
-    // Await params to ensure it is resolved before use
     const { id } = await params;
 
-    // Validate if the id is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ success: false, error: "Invalid blog post ID" }, { status: 400 });
     }
 
     const body = await req.json();
     
-    // Use findByIdAndUpdate to find by _id and update the post atomically
+    // Set publishedDate if publishing for the first time
+    if (body.status === 'published' && !body.publishedDate) {
+      body.publishedDate = new Date();
+    }
+    
     const blog = await BlogPost.findByIdAndUpdate(id, body, { new: true });
     
     if (!blog) {
@@ -71,19 +74,18 @@ export async function PUT(req, { params }) {
 /**
  * DELETE a blog post by its _id.
  */
-export async function DELETE(req, { params }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authCheck = checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
+
   try {
     await connectDB();
-
-    // Await params to ensure it is resolved before use
     const { id } = await params;
 
-    // Validate if the id is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ success: false, error: "Invalid blog post ID" }, { status: 400 });
     }
 
-    // Find and delete the blog post by its _id atomically
     const blog = await BlogPost.findByIdAndDelete(id);
     
     if (!blog) {

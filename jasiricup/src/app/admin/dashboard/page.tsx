@@ -1,84 +1,190 @@
 // src/app/admin/dashboard/page.tsx
 import Link from "next/link";
+import connectDB from "@/lib/dbConnect";
+import BlogPost from "@/lib/models/BlogPost";
+import ContactMessage from "@/lib/models/ContactMessage";
 
-export default function AdminDashboard() {
+export const dynamic = 'force-dynamic';
+
+interface IRecentPost {
+  _id: string;
+  title: string;
+  status: string;
+  createdAt?: Date;
+  viewCount?: number;
+}
+
+async function getDashboardStats() {
+  try {
+    await connectDB();
+    const [totalBlogs, publishedBlogs, draftBlogs, totalMessages, totalViews] = await Promise.all([
+      BlogPost.countDocuments({}),
+      BlogPost.countDocuments({ status: 'published' }),
+      BlogPost.countDocuments({ status: 'draft' }),
+      ContactMessage.countDocuments({}),
+      BlogPost.aggregate([{ $group: { _id: null, total: { $sum: '$viewCount' } } }]),
+    ]);
+    
+    // Add "as unknown" before "as IRecentPost[]"
+    const recentPosts = (await BlogPost.find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('title status createdAt viewCount')
+      .lean()) as unknown as IRecentPost[];
+
+    return {
+      totalBlogs,
+      publishedBlogs,
+      draftBlogs,
+      totalMessages,
+      totalViews: totalViews[0]?.total || 0,
+      recentPosts,
+    };
+  } catch {
+    return {
+      totalBlogs: 0,
+      publishedBlogs: 0,
+      draftBlogs: 0,
+      totalMessages: 0,
+      totalViews: 0,
+      recentPosts: [],
+    };
+  }
+}
+
+export default async function AdminDashboard() {
+  const stats = await getDashboardStats();
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
-        <p className="text-gray-500 mt-2 text-sm">Here is what is happening with Jasiri Cup today.</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
+        <p className="text-gray-500 mt-1 text-sm">Here is what is happening with Jasiri Cup today.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Stat Card 1 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-gray-500 font-medium text-sm">Total Published Blogs</h3>
-            <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">+3 this week</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Published Posts</h3>
+            <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">Live</span>
           </div>
-          <p className="text-4xl font-extrabold text-gray-900">24</p>
+          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.publishedBlogs}</p>
         </div>
 
-        {/* Stat Card 2 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-gray-500 font-medium text-sm">Total Page Views</h3>
-            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">+12%</span>
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Draft Posts</h3>
+            <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">Draft</span>
           </div>
-          <p className="text-4xl font-extrabold text-gray-900">1,482</p>
+          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.draftBlogs}</p>
         </div>
 
-        {/* Stat Card 3 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-gray-500 font-medium text-sm">Unread Messages</h3>
-            <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">Needs attention</span>
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Total Views</h3>
+            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">All time</span>
           </div>
-          <p className="text-4xl font-extrabold text-gray-900">7</p>
+          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.totalViews.toLocaleString()}</p>
+        </div>
+
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Messages</h3>
+            {stats.totalMessages > 0 && (
+              <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">Inbox</span>
+            )}
+          </div>
+          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.totalMessages}</p>
         </div>
       </div>
 
-      {/* Quick Actions & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
+      {/* Quick Actions & Recent Posts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
+          <h2 className="text-base md:text-lg font-bold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-3">
             <Link 
               href="/admin/blog/create"
-              className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
             >
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <span className="text-purple-600 text-xl font-bold">+</span>
+              <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <span className="text-purple-600 text-lg font-bold">+</span>
               </div>
-              <span className="font-medium text-gray-700 group-hover:text-purple-700">Write New Post</span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">New Post</span>
+            </Link>
+
+            <Link 
+              href="/admin/pages"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+            >
+              <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <span className="text-blue-600 text-lg">🗂️</span>
+              </div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">Edit Pages</span>
             </Link>
 
             <Link 
               href="/admin/products"
-              className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
             >
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <span className="text-blue-600 text-xl font-bold">📦</span>
+              <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <span className="text-green-600 text-lg">📦</span>
               </div>
-              <span className="font-medium text-gray-700 group-hover:text-purple-700">Manage Products</span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">Products</span>
+            </Link>
+
+            <Link 
+              href="/admin/messages"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+            >
+              <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <span className="text-amber-600 text-lg">✉️</span>
+              </div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">Messages</span>
             </Link>
           </div>
         </div>
 
-        {/* Empty State / Placeholder for recent activity */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="flex flex-col items-center justify-center h-48 text-center">
-            <div className="text-4xl mb-3">🌱</div>
-            <p className="text-gray-500 font-medium">All caught up!</p>
-            <p className="text-sm text-gray-400 mt-1">No new activities to display right now.</p>
+        {/* Recent Posts */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base md:text-lg font-bold text-gray-900">Recent Posts</h2>
+            <Link href="/admin/blog" className="text-xs text-purple-600 hover:text-purple-800 font-medium">
+              View all →
+            </Link>
           </div>
+          
+          {stats.recentPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 text-center">
+              <div className="text-3xl mb-2">🌱</div>
+              <p className="text-gray-500 text-sm">No posts yet. Create your first one!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {stats.recentPosts.map((post) => (
+                <div key={String(post._id)} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{post.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {post.createdAt ? new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                      {' · '}{post.viewCount || 0} views
+                    </p>
+                  </div>
+                  <span className={`ml-3 shrink-0 px-2 py-0.5 text-xs font-semibold rounded-md ${
+                    post.status === 'published'
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {post.status === 'published' ? 'Live' : 'Draft'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-
       </div>
     </div>
   );
