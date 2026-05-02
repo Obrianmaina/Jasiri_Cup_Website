@@ -1,3 +1,4 @@
+// src/components/product/HowToUseSection.tsx
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -33,9 +34,7 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
   // Safe play function that handles promises properly
   const safePlay = useCallback(async () => {
     if (!videoRef.current) return;
-
     try {
-      // Wait for any pending play promise to resolve first
       if (playPromiseRef.current) {
         await playPromiseRef.current;
       }
@@ -46,7 +45,6 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
       await playPromise;
       playPromiseRef.current = null;
     } catch (err) {
-      // Safely check if err is an Error object before checking its name
       if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error playing video:', err);
       }
@@ -57,9 +55,7 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
   // Safe pause function
   const safePause = useCallback(async () => {
     if (!videoRef.current) return;
-
     try {
-      // Wait for any pending play promise to resolve before pausing
       if (playPromiseRef.current) {
         await playPromiseRef.current;
       }
@@ -68,7 +64,6 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
         videoRef.current.pause();
       }
     } catch (err) {
-      // Safely check if err is an Error object before checking its name
       if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error pausing video:', err);
       }
@@ -106,9 +101,9 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
   }, [isPlaying, safePlay]);
 
   return (
-    <section className="bg-gray-50 rounded-lg p-8 mb-12">
-      <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">How to Use</h2>
-
+    <section className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-8 mb-12 transition-colors duration-300">
+      <h2 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white transition-colors">How to Use</h2>
+      
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Steps List */}
         <div className="w-full lg:w-1/2 space-y-4">
@@ -119,7 +114,7 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
               className={`w-full text-left p-6 rounded-lg transition-all duration-300 ${
                 activeStep === step.id
                   ? 'bg-[#1AA75B] text-white shadow-lg transform scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 hover:shadow-md'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-md'
               }`}
               onMouseEnter={() => isDesktop && handleActivateStep(step.id)}
               onMouseLeave={handleStepLeave}
@@ -128,19 +123,19 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
             >
               <h3
                 className={`text-xl font-semibold mb-2 ${
-                  activeStep === step.id ? 'text-white' : 'text-gray-800'
+                  activeStep === step.id ? 'text-white' : 'text-gray-800 dark:text-gray-100'
                 }`}
               >
                 {step.title}
               </h3>
               <p
                 className={`text-sm ${
-                  activeStep === step.id ? 'text-gray-100' : 'text-gray-600'
+                  activeStep === step.id ? 'text-gray-100' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
                 {step.description}
               </p>
-
+              
               {/* Step indicator */}
               <div className="flex items-center mt-4">
                 <div
@@ -155,7 +150,7 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
                 {step.id < steps.length && (
                   <div
                     className={`flex-1 h-0.5 ml-2 ${
-                      activeStep === step.id ? 'bg-white' : 'bg-gray-300'
+                      activeStep === step.id ? 'bg-white' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   />
                 )}
@@ -166,7 +161,7 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
 
         {/* Video Player */}
         <div className="w-full lg:w-1/2">
-          <div className="relative bg-white rounded-lg overflow-hidden shadow-lg">
+          <div className="relative bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg transition-colors">
             <video
               ref={videoRef}
               key={currentStep?.videoUrl || 'fallback'}
@@ -186,15 +181,15 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
               )}
               Your browser does not support the video tag.
             </video>
-
+            
             {/* Overlay info only when a step is active */}
             {currentStep && (
-              <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-70 text-white p-4 rounded-lg">
+              <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-70 dark:bg-opacity-80 text-white p-4 rounded-lg">
                 <h4 className="font-semibold text-lg mb-1">{currentStep.title}</h4>
                 <p className="text-sm opacity-90">{currentStep.description}</p>
               </div>
             )}
-
+            
             {/* Play indicator */}
             {currentStep && !isPlaying && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -204,8 +199,7 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
               </div>
             )}
           </div>
-
-          <div className="mt-4 text-center text-gray-600 text-sm">
+          <div className="mt-4 text-center text-gray-600 dark:text-gray-400 text-sm transition-colors">
             <p>Tap or hover over steps to play corresponding videos</p>
           </div>
         </div>

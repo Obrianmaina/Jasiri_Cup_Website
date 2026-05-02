@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/common/Header";
 import { Footer } from "@/components/common/Footer";
+import { ThemeProvider } from "@/components/common/ThemeProvider";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -17,16 +18,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      {/* Added overflow-x-hidden to prevent horizontal scrolling */}
-      <body className={`${montserrat.className} overflow-x-hidden`}>
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-grow">
-            {children}
-          </main>
-          <Footer />
-        </div>
+    <html lang="en" suppressHydrationWarning>
+      {/* Added dark mode background color for the body */}
+      <body className={`${montserrat.className} overflow-x-hidden dark:bg-gray-950 transition-colors duration-300`}>
+        <ThemeProvider>
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

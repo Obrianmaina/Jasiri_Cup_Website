@@ -17,7 +17,7 @@ const DEFAULT_HERO_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1
 
 export const ArticleContent = ({ article }: ArticleContentProps) => {
   const heroImageSource = article.heroImage && article.heroImage.trim() ? article.heroImage : DEFAULT_HERO_IMAGE;
-  
+
   // Format the published date if available
   const formattedDate = article.publishedDate 
     ? new Date(article.publishedDate).toLocaleDateString('en-US', {
@@ -26,17 +26,17 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
         day: 'numeric'
       })
     : null;
-  
+
   return (
-    <article className="bg-white rounded-lg p-8">
+    <article className="bg-white dark:bg-gray-800 rounded-lg p-8 transition-colors duration-300 shadow-sm border border-transparent dark:border-gray-700">
       {/* Article Header */}
       <header className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4 leading-tight">
+        <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4 leading-tight transition-colors">
           {article.title}
         </h1>
         
         {/* Article Meta */}
-        <div className="text-gray-500 text-sm mb-6 flex items-center justify-center space-x-4">
+        <div className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex items-center justify-center space-x-4 transition-colors">
           {article.author && (
             <span>By {article.author}</span>
           )}
@@ -63,7 +63,7 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
       </div>
 
       {/* Article Content */}
-      <div className="article-content max-w-none text-gray-700 leading-relaxed mx-auto prose">
+      <div className="article-content max-w-none text-gray-700 dark:text-gray-300 leading-relaxed mx-auto prose transition-colors duration-300">
         <ReactMarkdown>{article.content}</ReactMarkdown>
       </div>
     </article>

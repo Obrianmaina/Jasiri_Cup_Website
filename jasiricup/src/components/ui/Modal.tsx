@@ -1,4 +1,3 @@
-// src/components/ui/Modal.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -52,7 +51,7 @@ export const Modal = ({
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
         <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         ></div>
@@ -63,18 +62,18 @@ export const Modal = ({
         </span>
 
         {/* Modal panel */}
-        <div className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:w-full ${sizeClasses[size]}`}>
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:w-full ${sizeClasses[size]}`}>
+          <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 transition-colors">
             <div className="flex items-start">
               <div className="w-full">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                     {title}
                   </h3>
                   {showCloseButton && (
                     <button
                       onClick={onClose}
-                      className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150"
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:text-gray-600 dark:focus:text-gray-300 transition ease-in-out duration-150"
                       aria-label="Close modal"
                     >
                       <span className="sr-only">Close</span>
@@ -118,7 +117,7 @@ export const ConfirmModal = ({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  confirmButtonClass = 'bg-red-600 hover:bg-red-700'
+  confirmButtonClass = 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600'
 }: ConfirmModalProps) => {
   const handleConfirm = () => {
     onConfirm();
@@ -128,17 +127,17 @@ export const ConfirmModal = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="small">
       <div className="space-y-4">
-        <p className="text-gray-600">{message}</p>
+        <p className="text-gray-600 dark:text-gray-300">{message}</p>
         <div className="flex justify-end space-x-3 pt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
           >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${confirmButtonClass}`}
+            className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors ${confirmButtonClass}`}
           >
             {confirmText}
           </button>

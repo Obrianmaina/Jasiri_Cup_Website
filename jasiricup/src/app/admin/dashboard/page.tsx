@@ -64,51 +64,48 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-start mb-3">
-            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Published Posts</h3>
-            <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">Live</span>
-          </div>
-          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.publishedBlogs}</p>
-        </div>
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
+    <h3 className="text-gray-500 dark:text-gray-400 font-medium text-xs md:text-sm mb-3">Published Posts</h3>
+    <p className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white">{stats.publishedBlogs}</p>
+  </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
           <div className="flex justify-between items-start mb-3">
-            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Draft Posts</h3>
+            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-xs md:text-sm">Draft Posts</h3>
             <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">Draft</span>
           </div>
-          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.draftBlogs}</p>
+          <p className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white">{stats.draftBlogs}</p>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
           <div className="flex justify-between items-start mb-3">
-            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Total Views</h3>
+            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-xs md:text-sm">Total Views</h3>
             <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">All time</span>
           </div>
-          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.totalViews.toLocaleString()}</p>
+          <p className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white">{stats.totalViews.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
           <div className="flex justify-between items-start mb-3">
-            <h3 className="text-gray-500 font-medium text-xs md:text-sm">Messages</h3>
+            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-xs md:text-sm">Messages</h3>
             {stats.totalMessages > 0 && (
               <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline">Inbox</span>
             )}
           </div>
-          <p className="text-3xl md:text-4xl font-extrabold text-gray-900">{stats.totalMessages}</p>
+          <p className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white">{stats.totalMessages}</p>
         </div>
       </div>
 
       {/* Quick Actions & Recent Posts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
-          <h2 className="text-base md:text-lg font-bold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors p-5 md:p-6">
+          <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
             <Link 
               href="/admin/blog/create"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
             >
               <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-purple-600 text-lg font-bold">+</span>
@@ -118,7 +115,7 @@ export default async function AdminDashboard() {
 
             <Link 
               href="/admin/pages"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
             >
               <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-blue-600 text-lg">🗂️</span>
@@ -128,7 +125,7 @@ export default async function AdminDashboard() {
 
             <Link 
               href="/admin/products"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
             >
               <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-green-600 text-lg">📦</span>
@@ -138,7 +135,7 @@ export default async function AdminDashboard() {
 
             <Link 
               href="/admin/messages"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-center"
             >
               <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-amber-600 text-lg">✉️</span>
@@ -149,9 +146,9 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Recent Posts */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors p-5 md:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base md:text-lg font-bold text-gray-900">Recent Posts</h2>
+            <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white">Recent Posts</h2>
             <Link href="/admin/blog" className="text-xs text-purple-600 hover:text-purple-800 font-medium">
               View all →
             </Link>

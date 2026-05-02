@@ -14,11 +14,13 @@ export const Button = ({
   ...props
 }: ButtonProps) => {
   const baseStyles = 'font-medium rounded-full transition-colors duration-200';
+  
   const variants = {
-    primary: 'bg-purple-600 text-white hover:bg-purple-700',
-    secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-    outline: 'border border-purple-600 text-purple-600 hover:bg-purple-50',
+    primary: 'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600',
+    secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700',
+    outline: 'border border-purple-600 text-purple-600 hover:bg-purple-50 dark:border-purple-400 dark:text-purple-400 dark:hover:bg-purple-900/30',
   };
+
   const sizes = {
     small: 'px-4 py-2 text-sm',
     medium: 'px-6 py-3 text-base',

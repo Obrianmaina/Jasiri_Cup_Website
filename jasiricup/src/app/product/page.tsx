@@ -82,7 +82,6 @@ async function getProductContent(): Promise<ProductContent> {
     const mainSection = data.data?.find((d: { section: string }) => d.section === 'main');
 
     if (mainSection?.content?.title) {
-      // Merge with fallback to ensure all fields exist
       return {
         ...FALLBACK_CONTENT,
         ...mainSection.content,
@@ -90,7 +89,6 @@ async function getProductContent(): Promise<ProductContent> {
         downloadCards: mainSection.content.downloadCards?.length > 0 ? mainSection.content.downloadCards : FALLBACK_CONTENT.downloadCards,
       };
     }
-
     return FALLBACK_CONTENT;
   } catch {
     return FALLBACK_CONTENT;
@@ -109,30 +107,31 @@ export default async function ProductPage() {
     <div className="container mx-auto px-4 sm:px-6 md:px-16 py-8">
       <Breadcrumbs items={productBreadcrumbs} />
 
-      {/* ── Hero Section ─────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 sm:p-10 mb-12 flex flex-col-reverse md:flex-row items-center justify-between gap-8 shadow-sm border border-purple-100">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-purple-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 sm:p-10 mb-12 flex flex-col-reverse md:flex-row items-center justify-between gap-8 shadow-sm border border-purple-100 dark:border-gray-700 transition-colors duration-300">
+        
         {/* Text */}
         <div className="w-full md:w-1/2 text-center md:text-left">
-          <span className="inline-block bg-purple-100 text-purple-700 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4">
+          <span className="inline-block bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4 transition-colors">
             Our Product
           </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white leading-tight transition-colors">
             {content.title}
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed max-w-md mx-auto md:mx-0">
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-md mx-auto md:mx-0 transition-colors">
             {content.description}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
             <Link
               href="/order"
-              className="inline-flex items-center justify-center bg-purple-600 text-white px-8 py-3.5 rounded-full hover:bg-purple-700 transition-colors font-semibold shadow-md hover:shadow-lg"
+              className="inline-flex items-center justify-center bg-purple-600 text-white px-8 py-3.5 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors font-semibold shadow-md hover:shadow-lg"
             >
-              Order Now →
+              Order Now
             </Link>
             <a
               href="#how-to-use"
-              className="inline-flex items-center justify-center border-2 border-purple-200 text-purple-700 px-8 py-3.5 rounded-full hover:border-purple-400 hover:bg-purple-50 transition-colors font-semibold"
+              className="inline-flex items-center justify-center border-2 border-purple-200 dark:border-purple-500/50 text-purple-700 dark:text-purple-400 px-8 py-3.5 rounded-full hover:border-purple-400 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors font-semibold"
             >
               How to Use
             </a>
@@ -141,7 +140,7 @@ export default async function ProductPage() {
 
         {/* Image */}
         <div className="w-full md:w-1/2 flex justify-center">
-          <div className="relative w-72 h-72 sm:w-108 sm:h-108 rounded-2xl overflow-hidden border-4 border-white">
+          <div className="relative w-72 h-72 sm:w-108 sm:h-108 rounded-2xl overflow-hidden  border-white dark:border-gray-800 transition-colors">
             <Image
               src={content.heroImage}
               alt={content.title}
@@ -154,32 +153,32 @@ export default async function ProductPage() {
         </div>
       </section>
 
-      {/* ── Features Strip ───────────────────────────────────── */}
+      {/* Features Strip */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
         {[
-          { icon: '♻️', label: 'Eco-Friendly', sub: 'Reusable for years' },
+          { icon: '🌿', label: 'Eco-Friendly', sub: 'Reusable for years' },
           { icon: '💰', label: 'Cost-Effective', sub: 'Save money long-term' },
           { icon: '🏃‍♀️', label: 'Active Lifestyle', sub: 'Up to 12h protection' },
-          { icon: '🌿', label: 'Body Safe', sub: 'Medical-grade silicone' },
+          { icon: '⚕️', label: 'Body Safe', sub: 'Medical-grade silicone' },
         ].map(f => (
-          <div key={f.label} className="bg-white rounded-xl p-4 text-center shadow-sm border border-gray-100 hover:shadow-sm transition-shadow">
+          <div key={f.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300">
             <div className="text-2xl mb-2">{f.icon}</div>
-            <p className="font-bold text-gray-800 text-sm">{f.label}</p>
-            <p className="text-xs text-gray-500 mt-1">{f.sub}</p>
+            <p className="font-bold text-gray-800 dark:text-gray-100 text-sm transition-colors">{f.label}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">{f.sub}</p>
           </div>
         ))}
       </section>
 
-      {/* ── How to Use ───────────────────────────────────────── */}
+      {/* How to Use */}
       <div id="how-to-use">
         <HowToUseSection steps={content.steps} />
       </div>
 
-      {/* ── Download Cards ───────────────────────────────────── */}
+      {/* Download Cards */}
       <section className="mb-12">
         <div className="text-center mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Resources & Downloads</h2>
-          <p className="text-gray-500 text-sm sm:text-base max-w-md mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2 transition-colors">Resources & Downloads</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base max-w-md mx-auto transition-colors">
             Access our guides, info sheets, and hygiene tips to get the most out of your JasiriCup.
           </p>
         </div>
@@ -196,8 +195,8 @@ export default async function ProductPage() {
         </div>
       </section>
 
-      {/* ── CTA Banner ───────────────────────────────────────── */}
-      <section className="bg-gradient-to-r from-green-600 to-purple-800 rounded-2xl p-8 sm:p-12 text-center text-white mb-4">
+      {/* CTA Banner */}
+      <section className="bg-gradient-to-r from-green-600 to-purple-800 rounded-2xl p-8 sm:p-12 text-center text-white mb-4 shadow-md">
         <h2 className="text-2xl sm:text-3xl font-bold mb-3">Ready to Make a Change?</h2>
         <p className="text-purple-100 mb-6 max-w-md mx-auto text-sm sm:text-base">
           Join thousands of girls and women who have switched to JasiriCup for a healthier, more sustainable period experience.
@@ -209,6 +208,7 @@ export default async function ProductPage() {
           Get Yours Today
         </Link>
       </section>
+
     </div>
   );
 }

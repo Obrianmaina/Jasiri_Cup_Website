@@ -3,18 +3,13 @@ import Image from "next/image";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 
-// Helper function to strip HTML tags and Markdown formatting
 const stripFormatting = (text: string): string => {
   if (!text) return '';
-  // Remove HTML tags
   let cleanText = text.replace(/<[^>]*>/g, '');
-  // Remove basic Markdown characters (headers, bold, italic, links, etc.)
   cleanText = cleanText.replace(/[#*`>_[\]()]/g, '');
-  // Clean up any extra whitespace left behind
   return cleanText.replace(/\s+/g, ' ').trim();
 };
 
-// Helper function to truncate a string to the nearest word boundary
 const truncateDescription = (text: string, maxLength: number): string => {
   const plainText = stripFormatting(text);
   if (plainText.length <= maxLength) return plainText;
@@ -65,25 +60,16 @@ export default async function BlogPage() {
     });
 
     if (!response.ok) throw new Error('Failed to fetch blog posts');
-
     const data = await response.json();
     
-    // Filter only published posts and sort by publishedDate (most recent first)
     const publishedPosts = data.data
       .filter((post: BlogPostResponse) => post.status === 'published')
       .sort((a: BlogPostResponse, b: BlogPostResponse) => {
         const dateA = new Date(a.publishedDate).getTime();
         const dateB = new Date(b.publishedDate).getTime();
-        return dateB - dateA; // Most recent first
+        return dateB - dateA; 
       });
 
-    console.log(`Found ${publishedPosts.length} published posts`);
-
-    if (publishedPosts.length === 0) {
-      console.log('No published posts found');
-    }
-
-    // Convert to BlogPost format
     const allPosts = publishedPosts.map((post: BlogPostResponse) => ({
       id: post._id,
       imageSrc: (post.heroImage && post.heroImage.trim()) ? post.heroImage : DEFAULT_IMAGE,
@@ -92,11 +78,9 @@ export default async function BlogPage() {
       linkHref: `/blog/${post.slug}`,
     }));
 
-    // 1. First, try to find a featured post
     const featuredPostData = publishedPosts.find((post: BlogPostResponse) => post.featured === true);
     
     if (featuredPostData) {
-      console.log('Using featured post:', featuredPostData.title);
       featuredPost = {
         id: featuredPostData._id,
         imageSrc: (featuredPostData.heroImage && featuredPostData.heroImage.trim()) 
@@ -107,10 +91,8 @@ export default async function BlogPage() {
         linkHref: `/blog/${featuredPostData.slug}`,
       };
     } 
-    // 2. If no featured post, use the most recent published post
     else if (publishedPosts.length > 0) {
-      const latestPost = publishedPosts[0]; // Already sorted by most recent
-      console.log('Using latest post:', latestPost.title);
+      const latestPost = publishedPosts[0];
       featuredPost = {
         id: latestPost._id,
         imageSrc: (latestPost.heroImage && latestPost.heroImage.trim()) 
@@ -122,23 +104,17 @@ export default async function BlogPage() {
       };
     }
 
-    // 3. Remove the featured/latest post from the regular posts list to avoid duplication
     if (featuredPost) {
       blogPosts = allPosts.filter((post: BlogPost) => post.id !== featuredPost!.id);
     } else {
       blogPosts = allPosts;
     }
 
-    console.log('Featured post:', featuredPost?.title || 'None');
-    console.log(`Regular posts: ${blogPosts.length}`);
-    console.log('All published posts found:', publishedPosts.length);
-
   } catch (err) {
     console.error('Error fetching blog posts:', err);
     error = 'Failed to load blog posts. Please try again later.';
   }
 
-  // Fallback hero content if no posts are available
   const defaultHero = {
     title: "Sustainable Periods",
     description: "This initiative targets girls in rural areas (ASAL Regions that remain inadequately served), who often lack access to affordable menstrual products and adequate education.",
@@ -152,18 +128,18 @@ export default async function BlogPage() {
     <div className="container mx-auto px-4 sm:px-8 md:px-16 py-8">
       <Breadcrumbs items={breadcrumbs} />
 
-      {/* Dynamic Hero Section - Shows Latest/Featured Blog Post */}
-      <section className="relative bg-gray-100 rounded-lg p-6 sm:p-8 mb-12 flex flex-col md:flex-row items-center justify-between">
+      {/* Dynamic Hero Section */}
+      <section className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg p-6 sm:p-8 mb-12 flex flex-col md:flex-row items-center justify-between transition-colors duration-300">
         <div className="w-full md:w-1/2 pr-0 md:pr-8 text-center md:text-left">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800 dark:text-white transition-colors">
             {heroContent.title}
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 mb-6">
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 transition-colors">
             {heroContent.description}
           </p>
           <a
             href={heroContent.linkHref}
-            className="inline-block bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-colors"
+            className="inline-block bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors"
           >
             Read More
           </a>
@@ -182,9 +158,10 @@ export default async function BlogPage() {
 
       {/* Blog Posts Grid */}
       <section>
-        <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-800 text-center md:text-left">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center md:text-left transition-colors">
           Latest Posts
         </h2>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
           {error && (
             <div className="col-span-full">
@@ -207,8 +184,8 @@ export default async function BlogPage() {
           ) : (
             !error && (
               <div className="col-span-full text-center py-12">
-                <p className="text-gray-500 text-lg">No blog posts found.</p>
-                <p className="text-gray-400 text-sm mt-2">
+                <p className="text-gray-500 dark:text-gray-400 text-lg transition-colors">No blog posts found.</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2 transition-colors">
                   Create and publish your first blog post in the admin panel.
                 </p>
               </div>

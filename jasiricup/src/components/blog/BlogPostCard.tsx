@@ -13,10 +13,10 @@ const DEFAULT_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v175408
 
 export const BlogPostCard = ({ imageSrc, title, description, linkHref }: BlogPostCardProps) => {
   const imageSource = imageSrc && imageSrc.trim() ? imageSrc : DEFAULT_IMAGE;
-  
+
   return (
     <div className="px-8">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-300 hover:scale-105">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:scale-105 border border-transparent dark:border-gray-700 hover:shadow-xl">
         <Image
           src={imageSource}
           alt={title}
@@ -27,10 +27,10 @@ export const BlogPostCard = ({ imageSrc, title, description, linkHref }: BlogPos
         />
         
         <div className="p-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
-          <p className="text-gray-600 text-sm mb-4">{description}</p>
-            
-          <Link href={linkHref} className="inline-block bg-purple-600 text-white px-4 py-2 rounded-full text-sm hover:bg-purple-700 transition-colors">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2 transition-colors">{title}</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 transition-colors">{description}</p>
+          
+          <Link href={linkHref} className="inline-block bg-purple-600 text-white px-4 py-2 rounded-full text-sm hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors">
             Read More
           </Link>
         </div>

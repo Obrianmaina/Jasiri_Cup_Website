@@ -62,6 +62,7 @@ async function getTeamContent(): Promise<TeamMember[]> {
     const response = await fetch(`${baseUrl}/api/site-content?page=team`, {
       next: { tags: ['site-content-team'], revalidate: 300 },
     });
+
     if (!response.ok) return applyAlternatingColors(FALLBACK_TEAM_MEMBERS);
 
     const data = await response.json();
@@ -88,13 +89,15 @@ export default async function TeamPage() {
     <div className="container mx-auto px-4 md:px-16 py-8">
       <Breadcrumbs items={breadcrumbs} />
 
-      <section className="bg-gray-100 rounded-2xl p-6 md:p-10 mb-12 text-start shadow-sm">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 text-gray-800 leading-tight">
+      {/* Intro Section */}
+      <section className="bg-gray-100 dark:bg-gray-800/50 rounded-2xl p-6 md:p-10 mb-24 text-start shadow-sm transition-colors duration-300">
+        <h1 className="text-3xl md:text-4xl font-bold mb-3 text-gray-800 dark:text-white leading-tight transition-colors">
           &ldquo;Empowering girls, one cup at a time.&rdquo;
         </h1>
-        <p className="text-lg md:text-xl text-gray-500 font-medium">- The JasiriCup Team</p>
+        <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 font-medium transition-colors">- The JasiriCup Team</p>
       </section>
 
+      {/* Team Members Grid */}
       <section className="space-y-16">
         {teamMembers.map((member, index) => (
           <TeamMemberCard

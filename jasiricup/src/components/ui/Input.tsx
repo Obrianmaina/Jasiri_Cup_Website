@@ -9,13 +9,13 @@ export const Input = ({ label, id, className = '', ...props }: InputProps) => {
   return (
     <div className="mb-4">
       {label && (
-        <label htmlFor={id} className="block text-gray-700 text-lg font-medium mb-2">
+        <label htmlFor={id} className="block text-gray-700 dark:text-gray-200 text-lg font-medium mb-2 transition-colors">
           {label}
         </label>
       )}
       <input
         id={id}
-        className={`appearance-none bg-gray-50 rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${className}`}
+        className={`appearance-none bg-gray-50 dark:bg-gray-800 rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-100 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${className}`}
         {...props}
       />
     </div>

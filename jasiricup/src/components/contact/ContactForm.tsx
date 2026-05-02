@@ -26,14 +26,12 @@ export const ContactForm = () => {
     topic: '',
     message: '',
   });
-
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else {
@@ -52,7 +50,6 @@ export const ContactForm = () => {
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
-
     if (errors[id as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [id]: undefined }));
     }
@@ -62,7 +59,6 @@ export const ContactForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setLoading(true);
     setStatus(null);
 
@@ -93,9 +89,9 @@ export const ContactForm = () => {
     <div className="w-full max-w-2xl mx-auto">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-lg space-y-6"
+        className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 transition-colors duration-300"
       >
-        <h2 className="text-2xl font-bold text-gray-800 text-center">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white text-center transition-colors">
           Get In Touch
         </h2>
 
@@ -107,7 +103,7 @@ export const ContactForm = () => {
             onChange={handleChange}
             className={errors.name ? 'border-red-500' : ''}
           />
-          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+          {errors.name && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.name}</p>}
         </div>
 
         <div>
@@ -119,7 +115,7 @@ export const ContactForm = () => {
             className={errors.email ? 'border-red-500' : ''}
             placeholder="your.email@example.com"
           />
-          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+          {errors.email && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.email}</p>}
         </div>
 
         <div>
@@ -131,7 +127,7 @@ export const ContactForm = () => {
             className={errors.topic ? 'border-red-500' : ''}
             placeholder="What is this regarding?"
           />
-          {errors.topic && <p className="text-red-500 text-sm mt-1">{errors.topic}</p>}
+          {errors.topic && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.topic}</p>}
         </div>
 
         <div>
@@ -144,9 +140,9 @@ export const ContactForm = () => {
             placeholder="Please share your thoughts, questions, or feedback..."
           />
           {errors.message && (
-            <p className="text-red-500 text-sm mt-1">{errors.message}</p>
+            <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.message}</p>
           )}
-          <p className="text-gray-500 text-xs mt-1">
+          <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 transition-colors">
             {formData.message.length}/1000 characters
           </p>
         </div>
@@ -163,17 +159,17 @@ export const ContactForm = () => {
 
         {status && (
           <div
-            className={`mt-6 p-4 rounded-md ${
+            className={`mt-6 p-4 rounded-md transition-colors duration-300 ${
               status.toLowerCase().includes('error')
-                ? 'bg-red-50 border border-red-200 text-red-700'
-                : 'bg-green-50 border border-green-200 text-green-700'
+                ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+                : 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
             }`}
           >
             <p className="text-center">{status}</p>
           </div>
         )}
 
-        <p className="text-gray-500 text-sm text-center">
+        <p className="text-gray-500 dark:text-gray-400 text-sm text-center transition-colors">
           All fields marked with * are required
         </p>
       </form>

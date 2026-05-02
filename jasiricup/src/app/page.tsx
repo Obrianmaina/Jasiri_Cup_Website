@@ -1,4 +1,3 @@
-// src/app/page.tsx
 'use client';
 
 import Image from "next/image";
@@ -11,11 +10,8 @@ import React, { useState, useEffect } from 'react';
 // Helper function to strip HTML tags and Markdown formatting
 const stripFormatting = (text: string): string => {
   if (!text) return '';
-  // Remove HTML tags
   let cleanText = text.replace(/<[^>]*>/g, '');
-  // Remove basic Markdown characters (headers, bold, italic, links, etc.)
   cleanText = cleanText.replace(/[#*`>_[\]()]/g, '');
-  // Clean up any extra whitespace left behind
   return cleanText.replace(/\s+/g, ' ').trim();
 };
 
@@ -91,7 +87,6 @@ export default function HomePage() {
           fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/site-content?page=home`, { method: "GET" })
         ]);
 
-        // Handle Blog Data
         if (blogRes.ok) {
           const blogData = await blogRes.json();
           const publishedPosts = blogData.data
@@ -112,7 +107,6 @@ export default function HomePage() {
           }
         }
 
-        // Handle Home Page CMS Data
         if (contentRes.ok) {
           const contentData = await contentRes.json();
           const mainSection = contentData.data?.find((d: { section: string }) => d.section === 'main');
@@ -127,7 +121,7 @@ export default function HomePage() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [mounted]);
 
@@ -146,10 +140,11 @@ export default function HomePage() {
     return (
       <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-8">
         <Breadcrumbs items={homeBreadcrumbs} />
-        <div className="relative bg-gray-100 rounded-lg p-6 mb-6 flex items-center justify-center h-48 sm:h-64">
+        {/* Loading state: added dark mode classes */}
+        <div className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg p-6 mb-6 flex items-center justify-center h-48 sm:h-64 transition-colors duration-300">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading content...</p>
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-purple-600 dark:border-purple-400 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading content...</p>
           </div>
         </div>
       </div>
@@ -162,32 +157,48 @@ export default function HomePage() {
     <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-4">
       <Breadcrumbs items={homeBreadcrumbs} />
       
-      {/* Hero Section */}
-      <section className="relative bg-gray-100 rounded-lg mb-6 overflow-hidden">
+      {/* Hero Section: added dark mode classes */}
+      <section className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg mb-6 overflow-hidden transition-colors duration-300">
         <div className="p-4 sm:p-6 md:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
           <div className="w-full lg:w-2/3 text-center lg:text-left order-2 lg:order-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 text-gray-800 leading-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 text-gray-800 dark:text-white leading-tight transition-colors duration-300">
               {currentBanner?.title || "Welcome to JasiriCup"}
             </h1>
-            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-4 sm:mb-6 leading-relaxed transition-colors duration-300">
               {currentBanner?.description}
             </p>
             <Link href={currentBanner?.linkHref || "/blog"} passHref>
-              <button className="bg-violet-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-purple-700 transition-colors">
+              <button className="bg-violet-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors">
                 Read More
               </button>
             </Link>
           </div>
+          
           <div className="w-full lg:w-1/3 flex justify-center lg:justify-end order-1 lg:order-2">
             <div className="relative w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[280px] aspect-square rounded-lg shadow-lg overflow-hidden">
-              <Image src={bannerImageSrc} alt={currentBanner?.title || "Banner"} fill style={{ objectFit: 'cover' }} priority={currentBannerIndex === 0} sizes="(max-width: 768px) 280px, 280px" className="rounded-lg" />
+              <Image 
+                src={bannerImageSrc} 
+                alt={currentBanner?.title || "Banner"} 
+                fill 
+                style={{ objectFit: 'cover' }} 
+                priority={currentBannerIndex === 0} 
+                sizes="(max-width: 768px) 280px, 280px" 
+                className="rounded-lg" 
+              />
             </div>
           </div>
         </div>
+
+        {/* Slider dots: added dark mode classes */}
         {blogPosts.length > 1 && (
           <div className="flex justify-center space-x-2 pb-4 sm:pb-6">
             {blogPosts.map((_, index) => (
-              <button key={index} onClick={() => setCurrentBannerIndex(index)} className={`w-2 h-2 rounded-full transition-colors ${index === currentBannerIndex ? 'bg-violet-600' : 'bg-gray-400'}`} aria-label={`Go to slide ${index + 1}`} />
+              <button 
+                key={index} 
+                onClick={() => setCurrentBannerIndex(index)} 
+                className={`w-2 h-2 rounded-full transition-colors ${index === currentBannerIndex ? 'bg-violet-600 dark:bg-purple-400' : 'bg-gray-400 dark:bg-gray-600'}`} 
+                aria-label={`Go to slide ${index + 1}`} 
+              />
             ))}
           </div>
         )}
