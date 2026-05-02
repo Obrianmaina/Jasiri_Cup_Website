@@ -177,7 +177,7 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
               onLoadedData={handleVideoLoad}
               poster={
                 activeStep === 0
-                  ? "https://res.cloudinary.com/dsvexizbx/image/upload/v1754083512/cotton-mermaid-menstrual-cup-firm-plum-the-nappy-period-lady-removebg-preview_1_d8ltxm.png"
+                  ? "https://res.cloudinary.com/dsvexizbx/image/upload/v1777718008/Vibrant_pink_menstrual_cup_illustration_bogdv8.png"
                   : undefined
               }
             >
