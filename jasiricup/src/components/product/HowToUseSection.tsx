@@ -46,8 +46,8 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
       await playPromise;
       playPromiseRef.current = null;
     } catch (err) {
-      // Only log if it's not an AbortError (which is expected when interrupted)
-      if (err.name !== 'AbortError') {
+      // Safely check if err is an Error object before checking its name
+      if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error playing video:', err);
       }
       playPromiseRef.current = null;
@@ -68,8 +68,8 @@ export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
         videoRef.current.pause();
       }
     } catch (err) {
-      // Ignore AbortError as it's expected when play is interrupted
-      if (err.name !== 'AbortError') {
+      // Safely check if err is an Error object before checking its name
+      if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error pausing video:', err);
       }
     } finally {

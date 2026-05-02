@@ -3,9 +3,19 @@
 import { useState } from 'react';
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 
+// Define an explicit interface for your items
+interface OrderItem {
+  quantity: number;
+  color: string;
+  size: string;
+  customNotes: string;
+}
+
 export default function OrderPage() {
   const [clientInfo, setClientInfo] = useState({ name: '', email: '', phone: '' });
-  const [items, setItems] = useState([
+  
+  // Apply the interface to your state
+  const [items, setItems] = useState<OrderItem[]>([
     { quantity: 1, color: '', size: '', customNotes: '' }
   ]);
 
@@ -19,11 +29,19 @@ export default function OrderPage() {
     { label: 'Order', href: '/order' },
   ];
 
-  // Handle item changes
+  // Handle item changes safely
   const handleItemChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     const newItems = [...items];
-    newItems[index][name as keyof typeof newItems[number]] = value;
+    
+    // Check if the field is quantity to cast it to a number
+    if (name === 'quantity') {
+      newItems[index].quantity = Number(value) || 1;
+    } else {
+      // Assert the other properties as strictly strings
+      newItems[index][name as 'color' | 'size' | 'customNotes'] = value;
+    }
+    
     setItems(newItems);
   };
 
