@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Logo */}
             <Link href="/admin/dashboard" className="flex items-center gap-2 shrink-0">
               <span className="text-lg font-bold text-purple-700 tracking-tight">
-                Jasiri Admin
+                Admin Central
               </span>
             </Link>
 

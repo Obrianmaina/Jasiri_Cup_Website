@@ -49,7 +49,7 @@ export default function OrderPage() {
   };
 
   return (
-    <div className="bg-white-100 min-h-screen p-4 sm:p-8">
+    <div className="space-y-8 w-1/2 mx-auto px-4 sm:px-6 md:px-16 py-8">
         <Breadcrumbs items={productBreadcrumbs} />
       <div className="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
         <h1 className="text-3xl font-extrabold mb-8 text-center text-gray-900">Place Your Order</h1>
