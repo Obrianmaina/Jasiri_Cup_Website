@@ -1,64 +1,91 @@
+// src/components/common/Footer.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
 
 export const Footer = () => {
-  return (
-    <footer className="bg-gray-800 text-white py-8 mt-12">
-      <div className="container mx-auto px-4 flex flex-col md:flex-row items-center md:items-start justify-between text-center md:text-left">
-        <div className="mb-6 md:mb-0">
-          <Image
-            src="https://res.cloudinary.com/dsvexizbx/image/upload/v1754083461/whitelogo_bpym4s.png"
-            alt="JasiriCup Logo"
-            width={120}
-            height={40}
-            className="mb-2 mx-auto md:mx-0"
-          />
-          <p className="text-sm text-white">All rights reserved © 2025</p>
-        </div>
+  const navLinks = [
+    { name: 'Home',        href: '/' },
+    { name: 'Product',     href: '/product' },
+    { name: 'Blog',        href: '/blog' },
+    { name: 'Team',        href: '/team' },
+    { name: 'Get In Touch',href: '/get-in-touch' },
+  ];
 
-        <div className="mb-6 md:mb-0">
-          <p className="text-gray-300 mb-3">Connect with JasiriCup on:</p>
-          <div className="flex justify-center md:justify-start space-x-4">
-            <a
-              href="https://www.facebook.com/JasiriCup" // Example Facebook link
-              className="text-white hover:text-blue-600 transition-colors" // Hover color for Facebook
-              target="_blank" // Opens in a new tab
-              rel="noopener noreferrer" // Security best practice
-            >
-              <FaFacebookF size={20} />
-            </a>
-            <a
-              href="https://www.instagram.com/JasiriCup" // Example Instagram link
-              className="text-white hover:text-pink-600 transition-colors" // Hover color for Instagram
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaInstagram size={20} />
-            </a>
-            <a
-              href="https://www.linkedin.com/company/JasiriCup" // Example LinkedIn link
-              className="text-white hover:text-blue-700 transition-colors" // Hover color for LinkedIn
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaLinkedinIn size={20} />
-            </a>
-            <a
-              href="https://www.youtube.com/JasiriCup" // Example YouTube link
-              className="text-white hover:text-red-600 transition-colors" // Hover color for YouTube
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaYoutube size={20} />
-            </a>
+  const socialLinks = [
+    { icon: FaFacebookF,  href: 'https://www.facebook.com/JasiriCup',   label: 'Facebook',  hoverClass: 'hover:text-blue-400' },
+    { icon: FaInstagram,  href: 'https://www.instagram.com/JasiriCup',  label: 'Instagram', hoverClass: 'hover:text-pink-400' },
+    { icon: FaLinkedinIn, href: 'https://www.linkedin.com/company/JasiriCup', label: 'LinkedIn', hoverClass: 'hover:text-blue-300' },
+    { icon: FaYoutube,    href: 'https://www.youtube.com/JasiriCup',    label: 'YouTube',   hoverClass: 'hover:text-red-400' },
+  ];
+
+  return (
+    <footer className="bg-gray-900 text-white">
+      <div className="container mx-auto px-6 md:px-16 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          {/* Brand */}
+          <div className="flex flex-col gap-4">
+            <Image
+              src="https://res.cloudinary.com/dsvexizbx/image/upload/v1754083461/whitelogo_bpym4s.png"
+              alt="JasiriCup Logo"
+              width={130}
+              height={44}
+              className="object-contain"
+            />
+            <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
+              Providing menstrual products, health resources, and opportunities for youth development across Kenya.
+            </p>
+            <p className="text-xs text-gray-500">© {new Date().getFullYear()} JasiriCup. All rights reserved.</p>
+          </div>
+
+          {/* Navigation */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              {navLinks.map(link => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Social + Mission */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Connect With Us</h3>
+            <div className="flex gap-4 mb-6">
+              {socialLinks.map(s => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  aria-label={s.label}
+                  className={`text-gray-400 ${s.hoverClass} transition-colors`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <s.icon size={20} />
+                </a>
+              ))}
+            </div>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Join us in making a positive impact! Every cup donated keeps a girl in school.
+            </p>
           </div>
         </div>
+      </div>
 
-        <div className="max-w-xs text-gray-300 text-sm">
-            <p>
-            JasiriCup is committed to providing menstrual products, health resources, and opportunities for youth development. Join us in making a positive impact!
-            </p>
+      {/* Bottom bar */}
+      <div className="border-t border-gray-800">
+        <div className="container mx-auto px-6 md:px-16 py-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+          <p className="text-xs text-gray-600">Built with ♥ for girls across Kenya</p>
+          <Link href="/get-in-touch" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
+            Partner with us →
+          </Link>
         </div>
       </div>
     </footer>
