@@ -39,7 +39,7 @@ export default async function AdminBlogPage() {
   }));
 
   return (
-    <div className="space-y-8 w-full">
+    <div className="space-y-8 w-6xl mx-auto px-4 sm:px-6 md:px-16 py-8">
       {/* Modern Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 border-b border-gray-200 pb-4">
         <div>

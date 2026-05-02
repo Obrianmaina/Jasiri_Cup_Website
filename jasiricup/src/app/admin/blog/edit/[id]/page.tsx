@@ -139,7 +139,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
   }
 
   return (
-    <div className="space-y-8 w-full">
+    <div className="space-y-8 w-6xl mx-auto px-4 sm:px-6 md:px-16 py-8">
       <div className="border-b border-gray-200 pb-4">
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Edit Blog Post</h1>
         <p className="mt-2 text-sm text-gray-500">Update your blog post content and settings.</p>
