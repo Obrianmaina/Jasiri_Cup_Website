@@ -1,4 +1,3 @@
-// src/components/admin/BlogEditor.tsx
 'use client';
 
 import { useState, useRef } from 'react';
@@ -43,6 +42,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [showToolbar, setShowToolbar] = useState(true);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
@@ -79,7 +79,6 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
       setUploadError('Please select an image file');
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       setUploadError('File size must be less than 5MB');
       return;
@@ -89,12 +88,12 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
     setUploadError('');
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
 
       const response = await fetch('/api/admin/upload', {
         method: 'POST',
-        body: formData,
+        body: formDataUpload,
       });
 
       if (!response.ok) {
@@ -174,7 +173,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 sm:p-8 transition-colors">
       <form className="space-y-8">
         
         {/* Basic Info Section */}
@@ -190,7 +189,6 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               required
             />
           </div>
-
           <div>
             <Input
               id="slug"
@@ -201,11 +199,10 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               placeholder="url-friendly-slug"
               required
             />
-            <p className="text-xs text-gray-400 mt-1.5 font-mono">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 font-mono">
               /blog/{formData.slug || 'slug'}
             </p>
           </div>
-
           <div>
             <Input
               id="author"
@@ -219,9 +216,9 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
         </div>
 
         {/* Hero Image Section */}
-        <div className="bg-gray-50/50 p-6 rounded-xl border border-gray-100">
+        <div className="bg-gray-50/50 dark:bg-gray-800/30 p-6 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
-            <label className="block text-sm font-semibold text-gray-700">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
               Hero Image
             </label>
             <label className="flex items-center mt-2 sm:mt-0 cursor-pointer">
@@ -230,31 +227,48 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                 name="featured"
                 checked={formData.featured}
                 onChange={handleInputChange}
-                className="mr-2 h-4 w-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-500 rounded border-gray-300 dark:border-gray-600 focus:ring-purple-500 bg-white dark:bg-gray-800"
               />
-              <span className="text-sm font-medium text-gray-700">Feature this post on home page</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Feature this post on home page</span>
             </label>
           </div>
           
           <div className="space-y-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50 transition-colors cursor-pointer"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Upload Image File</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-50 dark:file:bg-purple-900/40 file:text-purple-700 dark:file:text-purple-400 hover:file:bg-purple-100 dark:hover:file:bg-purple-900/60 disabled:opacity-50 transition-colors cursor-pointer"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Or Paste Image URL</label>
+                <input
+                  type="text"
+                  name="heroImage"
+                  value={formData.heroImage}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
             
             {uploading && (
-              <div className="flex items-center text-sm text-purple-600 font-medium">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+              <div className="flex items-center text-sm text-purple-600 dark:text-purple-400 font-medium">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 dark:border-purple-400 mr-2"></div>
                 Uploading securely...
               </div>
             )}
             
             {uploadError && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg border border-red-100 dark:border-red-800">
                 {uploadError}
               </div>
             )}
@@ -264,15 +278,15 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                 <img
                   src={formData.heroImage}
                   alt="Hero preview"
-                  className="w-full sm:max-w-md h-48 object-cover rounded-xl border border-gray-200 shadow-sm"
+                  className="w-full sm:max-w-md h-48 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={removeCurrentImage}
-                  className="absolute -top-3 -right-3 bg-white border border-gray-200 text-red-500 rounded-full w-8 h-8 flex items-center justify-center text-lg hover:bg-red-50 hover:text-red-600 shadow-sm transition-all"
+                  className="absolute -top-3 -right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-red-500 dark:text-red-400 rounded-full w-8 h-8 flex items-center justify-center text-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300 shadow-sm transition-all"
                   title="Remove image"
                 >
-                  ×
+                  ✕
                 </button>
               </div>
             )}
@@ -282,20 +296,20 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
         {/* Content Editor Section */}
         <div>
           <div className="flex justify-between items-end mb-2">
-            <label className="block text-sm font-semibold text-gray-700">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
               Markdown Content*
             </label>
             <button
               type="button"
               onClick={() => setShowToolbar(!showToolbar)}
-              className="text-xs font-medium text-purple-600 hover:text-purple-800 transition-colors sm:hidden"
+              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors sm:hidden"
             >
               {showToolbar ? 'Hide Formatting' : 'Show Formatting'}
             </button>
           </div>
           
           <div className="flex flex-col shadow-sm rounded-xl">
-            <div className={`border border-gray-200 border-b-0 rounded-t-xl p-2 bg-gray-50/50 ${showToolbar ? 'block' : 'hidden sm:block'}`}>
+            <div className={`border border-gray-200 dark:border-gray-700 border-b-0 rounded-t-xl p-2 bg-gray-50/50 dark:bg-gray-800/50 transition-colors ${showToolbar ? 'block' : 'hidden sm:block'}`}>
               <div className="flex flex-wrap gap-1.5">
                 {[
                   { label: 'H2', before: '## ' },
@@ -310,21 +324,20 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                     key={btn.label}
                     type="button"
                     onClick={() => insertFormatting(btn.before, btn.after)}
-                    className="px-3 py-1.5 text-xs font-semibold bg-white border border-gray-200 rounded-lg hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition-colors"
+                    className="px-3 py-1.5 text-xs font-semibold bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300 hover:border-purple-200 dark:hover:border-purple-500/50 transition-colors"
                   >
                     {btn.label}
                   </button>
                 ))}
               </div>
             </div>
-
             <textarea
               ref={contentRef}
               name="content"
               value={formData.content}
               onChange={handleInputChange}
               rows={16}
-              className={`w-full border-gray-200 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm leading-relaxed p-4 ${showToolbar ? 'rounded-b-xl' : 'rounded-xl'}`}
+              className={`w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm leading-relaxed p-4 transition-colors ${showToolbar ? 'rounded-b-xl' : 'rounded-xl'}`}
               placeholder="Write your blog content here using Markdown syntax..."
               required
             />
@@ -344,14 +357,14 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               rows={4}
             />
             <div className="flex justify-end mt-1">
-              <span className={`text-xs ${formData.metaDescription.length > 160 ? 'text-red-500' : 'text-gray-400'}`}>
+              <span className={`text-xs ${formData.metaDescription.length > 160 ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
                 {formData.metaDescription.length}/160
               </span>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
               Categories & Tags
             </label>
             <div className="flex flex-col sm:flex-row gap-2 mb-3">
@@ -361,29 +374,29 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 placeholder="e.g. Education, Health"
-                className="flex-1 border-gray-200 rounded-xl px-4 py-2.5 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                className="flex-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 focus:ring-purple-500 focus:border-purple-500 text-sm transition-colors"
               />
               <Button type="button" onClick={addTag} variant="secondary" className="whitespace-nowrap rounded-xl">
                 Add Tag
               </Button>
             </div>
             
-            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
               {formData.tags.length === 0 && (
-                <span className="text-sm text-gray-400 flex items-center px-2">No tags added yet.</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500 flex items-center px-2">No tags added yet.</span>
               )}
               {formData.tags.map((tag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-white border border-purple-100 text-purple-700 shadow-sm"
+                  className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm transition-colors"
                 >
                   {tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="ml-2 text-purple-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 transition-colors"
+                    className="ml-2 text-purple-400 dark:text-purple-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md p-0.5 transition-colors"
                   >
-                    ×
+                    ✕
                   </button>
                 </span>
               ))}
@@ -392,7 +405,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
         </div>
 
         {/* Actions */}
-        <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-3">
+        <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-end gap-3 transition-colors">
           <Button
             type="button"
             onClick={(e) => handleSubmit(e, 'draft')}

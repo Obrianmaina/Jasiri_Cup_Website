@@ -1,9 +1,9 @@
-// src/app/admin/blog/BlogListClient.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { ConfirmModal } from '@/components/ui/Modal'; // Import the new modal
 
 interface IBlogListItem {
   _id: string;
@@ -30,19 +30,19 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Core filter states that drive the database fetch
+  // New state for delete confirmation
+  const [itemToDelete, setItemToDelete] = useState<{id: string, title: string} | null>(null);
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
-  // UI state for the search bar (allows typing without immediate fetching)
   const [searchInput, setSearchInput] = useState('');
-  
   const [loading, setLoading] = useState(false);
+
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isFirstRender = useRef(true);
 
-  // Fetch function relies purely on current state
   const fetchBlogs = useCallback(async () => {
     setLoading(true);
     try {
@@ -55,7 +55,6 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
         sortDir: 'desc',
       });
 
-      // Added cache prevention to guarantee fresh data
       const res = await fetch(`/api/admin/blog?${params}`, { 
         cache: 'no-store',
         headers: {
@@ -75,7 +74,6 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
     }
   }, [page, search, statusFilter]);
 
-  // Single source of truth for triggering data fetches
   useEffect(() => {
     if (isFirstRender.current) { 
       isFirstRender.current = false; 
@@ -84,7 +82,6 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
     fetchBlogs();
   }, [fetchBlogs]);
 
-  // UI Handlers
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
     clearTimeout(searchTimeout.current);
@@ -99,13 +96,24 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
     setPage(1);
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  // Setup the request
+  const handleDeleteRequest = (id: string, title: string) => {
+    setItemToDelete({ id, title });
+  };
+
+  // Execute the delete after confirmation
+  const executeDelete = async () => {
+    if (!itemToDelete) return;
+    const { id, title } = itemToDelete;
+    setItemToDelete(null);
+
     setProcessingId(id);
     const tid = toast.loading('Deleting...');
+
     try {
       const res = await fetch(`/api/admin/blog/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
+      
       setBlogs(prev => prev.filter(b => b._id !== id));
       toast.success('Deleted', { id: tid });
     } catch {
@@ -124,6 +132,7 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
         body: JSON.stringify({ featured: !current }),
       });
       if (!res.ok) throw new Error();
+      
       setBlogs(prev => prev.map(b => b._id === id ? { ...b, featured: !current } : b));
       toast.success(current ? 'Removed from featured' : 'Featured!');
     } catch {
@@ -135,13 +144,13 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
 
   if (blogs.length === 0 && !search && !statusFilter) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-        <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">📝</span>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-12 text-center transition-colors">
+        <div className="w-16 h-16 bg-purple-50 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl text-purple-500">✍️</span>
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2">No blog posts yet</h3>
-        <p className="text-gray-500 mb-6">Get started by writing your first blog post.</p>
-        <Link href="/admin/blog/create" className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No blog posts yet</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">Get started by writing your first blog post.</p>
+        <Link href="/admin/blog/create" className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors shadow-sm">
           Write New Post
         </Link>
       </div>
@@ -150,19 +159,18 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           placeholder="Search by title, author, tag..."
           value={searchInput}
           onChange={e => handleSearchChange(e.target.value)}
-          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+          className="flex-1 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
         />
         <select
           value={statusFilter}
           onChange={e => handleStatusChange(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none bg-white"
+          className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors"
         >
           <option value="">All statuses</option>
           <option value="published">Published</option>
@@ -170,55 +178,58 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
         </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 dark:border-purple-400"></div>
           </div>
         )}
         
         {!loading && blogs.length === 0 && (
-          <div className="text-center py-12 text-gray-400 text-sm">No posts match your filters.</div>
+          <div className="text-center py-12 text-gray-400 dark:text-gray-500 text-sm">No posts match your filters.</div>
         )}
         
         {!loading && blogs.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50/50">
+            <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+              <thead className="bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
                 <tr>
                   {['Post Details', 'Status', 'Date', 'Views', 'Actions'].map(h => (
-                    <th key={h} className={`px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider ${h === 'Actions' ? 'text-right' : 'text-left'}`}>{h}</th>
+                    <th key={h} className={`px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${h === 'Actions' ? 'text-right' : 'text-left'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 bg-white">
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-800 bg-white dark:bg-gray-900 transition-colors">
                 {blogs.map(blog => (
-                  <tr key={blog._id} className="hover:bg-purple-50/30 transition-colors group">
+                  <tr key={blog._id} className="hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition-colors">{blog.title}</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">{blog.title}</span>
                           {blog.featured && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-700 uppercase tracking-wide">Featured</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 uppercase tracking-wide">Featured</span>
                           )}
                         </div>
-                        <span className="text-xs text-gray-400 mt-1 font-mono truncate max-w-[250px]">{blog.slug}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-mono truncate max-w-[250px]">{blog.slug}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${blog.status === 'published' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
+                      <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                        blog.status === 'published' 
+                          ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' 
+                          : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
+                      }`}>
                         {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {blog.status === 'published' && blog.publishedDate
                         ? new Date(blog.publishedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : 'Not Published'}
                     </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-gray-400">👁️</span>
+                        <span className="text-gray-400 dark:text-gray-500">👁️</span>
                         <span className="font-medium">{blog.viewCount || 0}</span>
                       </div>
                     </td>
@@ -227,17 +238,22 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
                         <button
                           onClick={() => toggleFeatured(blog._id, blog.featured)}
                           disabled={processingId === blog._id}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${blog.featured ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${
+                            blog.featured 
+                              ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50' 
+                              : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                          }`}
                         >
-                          {blog.featured ? '⭐ Unfeature' : '⭐ Feature'}
+                          {blog.featured ? '⭐ Unfeature' : '☆ Feature'}
                         </button>
-                        <Link href={`/admin/blog/edit/${blog._id}`} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
+                        <Link href={`/admin/blog/edit/${blog._id}`} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
                           Edit
                         </Link>
+                        {/* Updated to call handleDeleteRequest */}
                         <button
-                          onClick={() => handleDelete(blog._id, blog.title)}
+                          onClick={() => handleDeleteRequest(blog._id, blog.title)}
                           disabled={processingId === blog._id}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50"
                         >
                           Delete
                         </button>
@@ -251,29 +267,38 @@ export default function BlogListClient({ initialBlogs }: { initialBlogs: IBlogLi
         )}
       </div>
 
-      {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 transition-colors">
           <span>{pagination.total} post{pagination.total !== 1 ? 's' : ''} total</span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage(p => p - 1)}
               disabled={!pagination.hasPrev || loading}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Prev
             </button>
-            <span className="px-3 py-1.5 font-medium text-gray-700">{page} / {pagination.totalPages}</span>
+            <span className="px-3 py-1.5 font-medium text-gray-700 dark:text-gray-300">{page} / {pagination.totalPages}</span>
             <button
               onClick={() => setPage(p => p + 1)}
               disabled={!pagination.hasNext || loading}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={executeDelete}
+        title="Delete Blog Post"
+        message={`Are you sure you want to delete "${itemToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete Post"
+      />
     </div>
   );
 }

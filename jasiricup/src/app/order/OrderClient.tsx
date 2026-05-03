@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
+import { Modal } from "@/components/ui/Modal";
 
 interface IProductVariation {
   color: string;
@@ -30,6 +31,9 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
   const [items, setItems] = useState<OrderItem[]>([
     { productId: '', productName: '', quantity: 1, color: '', size: '', customNotes: '' }
   ]);
+  
+  // New state for our branded alert modal
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', isSuccess: true });
 
   const productBreadcrumbs = [
     { label: 'Home', href: '/' },
@@ -43,7 +47,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
   const handleItemChange = (index: number, field: string, value: string | number) => {
     const newItems = [...items];
     
-    // Reset child dropdowns if a parent dropdown changes
     if (field === 'productId') {
       const product = activeProducts.find(p => p._id === value);
       newItems[index] = {
@@ -78,11 +81,11 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
     });
 
     if (res.ok) {
-      alert('Order submitted successfully!');
+      setAlertModal({ isOpen: true, title: 'Order Successful', message: 'Thank you! Your order has been submitted successfully.', isSuccess: true });
       setClientInfo({ name: '', email: '', phone: '' });
       setItems([{ productId: '', productName: '', quantity: 1, color: '', size: '', customNotes: '' }]);
     } else {
-      alert('Failed to submit order. Please try again.');
+      setAlertModal({ isOpen: true, title: 'Submission Failed', message: 'Failed to submit your order. Please try again.', isSuccess: false });
     }
   };
 
@@ -136,7 +139,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
                   <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-gray-100 transition-colors">Item {index + 1}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     
-                    {/* Product Selection */}
                     <div className="md:col-span-2">
                       <select required value={item.productId} onChange={e => handleItemChange(index, 'productId', e.target.value)} className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors">
                         <option value="">Select Product</option>
@@ -146,7 +148,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
                       </select>
                     </div>
 
-                    {/* Color Selection */}
                     <select required disabled={!item.productId} value={item.color} onChange={e => handleItemChange(index, 'color', e.target.value)} className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 transition-colors">
                       <option value="">Select Color</option>
                       {availableColors.map(color => (
@@ -154,7 +155,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
                       ))}
                     </select>
 
-                    {/* Size Selection */}
                     <select required disabled={!item.color} value={item.size} onChange={e => handleItemChange(index, 'size', e.target.value)} className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 transition-colors">
                       <option value="">Select Size</option>
                       {availableSizes.map(size => (
@@ -162,7 +162,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
                       ))}
                     </select>
 
-                    {/* Quantity */}
                     <div className="md:col-span-2 flex items-center gap-4">
                       <div className="flex-1">
                         <input required type="number" min={1} max={maxStock > 0 ? maxStock : 1} placeholder="Quantity" value={item.quantity} onChange={e => handleItemChange(index, 'quantity', Number(e.target.value))} disabled={!item.size} className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 transition-colors" />
@@ -170,7 +169,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
                       </div>
                     </div>
 
-                    {/* Notes */}
                     <div className="md:col-span-2">
                       <textarea rows={2} placeholder="Custom Notes (e.g., delivery instructions)" value={item.customNotes} onChange={e => handleItemChange(index, 'customNotes', e.target.value)} className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" />
                     </div>
@@ -186,7 +184,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
             })}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
             <button type="button" onClick={addItem} className="w-full sm:w-auto px-6 py-3 text-purple-600 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 rounded-full font-medium hover:bg-purple-200 dark:hover:bg-purple-800/60 transition-colors">
               + Add Another Item
@@ -197,6 +194,39 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
           </div>
         </form>
       </div>
+
+      {/* Branded Alert Modal */}
+      <Modal 
+        isOpen={alertModal.isOpen} 
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })} 
+        title={alertModal.title} 
+        size="small" 
+        showCloseButton={false}
+      >
+        <div className="text-center space-y-4 pt-2">
+          <div className={`mx-auto flex items-center justify-center h-14 w-14 rounded-full ${
+            alertModal.isSuccess 
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+              : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+          }`}>
+            {alertModal.isSuccess ? (
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            ) : (
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            )}
+          </div>
+          <p className="text-gray-600 dark:text-gray-300 text-base">{alertModal.message}</p>
+          <div className="pt-4">
+            <button 
+              onClick={() => setAlertModal({ ...alertModal, isOpen: false })} 
+              className="w-full bg-purple-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }

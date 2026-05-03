@@ -1,3 +1,4 @@
+// src/app/page.tsx
 'use client';
 
 import Image from "next/image";
@@ -6,6 +7,7 @@ import { AboutSection } from "@/components/home/AboutSection";
 import { VisionMissionCards } from "@/components/home/VisionMissionCards";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import React, { useState, useEffect } from 'react';
+import { StatsSection } from "@/components/home/StatsSection";
 
 // Helper function to strip HTML tags and Markdown formatting
 const stripFormatting = (text: string): string => {
@@ -45,23 +47,38 @@ interface HomeContent {
   about: { title: string; content: string; imageSrc: string };
   vision: { title: string; content: string };
   mission: { title: string; content: string };
+  stats: {
+    title: string;
+    description: string;
+    numbers: { label: string; value: string }[];
+  };
 }
 
+// RESTORED CONSTANT
 const DEFAULT_BANNER_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082805/impact-story-hero_ilth4o.png";
 
 const FALLBACK_HOME: HomeContent = {
   about: {
     title: 'About JasiriCup',
-    content: 'This initiative targets girls in rural areas (ASAL Regions that remain inadequately served), who often lack access to affordable menstrual products and adequate education.',
+    content: 'This initiative targets girls in rural areas...',
     imageSrc: 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754082804/about-jasiricup_y8uq1m.png'
   },
   vision: {
     title: 'Jasiri Initiative Vision',
-    content: 'Empowering girls through sustainable menstrual solutions and comprehensive education.'
+    content: 'Empowering girls through sustainable menstrual solutions...'
   },
   mission: {
     title: 'Jasiri Initiative Mission',
-    content: 'To provide safe, eco-friendly menstrual products and health resources to underserved communities.'
+    content: 'To provide safe, eco-friendly menstrual products...'
+  },
+  stats: {
+    title: "Help Us Reach More Girls",
+    description: "Your contribution directly funds menstrual cups and health education for girls across Kenya.",
+    numbers: [
+      { label: "Cups Donated", value: "5,000+" },
+      { label: "Girls Impacted", value: "12,000" },
+      { label: "Schools Reached", value: "45" }
+    ]
   }
 };
 
@@ -140,7 +157,6 @@ export default function HomePage() {
     return (
       <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-8">
         <Breadcrumbs items={homeBreadcrumbs} />
-        {/* Loading state: added dark mode classes */}
         <div className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg p-6 mb-6 flex items-center justify-center h-48 sm:h-64 transition-colors duration-300">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-purple-600 dark:border-purple-400 mx-auto mb-4"></div>
@@ -157,7 +173,6 @@ export default function HomePage() {
     <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-4">
       <Breadcrumbs items={homeBreadcrumbs} />
       
-      {/* Hero Section: added dark mode classes */}
       <section className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg mb-6 overflow-hidden transition-colors duration-300">
         <div className="p-4 sm:p-6 md:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
           <div className="w-full lg:w-2/3 text-center lg:text-left order-2 lg:order-1">
@@ -189,7 +204,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Slider dots: added dark mode classes */}
         {blogPosts.length > 1 && (
           <div className="flex justify-center space-x-2 pb-4 sm:pb-6">
             {blogPosts.map((_, index) => (
@@ -204,18 +218,24 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* About Section */}
       <AboutSection 
         title={homeContent.about.title} 
         content={homeContent.about.content} 
         imageUrl={homeContent.about.imageSrc} 
       />
 
-      {/* Vision & Mission Cards */}
       <VisionMissionCards 
         vision={homeContent.vision} 
         mission={homeContent.mission} 
       />
+
+      {homeContent.stats && homeContent.stats.numbers && (
+        <StatsSection 
+          stats={homeContent.stats.numbers}
+          ctaTitle={homeContent.stats.title}
+          ctaDescription={homeContent.stats.description}
+        />
+      )}
     </div>
   );
 }
