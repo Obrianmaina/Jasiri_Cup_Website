@@ -124,7 +124,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
   };
 
   return (
-    <div className="space-y-6 md:space-y-8 max-w-6xl mx-auto transition-colors duration-300">
+    <div className="pt-12 space-y-6 md:space-y-8 max-w-6xl mx-auto transition-colors duration-300">
       <div className="flex justify-between items-end">
         <div>
           <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 mb-4 transition-colors">

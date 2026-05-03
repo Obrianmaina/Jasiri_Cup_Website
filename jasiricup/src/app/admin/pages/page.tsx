@@ -364,7 +364,7 @@ export default function AdminPagesPage() {
   ] as const;
 
   return (
-    <div className="space-y-8 w-6xl mx-auto px-4 sm:px-6 md:px-16 py-8 transition-colors duration-300">
+    <div className="pt-12 space-y-8 w-6xl mx-auto px-4 sm:px-6 md:px-16 py-8 transition-colors duration-300">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-gray-200 dark:border-gray-800 pb-4 transition-colors">
         <div>
           <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 mb-4 transition-colors">

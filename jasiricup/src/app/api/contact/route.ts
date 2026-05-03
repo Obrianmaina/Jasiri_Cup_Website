@@ -1,7 +1,9 @@
+// src/app/api/contact/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import ContactMessage from '@/lib/models/ContactMessage';
 import nodemailer from 'nodemailer';
+import { generateBrandedEmail } from '@/lib/email-template';
 
 // Simple in-memory rate limiting (consider Redis for production)
 const rateLimitMap = new Map();
@@ -21,7 +23,7 @@ function sanitizeHtml(text: string): string {
     .trim();
 }
 
-// Enhanced email validation
+// Enhanced email validation function
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   return emailRegex.test(email.trim()) && email.length <= 254;
@@ -52,38 +54,63 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // Input validation function
-function validateInput(data: any): { isValid: boolean; errors: string[] } {
+function validateInput(data: unknown): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  if (!data.name || typeof data.name !== 'string') {
+  // 1. Ensure the data is actually an object before we try to read properties
+  if (!data || typeof data !== 'object') {
+    return { isValid: false, errors: ['Invalid request format'] };
+  }
+
+  // 2. Cast it to a safe, generic object so TypeScript lets us check properties
+  const payload = data as Record<string, unknown>;
+  
+  if (!payload.name || typeof payload.name !== 'string') {
     errors.push('Name is required');
-  } else if (data.name.trim().length < 2 || data.name.trim().length > 100) {
+  } else if (payload.name.trim().length < 2 || payload.name.trim().length > 100) {
     errors.push('Name must be between 2 and 100 characters');
   }
   
-  if (!data.email || typeof data.email !== 'string') {
+  if (!payload.email || typeof payload.email !== 'string') {
     errors.push('Email is required');
-  } else if (!isValidEmail(data.email)) {
+  } else if (!isValidEmail(payload.email)) {
     errors.push('Please provide a valid email address');
   }
   
-  if (!data.topic || typeof data.topic !== 'string') {
+  if (!payload.topic || typeof payload.topic !== 'string') {
     errors.push('Topic is required');
-  } else if (data.topic.trim().length < 3 || data.topic.trim().length > 200) {
+  } else if (payload.topic.trim().length < 3 || payload.topic.trim().length > 200) {
     errors.push('Topic must be between 3 and 200 characters');
   }
   
-  if (!data.message || typeof data.message !== 'string') {
+  if (!payload.message || typeof payload.message !== 'string') {
     errors.push('Message is required');
-  } else if (data.message.trim().length < 10 || data.message.trim().length > 1000) {
+  } else if (payload.message.trim().length < 10 || payload.message.trim().length > 1000) {
     errors.push('Message must be between 10 and 1000 characters');
   }
   
   return { isValid: errors.length === 0, errors };
 }
+// Define the shape of a Mongoose ValidationError
+interface MongooseValidationError extends Error {
+  name: 'ValidationError';
+  errors: Record<string, { message: string }>;
+}
 
-// Configure Nodemailer transporter with better security
-const transporter = nodemailer.createTransporter({
+// Type guard to safely check if an unknown error is a MongooseValidationError
+function isMongooseValidationError(error: unknown): error is MongooseValidationError {
+  if (!error || typeof error !== 'object') return false;
+  
+  const err = error as Record<string, unknown>;
+  return (
+    err.name === 'ValidationError' &&
+    typeof err.errors === 'object' &&
+    err.errors !== null
+  );
+}
+
+// Configure Nodemailer transporter
+const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_SERVER_HOST,
   port: parseInt(process.env.EMAIL_SERVER_PORT || '587', 10),
   secure: process.env.EMAIL_SERVER_SECURE === 'true',
@@ -94,7 +121,6 @@ const transporter = nodemailer.createTransporter({
   connectionTimeout: 10000,
   greetingTimeout: 5000,
   socketTimeout: 10000,
-  // Additional security options
   requireTLS: true,
   tls: {
     rejectUnauthorized: process.env.NODE_ENV === 'production'
@@ -155,7 +181,6 @@ export async function POST(request: NextRequest) {
     const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(fullText));
     
     if (hasSuspiciousContent) {
-      // Log suspicious activity
       console.warn(`Suspicious contact form submission from IP: ${clientIp}`);
       return NextResponse.json(
         { message: 'Message could not be processed. Please contact us directly.' },
@@ -166,55 +191,48 @@ export async function POST(request: NextRequest) {
     // Create new contact message in database
     const newContactMessage = await ContactMessage.create(sanitizedData);
 
-    // Send email notification with better error handling
+    // Send email notifications
     let emailSent = false;
     try {
+      // 1. Notify the Admin
+      const adminHtml = `
+        <h3>New Contact Message</h3>
+        <p><strong>Name:</strong> ${sanitizedData.name}<br>
+        <strong>Email:</strong> ${sanitizedData.email}<br>
+        <strong>Topic:</strong> ${sanitizedData.topic}</p>
+        <div style="background-color: #f8f9fa; border-left: 4px solid #7856BF; padding: 15px; margin-top: 15px;">
+          ${sanitizedData.message}
+        </div>
+      `;
+
       await transporter.sendMail({
         from: `"JasiriCup Contact" <${process.env.EMAIL_SERVER_USER}>`,
         replyTo: sanitizedData.email,
         to: process.env.EMAIL_TO,
-        subject: `New Contact Message: ${sanitizedData.topic}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-              New Contact Message from JasiriCup Website
-            </h1>
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-              <p><strong>Name:</strong> ${sanitizedData.name}</p>
-              <p><strong>Email:</strong> ${sanitizedData.email}</p>
-              <p><strong>Topic:</strong> ${sanitizedData.topic}</p>
-            </div>
-            <div style="margin: 20px 0;">
-              <h3 style="color: #333;">Message:</h3>
-              <div style="background-color: #fff; border-left: 4px solid #007bff; padding: 15px; margin: 10px 0;">
-                ${sanitizedData.message}
-              </div>
-            </div>
-            <hr style="border: none; height: 1px; background-color: #dee2e6; margin: 30px 0;">
-            <p style="color: #6c757d; font-size: 12px;">
-              Sent from IP: ${clientIp}<br>
-              Database ID: ${newContactMessage._id}
-            </p>
-          </div>
-        `,
-        text: `
-New Contact Message from JasiriCup Website
-
-Name: ${sanitizedData.name}
-Email: ${sanitizedData.email}
-Topic: ${sanitizedData.topic}
-
-Message:
-${sanitizedData.message}
-
-Sent from IP: ${clientIp}
-Database ID: ${newContactMessage._id}
-        `.trim(),
+        subject: `New Message: ${sanitizedData.topic}`,
+        html: generateBrandedEmail(`New Message: ${sanitizedData.topic}`, adminHtml),
       });
+
+      // 2. Send auto-reply to the Client
+      const clientHtml = `
+        <p>Hi ${sanitizedData.name},</p>
+        <p>Thank you for reaching out to JasiriCup. This is a quick note to let you know we have received your message regarding <strong>"${sanitizedData.topic}"</strong>.</p>
+        <p>Our team will review your message and get back to you as soon as possible.</p>
+        <p style="margin-top: 20px;">Best regards,<br><strong>The JasiriCup Team</strong></p>
+      `;
+
+      await transporter.sendMail({
+        from: `"JasiriCup" <${process.env.EMAIL_SERVER_USER}>`,
+        to: sanitizedData.email,
+        subject: `We received your message: ${sanitizedData.topic}`,
+        html: generateBrandedEmail("Message Received", clientHtml),
+      });
+
       emailSent = true;
-    } catch (emailError: any) {
-      console.error('Failed to send email:', emailError.message);
-      // Continue without failing the request
+    } catch (emailError: unknown) {
+      const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown email error';
+      console.error('Failed to send email:', errorMessage);
+      // Continue without failing the request so the DB entry still succeeds
     }
 
     return NextResponse.json(
@@ -229,11 +247,12 @@ Database ID: ${newContactMessage._id}
       { status: 201 }
     );
 
-  } catch (error: any) {
-    console.error('Contact API error:', error.message);
-
-    // Handle specific error types
-    if (error.name === 'ValidationError') {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Contact API error:', errorMessage);
+    
+    // Use the type guard to safely handle validation errors
+    if (isMongooseValidationError(error)) {
       return NextResponse.json(
         { 
           message: 'Invalid data provided', 
@@ -245,13 +264,13 @@ Database ID: ${newContactMessage._id}
         { status: 400 }
       );
     }
-
+    
     return NextResponse.json(
       { message: 'Internal server error. Please try again later.' },
       { status: 500 }
     );
   }
-}
+} // <--- THIS WAS THE MISSING BRACE!
 
 // Handle other HTTP methods securely
 export async function GET() {
