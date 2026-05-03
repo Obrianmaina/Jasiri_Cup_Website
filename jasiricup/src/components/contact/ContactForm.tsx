@@ -102,6 +102,7 @@ export const ContactForm = () => {
             value={formData.name}
             onChange={handleChange}
             className={errors.name ? 'border-red-500' : ''}
+            placeholder='John Doe'
           />
           {errors.name && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.name}</p>}
         </div>
