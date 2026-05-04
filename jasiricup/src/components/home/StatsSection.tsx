@@ -46,7 +46,7 @@ export const StatsSection = ({ stats, ctaTitle, ctaDescription }: StatsSectionPr
             {ctaDescription}
           </p>
           <Link 
-            href="/order" 
+            href="/donate" 
             className="inline-block bg-white text-purple-700 dark:bg-gray-900 dark:text-purple-400 font-bold px-8 py-3.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-md hover:shadow-lg"
           >
             Donate Today

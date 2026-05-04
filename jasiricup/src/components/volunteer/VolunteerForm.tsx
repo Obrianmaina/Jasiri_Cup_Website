@@ -134,7 +134,7 @@ export const VolunteerForm = ({ roles }: { roles: string[] }) => {
       <Button
         type="submit"
         disabled={loading}
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-colors"
+        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-full transition-colors"
       >
         {loading ? "Submitting..." : "Submit Application"}
       </Button>
