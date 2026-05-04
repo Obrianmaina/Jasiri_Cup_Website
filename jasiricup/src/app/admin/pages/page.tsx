@@ -74,13 +74,7 @@ interface Partner {
   type: string;
   since: string;
 }
-interface VolunteerRole {
-  icon: string;
-  title: string;
-  desc: string;
-  commitment: string;
-  location: string;
-}
+interface VolunteerRole { icon: string; title: string; desc: string; commitment: string; location: string; image?: string; }
 
 // --- Defaults ---
 const DEFAULT_HOME: HomeContent = {
@@ -884,27 +878,8 @@ export default function AdminPagesPage() {
               { key: "since", label: "Since Year", type: "text" },
             ]}
           />
-        ) : activeTab === "volunteer" ? (
-          <GenericArrayEditor
-            data={volunteerRoles}
-            onChange={setVolunteerRoles}
-            title="Role"
-            defaultItem={{
-              icon: "🙋",
-              title: "",
-              desc: "",
-              commitment: "",
-              location: "",
-            }}
-            fields={[
-              { key: "icon", label: "Emoji Icon", type: "text" },
-              { key: "title", label: "Role Title", type: "text" },
-              { key: "desc", label: "Description", type: "textarea" },
-              { key: "commitment", label: "Time Commitment", type: "text" },
-              { key: "location", label: "Location", type: "text" },
-            ]}
-          />
-        ) : activeTab === "press" ? (
+        ) : activeTab === 'volunteer' ? <GenericArrayEditor data={volunteerRoles} onChange={setVolunteerRoles} title="Role" defaultItem={{icon:'🙋', title:'', desc:'', commitment:'', location:'', image:''}} fields={[{key:'icon', label:'Emoji Icon', type:'text'}, {key:'title', label:'Role Title', type:'text'}, {key:'desc', label:'Description', type:'textarea'}, {key:'commitment', label:'Time Commitment', type:'text'}, {key:'location', label:'Location', type:'text'}, {key:'image', label:'Background Image URL', type:'text'}]} />
+         : activeTab === "press" ? (
           <div className="space-y-8">
             <div>
               <h3 className="font-bold mb-4">Media Coverage</h3>

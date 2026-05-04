@@ -1,13 +1,13 @@
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { VolunteerForm } from '@/components/volunteer/VolunteerForm';
 
-// 1. Define strict types for the Volunteer Roles and API response
 interface VolunteerRole {
   icon: string;
   title: string;
   desc: string;
   commitment: string;
   location: string;
+  image?: string; // Added image field
 }
 
 interface SiteContentSection {
@@ -31,7 +31,6 @@ async function getRoles(): Promise<VolunteerRole[]> {
     
     if (res.ok) {
       const { data } = await res.json();
-      // Apply the strict type to the find method
       const main = data.find((d: SiteContentSection) => d.section === 'main');
       if (main?.content?.roles?.length && main.content.roles.length > 0) {
         return main.content.roles;
@@ -55,25 +54,40 @@ export default async function VolunteerPage() {
 
       <section className="mb-16">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Volunteer Roles</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Apply the strict VolunteerRole type to the map method */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {roles.map((r: VolunteerRole, i: number) => (
-            <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border">
-              <div className="text-3xl mb-3">{r.icon}</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-2">{r.title}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{r.desc}</p>
-              <div className="text-xs text-gray-500">
-                <p>Time: {r.commitment}</p>
-                <p>Location: {r.location}</p>
+            <div key={i} className="relative overflow-hidden bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group">
+              
+              {/* Conditional Background Image with Gradient Fade */}
+              {r.image && (
+                <div className="absolute inset-0 z-0 flex justify-end">
+                  <div className="relative w-full sm:w-2/3 h-full">
+                    {/* Standard img tag prevents Next.js unconfigured domain errors */}
+                    <img src={r.image} alt="" className="absolute inset-0 w-full h-full object-cover object-right opacity-90 transition-transform duration-700 group-hover:scale-105" />
+                    {/* The gradient mask blending the image into the background color */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-gray-900 dark:via-gray-900/80 dark:to-transparent"></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Text Content (Pulled forward via z-index) */}
+              <div className="relative z-10 p-6 sm:p-8 sm:w-3/4">
+                <div className="text-4xl mb-4 drop-shadow-sm">{r.icon}</div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{r.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-5 leading-relaxed font-medium">{r.desc}</p>
+                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1.5">
+                  <p><span className="font-bold text-gray-800 dark:text-gray-200">Time:</span> {r.commitment}</p>
+                  <p><span className="font-bold text-gray-800 dark:text-gray-200">Location:</span> {r.location}</p>
+                </div>
               </div>
+              
             </div>
           ))}
         </div>
       </section>
 
       <section className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-center mb-6">Apply to Volunteer</h2>
-        {/* Apply the strict VolunteerRole type here as well */}
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">Apply to Volunteer</h2>
         <VolunteerForm roles={roles.map((r: VolunteerRole) => r.title)} />
       </section>
     </div>
