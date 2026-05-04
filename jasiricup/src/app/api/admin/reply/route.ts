@@ -6,7 +6,7 @@ import { generateBrandedEmail } from "@/lib/email-template";
 
 export async function POST(req: NextRequest) {
   // Verify admin authorization
-  const authCheck = checkAdminAuth(req);
+  const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {

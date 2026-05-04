@@ -10,7 +10,7 @@ import { checkAdminAuth } from "@/lib/auth-middleware";
  * GET a single blog post by its _id (for admin viewing, without incrementing views).
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authCheck = checkAdminAuth(req);
+  const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
  * UPDATE a blog post by its _id.
  */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authCheck = checkAdminAuth(req);
+  const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
  * DELETE a blog post by its _id.
  */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authCheck = checkAdminAuth(req);
+  const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {

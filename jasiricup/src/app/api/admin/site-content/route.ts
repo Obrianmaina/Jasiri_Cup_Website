@@ -6,7 +6,7 @@ import { checkAdminAuth } from "@/lib/auth-middleware";
 import { revalidateTag } from "next/cache";
 
 export async function GET(request: NextRequest) {
-  const authCheck = checkAdminAuth(request);
+  const authCheck = await checkAdminAuth(request);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authCheck = checkAdminAuth(request);
+  const authCheck = await checkAdminAuth(request);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {

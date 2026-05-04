@@ -22,7 +22,7 @@ const ALLOWED_MIME_TYPES = [
 
 export async function POST(request: NextRequest) {
   // Check admin authentication
-  const authCheck = checkAdminAuth(request);
+  const authCheck = await checkAdminAuth(request);
   if (!authCheck.isAuthorized) {
     return authCheck.response;
   }

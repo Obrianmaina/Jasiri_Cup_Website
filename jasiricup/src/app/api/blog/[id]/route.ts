@@ -6,8 +6,8 @@ import mongoose from 'mongoose';
 import { checkAdminAuth } from "@/lib/auth-middleware";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authCheck = checkAdminAuth(req);
-  if (!authCheck.isAuthorized) return authCheck.response;
+  const authCheck = await checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
     await connectDB();
@@ -28,8 +28,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authCheck = checkAdminAuth(req);
-  if (!authCheck.isAuthorized) return authCheck.response;
+  const authCheck = await checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
     await connectDB();
@@ -55,8 +55,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authCheck = checkAdminAuth(req);
-  if (!authCheck.isAuthorized) return authCheck.response;
+  const authCheck = await checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
     await connectDB();

@@ -5,7 +5,7 @@ import Product from "@/lib/models/Product";
 import { checkAdminAuth } from "@/lib/auth-middleware";
 
 export async function GET(req: NextRequest) {
-  const authCheck = checkAdminAuth(req);
+  const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const authCheck = checkAdminAuth(req);
+  const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {

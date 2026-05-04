@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "img-src 'self' data: blob: https://res.cloudinary.com",
+              "img-src 'self' data: blob: https://res.cloudinary.com https://upload.wikimedia.org",
               "media-src 'self' https://res.cloudinary.com",
               // Allow Anthropic API calls from artifacts
               "connect-src 'self' https://api.cloudinary.com https://api.anthropic.com",

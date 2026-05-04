@@ -26,7 +26,7 @@ const fallbackRoles: VolunteerRole[] = [
 async function getRoles(): Promise<VolunteerRole[]> {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/site-content?page=volunteer`, { 
-      next: { revalidate: 300 } 
+      next: { tags: ['site-content-volunteer'], revalidate: 300 }
     });
     
     if (res.ok) {
@@ -61,9 +61,9 @@ export default async function VolunteerPage() {
               {/* Conditional Background Image with Gradient Fade */}
               {r.image && (
                 <div className="absolute inset-0 z-0 flex justify-end">
-                  <div className="relative w-full sm:w-2/3 h-full">
+                  <div className="relative w-full sm:w-full h-full">
                     {/* Standard img tag prevents Next.js unconfigured domain errors */}
-                    <img src={r.image} alt="" className="absolute inset-0 w-full h-full object-cover object-right opacity-90 transition-transform duration-700 group-hover:scale-105" />
+                    <img src={r.image} alt="" className="absolute inset-0 w-full h-full object-cover object-right opacity-30 transition-transform duration-700 group-hover:scale-105" />
                     {/* The gradient mask blending the image into the background color */}
                     <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-gray-900 dark:via-gray-900/80 dark:to-transparent"></div>
                   </div>
