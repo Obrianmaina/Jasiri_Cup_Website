@@ -14,8 +14,13 @@ export const Header = () => {
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Product', href: '/product' },
+    { name: 'Impact', href: '/impact' },
+    { name: 'Stories', href: '/stories' },
     { name: 'Blog', href: '/blog' },
     { name: 'Team', href: '/team' },
+    { name: 'Partners', href: '/partners' },
+    { name: 'Press', href: '/press' },
+    { name: 'Volunteer', href: '/volunteer' },
   ];
 
   const toggleMobileMenu = () => {

@@ -1,17 +1,16 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Security Headers 
   async headers() {
     return [
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-DNS-Prefetch-Control',   value: 'on' },
-          { key: 'X-Frame-Options',           value: 'SAMEORIGIN' },
-          { key: 'X-Content-Type-Options',    value: 'nosniff' },
-          { key: 'X-XSS-Protection',          value: '1; mode=block' },
-          { key: 'Referrer-Policy',           value: 'strict-origin-when-cross-origin' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload',
@@ -24,12 +23,14 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              // Removed unsafe-eval. If TipTap/Slate requires it, scope it to admin only.
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
+              "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: blob: https://res.cloudinary.com",
               "media-src 'self' https://res.cloudinary.com",
-              "connect-src 'self' https://api.cloudinary.com",
+              // Allow Anthropic API calls from artifacts
+              "connect-src 'self' https://api.cloudinary.com https://api.anthropic.com",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",
@@ -44,6 +45,8 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'Cache-Control', value: 'no-store, max-age=0' },
           { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          // CSRF protection hint
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
         ],
       },
       {
@@ -56,22 +59,19 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Redirects 
   async redirects() {
     return [
-      { source: '/admin',       destination: '/admin/dashboard', permanent: true },
-      { source: '/.env',        destination: '/404',             permanent: true },
-      { source: '/.env.local',  destination: '/404',             permanent: true },
-      { source: '/package.json',destination: '/404',             permanent: true },
+      { source: '/admin', destination: '/admin/dashboard', permanent: true },
+      { source: '/.env', destination: '/404', permanent: true },
+      { source: '/.env.local', destination: '/404', permanent: true },
+      { source: '/package.json', destination: '/404', permanent: true },
     ];
   },
 
-  // Rewrites 
   async rewrites() {
     return [{ source: '/health', destination: '/api/health' }];
   },
 
-  // Images 
   images: {
     remotePatterns: [
       {
@@ -85,12 +85,9 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: false,
   },
 
-  // General 
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,
-
-  // Vercel: standalone output bundles only what's needed
   output: 'standalone',
 
   compiler: {
@@ -99,13 +96,10 @@ const nextConfig: NextConfig = {
       : false,
   },
 
-  // Needed for mongoose on serverless
   serverExternalPackages: ['mongoose'],
-
   typescript: { ignoreBuildErrors: false },
-  eslint:     { ignoreDuringBuilds: process.env.NODE_ENV !== 'production' },
+  eslint: { ignoreDuringBuilds: process.env.NODE_ENV !== 'production' },
 
-  // Let Next.js infer the types for config and isServer
   webpack(config, { isServer }) {
     config.resolve = config.resolve || {};
     config.resolve.fallback = {
@@ -118,9 +112,9 @@ const nextConfig: NextConfig = {
     if (isServer && process.env.NODE_ENV === 'development') {
       console.log('\n--- Next.js env check ---');
       console.log('DB_CONNECTION_STRING:', process.env.DB_CONNECTION_STRING ? '✅' : '❌ MISSING');
-      console.log('ADMIN_SECRET_TOKEN:  ', process.env.ADMIN_SECRET_TOKEN   ? '✅' : '❌ MISSING');
+      console.log('ADMIN_SECRET_TOKEN:  ', process.env.ADMIN_SECRET_TOKEN ? '✅' : '❌ MISSING');
       console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅' : '❌ MISSING');
-      console.log('NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL  ? '✅' : '❌ MISSING');
+      console.log('NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL ? '✅' : '❌ MISSING');
       console.log('-------------------------\n');
     }
 

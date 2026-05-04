@@ -1,8 +1,9 @@
 // src/app/blog/[articleSlug]/page.tsx
-import Image from "next/image";
-import { ArticleContent } from "@/components/blog/ArticleContent";
-import { Breadcrumbs } from "@/components/common/Breadcrumbs";
+import Image from 'next/image';
+import { ArticleContent } from '@/components/blog/ArticleContent';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 interface ArticlePageProps {
   params: {
@@ -10,74 +11,88 @@ interface ArticlePageProps {
   };
 }
 
+async function fetchArticle(slug: string) {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/blog/slug/${slug}`,
+    { method: 'GET', next: { revalidate: 60 } },
+  );
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.success ? data.data : null;
+}
+
+// ─── Dynamic SEO metadata ──────────────────────────────────────────────────────
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+  const { articleSlug } = params;
+  const article = await fetchArticle(articleSlug);
+
+  if (!article) {
+    return { title: 'Article Not Found | JasiriCup' };
+  }
+
+  const description =
+    article.metaDescription ||
+    article.content?.replace(/[#*`>_[\]()]/g, '').slice(0, 160) + '...';
+
+  return {
+    title: `${article.title} | JasiriCup Blog`,
+    description,
+    keywords: article.tags?.join(', '),
+    authors: article.author ? [{ name: article.author }] : undefined,
+    openGraph: {
+      title: article.title,
+      description,
+      type: 'article',
+      publishedTime: article.publishedDate,
+      authors: article.author ? [article.author] : undefined,
+      images: article.heroImage
+        ? [
+            {
+              url: article.heroImage,
+              width: 1200,
+              height: 630,
+              alt: article.title,
+            },
+          ]
+        : [],
+      siteName: 'JasiriCup',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description,
+      images: article.heroImage ? [article.heroImage] : [],
+    },
+    alternates: {
+      canonical: `/blog/${articleSlug}`,
+    },
+  };
+}
+
+// ─── Page component ────────────────────────────────────────────────────────────
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { articleSlug } = params;
+  const articleData = await fetchArticle(articleSlug);
 
-  console.log('Article page: Loading article with slug:', articleSlug);
-
-  let articleData = null;
-  
-  try {
-    // Call the new slug-based API endpoint
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/blog/slug/${articleSlug}`, {
-      method: 'GET',
-      next: { revalidate: 60 }
-    });
-
-    console.log('Article page: API response status:', response.status);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.log('Article page: Article not found, calling notFound()');
-        notFound();
-      }
-      throw new Error(`Failed to fetch article: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('Article page: API response:', data.success ? 'Success' : 'Failed');
-    
-    if (data.success) {
-      articleData = data.data;
-      console.log('Article page: Loaded article:', articleData.title);
-      
-      // Ensure the article has required fields
-      if (!articleData.title || !articleData.content) {
-        throw new Error('Article missing required fields');
-      }
-    } else {
-      throw new Error(data.error || 'Failed to fetch article');
-    }
-  } catch (err) {
-    console.error('Article page: Error fetching article:', err);
+  if (!articleData || !articleData.title || !articleData.content) {
     notFound();
   }
+
+  // Increment view count (fire and forget)
+  fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/blog/slug/${articleSlug}`,
+    { method: 'GET', cache: 'no-store' },
+  ).catch(() => {});
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     { label: 'Blog', href: '/blog' },
-    { label: articleData?.title || 'Article', href: `/blog/${articleSlug}` },
+    { label: articleData.title, href: `/blog/${articleSlug}` },
   ];
 
   return (
     <div className="container mx-auto px-4 sm:px-16 py-8">
-      {/* Breadcrumbs */}
       <Breadcrumbs items={breadcrumbs} />
-
-      {/* Debug info in development */}
-      {/*process.env.NODE_ENV === 'development' && articleData && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 text-sm">
-          <p><strong>Article Debug:</strong></p>
-          <p>Slug: {articleSlug}</p>
-          <p>Title: {articleData.title}</p>
-          <p>Status: {articleData.status}</p>
-          <p>Published: {articleData.publishedDate}</p>
-          <p>Has content: {!!articleData.content}</p>
-          <p>Content length: {articleData.content?.length || 0} characters</p>
-        </div>
-      )*/}
-
-      {/* Article */}
       <div className="w-full max-w-4xl mx-auto">
         <ArticleContent article={articleData} />
       </div>

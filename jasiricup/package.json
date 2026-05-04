@@ -47,6 +47,8 @@
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "slate": "^0.118.0",
     "slate-react": "^0.117.4",
     "slugify": "^1.6.6",

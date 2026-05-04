@@ -8,6 +8,7 @@ const navLinks = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/admin/blog", label: "Blog Posts", icon: "✍️" },
   { href: "/admin/pages", label: "Page Content", icon: "📄" },
+  { href: "/admin/impact", label: "Impact Stats", icon: "📊" },
   { href: "/admin/products", label: "Products", icon: "🛍️" },
   { href: "/admin/messages", label: "Messages", icon: "📩" },
 ];

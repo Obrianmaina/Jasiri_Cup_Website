@@ -1,21 +1,13 @@
 // src/lib/auth.ts
-export const setAdminToken = (token: string) => {
-  document.cookie = `admin-token=${token}; path=/; max-age=86400; secure; samesite=strict`;
-};
+// NOTE: Do NOT set/read auth cookies from the client side.
+// Auth cookies are set exclusively server-side via /api/admin/auth/route.ts
+// This file is intentionally left minimal to avoid accidental misuse.
 
-export const removeAdminToken = () => {
-  document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-};
-
-export const getAdminToken = () => {
-  if (typeof document === 'undefined') return null;
-  
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'admin-token') {
-      return value;
-    }
-  }
-  return null;
+// Use this only to check if the user appears logged in (for UI purposes only)
+// The real auth check always happens server-side via middleware.ts
+export const isAdminLoggedIn = (): boolean => {
+  if (typeof document === 'undefined') return false;
+  // We cannot read httpOnly cookies from JS - this is intentional for security.
+  // Instead, we rely on the server redirect in middleware.ts
+  return false;
 };

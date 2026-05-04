@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
+import { BlogSearchClient } from "@/components/blog/BlogSearchClient"; 
 
 const stripFormatting = (text: string): string => {
   if (!text) return '';
@@ -158,40 +159,7 @@ export default async function BlogPage() {
 
       {/* Blog Posts Grid */}
       <section>
-        <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center md:text-left transition-colors">
-          Latest Posts
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-          {error && (
-            <div className="col-span-full">
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center">
-                <p>{error}</p>
-              </div>
-            </div>
-          )}
-          
-          {blogPosts.length > 0 ? (
-            blogPosts.map(post => (
-              <BlogPostCard
-                key={post.id}
-                imageSrc={post.imageSrc}
-                title={post.title}
-                description={post.description}
-                linkHref={post.linkHref}
-              />
-            ))
-          ) : (
-            !error && (
-              <div className="col-span-full text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400 text-lg transition-colors">No blog posts found.</p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2 transition-colors">
-                  Create and publish your first blog post in the admin panel.
-                </p>
-              </div>
-            )
-          )}
-        </div>
+        <BlogSearchClient posts={blogPosts} error={error} />
       </section>
     </div>
   );
