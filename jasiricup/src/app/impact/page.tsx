@@ -1,6 +1,6 @@
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { ImpactCounter } from '@/components/impact/ImpactCounter';
-import { ImpactMap, MapData } from '@/components/impact/ImpactMap';
+import { ImpactCards } from '@/components/impact/ImpactMap'; 
 import { TestimonialsSection, Testimonial } from '@/components/impact/TestimonialsSection';
 import connectDB from '@/lib/dbConnect';
 import SiteContent from '@/lib/models/SiteContent';
@@ -13,34 +13,60 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
+interface MapCounty {
+  name: string;
+  region: string;
+  girls: number;
+  color: string;
+  image?: string; 
+  imageAttribution?: string;
+}
+
 interface ImpactPageContent {
   hero: { subtitle: string; title: string; description: string; };
   testimonials: Testimonial[];
-  map: MapData;
+  map: { title: string; subtitle: string; expansionNote: string; counties: MapCounty[]; };
 }
 
 const fallbackContent: ImpactPageContent = {
   hero: {
     subtitle: "Real Change, Real Numbers",
     title: "Our Impact Across Kenya",
-    description: "Every cup donated keeps a girl in school. Here is what we have achieved together—and why we are just getting started."
+    description: "Every cup donated keeps a girl in school. Here is what we have achieved together and why we are just getting started."
   },
   testimonials: [
     { quote: 'Before JasiriCup, I missed school every month. Now I never miss a single day.', name: 'Amina W.', location: 'Garissa County', role: 'Form 3', avatar: '👩🏾' },
   ],
   map: {
     title: "Where We Work",
-    subtitle: "Active in 8 counties across Kenya, focusing on ASAL regions",
-    expansionNote: "Expanding to 5 new counties in 2025: Lamu, Isiolo, Samburu, West Pokot, Tana River",
-    counties: [{ name: 'Garissa', region: 'North East', girls: 2400, color: 'bg-purple-600' }]
+    subtitle: "Active in multiple counties across Kenya",
+    expansionNote: "Expanding to 5 new counties in 2025",
+    counties: [
+      {
+        name: 'Garissa',
+        region: 'North Eastern',
+        girls: 2400,
+        color: 'purple',
+        image: 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/happy_girl-5_ljvnx3.png',
+        imageAttribution: 'By <a href="//commons.wikimedia.org/wiki/User:Bahnfrend" class="underline">Bahnfrend</a> - Own work, CC BY-SA 4.0'
+      },
+      {
+        name: 'Nairobi',
+        region: 'Central',
+        girls: 4200,
+        color: 'green',
+        image: 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/happy_girl-5_ljvnx3.png'
+      }
+    ]
   }
 };
 
 const breadcrumbs = [{ label: 'Home', href: '/' }, { label: 'Our Impact', href: '/impact' }];
 
 async function getImpactPageData() {
-  // 1. Get the dynamic stats via fetch
-  const statsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/impact`, { next: { revalidate: 3600 } }).catch(() => null);
+  const statsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/impact`, { 
+  next: { tags: ['site-content-impact'], revalidate: 3600 } 
+}).catch(() => null);
   let stats = { cupsDonated: 5000, girlsImpacted: 12000, schoolsReached: 45, countiesReached: 8, periodsManaged: 60000, volunteersActive: 120 };
   
   if (statsRes?.ok) {
@@ -48,7 +74,6 @@ async function getImpactPageData() {
     if (data.stats) stats = data.stats;
   }
 
-  // 2. Get the structural page content directly from the DB
   await connectDB();
   const siteData = await SiteContent.findOne({ page: 'impact', section: 'main' }).lean() as { content?: ImpactPageContent } | null;
   const content = siteData?.content || fallbackContent;
@@ -72,7 +97,6 @@ export default async function ImpactPage() {
     <div className="container mx-auto px-4 sm:px-6 md:px-16 py-8">
       <Breadcrumbs items={breadcrumbs} />
 
-      {/* Hero (Dynamically Driven) */}
       <section className="text-center mb-16 mt-4">
         <span className="inline-block bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6">
           {content.hero.subtitle}
@@ -85,18 +109,16 @@ export default async function ImpactPage() {
         </p>
       </section>
 
-      {/* Stats Counters */}
       <section className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-20">
         {statCards.map((stat) => (
           <ImpactCounter key={stat.label} {...stat} />
         ))}
       </section>
 
-      {/* Testimonials & Map (Dynamically Driven) */}
       <TestimonialsSection testimonials={content.testimonials} />
-      <ImpactMap mapData={content.map} />
+      
+      <ImpactCards mapData={content.map} />
 
-      {/* CTA */}
       <section className="text-center py-16">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Help Us Reach More Girls</h2>
         <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">

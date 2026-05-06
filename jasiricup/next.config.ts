@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https://res.cloudinary.com https://upload.wikimedia.org",
               "media-src 'self' https://res.cloudinary.com",
               // Allow Anthropic API calls from artifacts
-              "connect-src 'self' https://api.cloudinary.com https://api.anthropic.com",
+              "connect-src 'self' https://api.cloudinary.com https://api.anthropic.com https://nominatim.openstreetmap.org",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",

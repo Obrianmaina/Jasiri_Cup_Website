@@ -15,7 +15,7 @@ interface PressDownload { name: string; desc: string; icon: string; file: string
 interface Partner { name: string; county: string; girls: number; type: string; since: string; }
 interface VolunteerRole { icon: string; title: string; desc: string; commitment: string; location: string; image?: string; }
 interface Testimonial { quote: string; name: string; location: string; role: string; avatar: string; }
-interface MapCounty { name: string; region: string; girls: number; color: string; }
+interface MapCounty { name: string; region: string; girls: number; color: string; image?: string; imageAttribution?: string; }
 interface ImpactPageContent { hero: { subtitle: string; title: string; description: string; }; testimonials: Testimonial[]; map: { title: string; subtitle: string; expansionNote: string; counties: MapCounty[]; }; }
 
 // --- Defaults ---
@@ -174,6 +174,8 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
 function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChange: (d: ImpactPageContent) => void; }) {
   return (
     <div className="space-y-6">
+      
+      {/* 1. Hero Section */}
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
         <h4 className="font-semibold text-sm mb-3">Hero Section</h4>
         <div className="space-y-3">
@@ -183,8 +185,9 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
         </div>
       </div>
 
+      {/* 2. Testimonials (Quotes) Section */}
       <div>
-        <h4 className="font-semibold text-sm mb-3">Testimonials</h4>
+        <h4 className="font-semibold text-sm mb-3">Testimonials (Quotes)</h4>
         <GenericArrayEditor
           data={data.testimonials || []}
           onChange={(t) => onChange({ ...data, testimonials: t })}
@@ -200,35 +203,71 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
         />
       </div>
 
+      {/* 3. Impact Section Settings */}
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-        <h4 className="font-semibold text-sm mb-3">Map Settings</h4>
+        <h4 className="font-semibold text-sm mb-3">Impact Section Settings</h4>
         <div className="space-y-3">
-          <div><label className="block text-xs mb-1">Map Title</label><input type="text" value={data.map?.title || ""} onChange={(e) => onChange({ ...data, map: { ...data.map, title: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
-          <div><label className="block text-xs mb-1">Map Subtitle</label><textarea rows={2} value={data.map?.subtitle || ""} onChange={(e) => onChange({ ...data, map: { ...data.map, subtitle: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
+          <div><label className="block text-xs mb-1">Title</label><input type="text" value={data.map?.title || ""} onChange={(e) => onChange({ ...data, map: { ...data.map, title: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
+          <div><label className="block text-xs mb-1">Subtitle</label><textarea rows={2} value={data.map?.subtitle || ""} onChange={(e) => onChange({ ...data, map: { ...data.map, subtitle: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
           <div><label className="block text-xs mb-1">Expansion Note</label><textarea rows={2} value={data.map?.expansionNote || ""} onChange={(e) => onChange({ ...data, map: { ...data.map, expansionNote: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
         </div>
       </div>
 
+      {/* 4. Impact Cards */}
       <div>
-        <h4 className="font-semibold text-sm mb-3">Map Counties</h4>
+        <h4 className="font-semibold text-sm mb-3">Impact Cards</h4>
         <GenericArrayEditor
           data={data.map?.counties || []}
           onChange={(c) => onChange({ ...data, map: { ...data.map, counties: c } })}
-          title="County"
-          defaultItem={{ name: "", region: "", girls: 0, color: "bg-purple-600" }}
+          title="Location"
+          defaultItem={{ name: "", region: "", girls: 0, color: "purple", image: "", imageAttribution: "" }}
           fields={[
-            { key: "name", label: "County Name", type: "text" },
+            { key: "name", label: "Country/County Name", type: "text" },
             { key: "region", label: "Region", type: "text" },
             { key: "girls", label: "Girls Supported", type: "number" },
-            { key: "color", label: "Color Class (e.g. bg-purple-600)", type: "text" },
+            { key: "image", label: "Background Image URL", type: "text" },
+            { key: "imageAttribution", label: "Image Attribution (HTML Allowed)", type: "textarea" },
+            { 
+              key: "color", 
+              label: "Theme Color", 
+              type: "select",
+              options: [
+                { label: "Purple", value: "purple" },
+                { label: "Green", value: "green" },
+                { label: "Blue", value: "blue" },
+                { label: "Amber", value: "amber" },
+                { label: "Pink", value: "pink" },
+                { label: "Red", value: "red" },
+                { label: "Teal", value: "teal" },
+              ]
+            },
           ]}
         />
       </div>
+
     </div>
   );
 }
 
-function GenericArrayEditor<T extends object>({ data, onChange, defaultItem, fields, title }: { data: T[]; onChange: (d: T[]) => void; defaultItem: T; fields: { key: keyof T; label: string; type: 'text' | 'textarea' | 'number' | 'array' }[]; title: string; }) {
+// 1. Updated Interface to support select dropdowns
+function GenericArrayEditor<T extends object>({ 
+  data, 
+  onChange, 
+  defaultItem, 
+  fields, 
+  title 
+}: { 
+  data: T[]; 
+  onChange: (d: T[]) => void; 
+  defaultItem: T; 
+  fields: { 
+    key: keyof T; 
+    label: string; 
+    type: 'text' | 'textarea' | 'number' | 'array' | 'select'; 
+    options?: { label: string; value: string }[]; 
+  }[]; 
+  title: string; 
+}) {
   const updateItem = (index: number, key: keyof T, val: T[keyof T]) => { const copy = [...data]; copy[index] = { ...copy[index], [key]: val }; onChange(copy); };
   const addItem = () => onChange([...data, { ...defaultItem, id: Date.now() } as unknown as T]);
   const removeItem = (index: number) => onChange(data.filter((_, i) => i !== index));
@@ -241,10 +280,23 @@ function GenericArrayEditor<T extends object>({ data, onChange, defaultItem, fie
             {fields.map(f => (
               <div key={String(f.key)} className={f.type === 'textarea' || f.type === 'array' ? 'sm:col-span-2' : ''}>
                 <label className="block text-xs mb-1">{f.label}</label>
-                {f.type === 'textarea' ? (
+                
+                {/* 2. Added Select Rendering Logic */}
+                {f.type === 'select' ? (
+                  <select 
+                    value={item[f.key] as unknown as string} 
+                    onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} 
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Select an option...</option>
+                    {f.options?.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                ) : f.type === 'textarea' ? (
                   <textarea value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} rows={3} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
                 ) : f.type === 'array' ? (
-                  <input value={(item[f.key] as unknown as string[]).join(', ')} onChange={e => updateItem(i, f.key, e.target.value.split(',').map(s => s.trim()) as unknown as T[keyof T])} placeholder="Comma separated" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
+                  <input value={((item[f.key] as unknown as string[]) || []).join(', ')} onChange={e => updateItem(i, f.key, e.target.value.split(',').map(s => s.trim()) as unknown as T[keyof T])} placeholder="Comma separated" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
                 ) : (
                   <input type={f.type} value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, (f.type === 'number' ? Number(e.target.value) : e.target.value) as unknown as T[keyof T])} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
                 )}
@@ -290,7 +342,6 @@ export default function AdminPagesPage() {
         if (pressRes.ok) { const { data } = await pressRes.json(); const m = data.find((d: SectionData<{ coverage: PressCoverage[], downloads: PressDownload[] }>) => d.section === 'main'); if (m?.content) setPressContent(m.content); }
         if (partRes.ok) { const { data } = await partRes.json(); const m = data.find((d: SectionData<{ partners: Partner[] }>) => d.section === 'main'); if (m?.content?.partners) setPartners(m.content.partners); }
         if (volRes.ok) { const { data } = await volRes.json(); const m = data.find((d: SectionData<{ roles: VolunteerRole[] }>) => d.section === 'main'); if (m?.content?.roles) setVolunteerRoles(m.content.roles); }
-        // Fetching the 'main' section for impact, avoiding the 'stats' section used on the other page
         if (impactRes.ok) { const { data } = await impactRes.json(); const m = data.find((d: SectionData<ImpactPageContent>) => d.section === 'main'); if (m?.content) setImpactContent(m.content); }
       } catch (err) {
         console.error('Failed to load content:', err);

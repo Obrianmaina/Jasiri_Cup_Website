@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import { ShareButtons } from '@/components/blog/ShareButtons';
+import Link from 'next/dist/client/link';
 
 interface ArticleContentProps {
   article: {
@@ -113,6 +114,20 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
           Share this article
         </p>
         <ShareButtons title={article.title} url={articleUrl} />
+      </div>
+
+      {/* Newsletter Trigger */}
+      <div className="mt-12 bg-purple-50 dark:bg-purple-900/20 p-6 sm:p-8 rounded-2xl text-center border border-purple-100 dark:border-purple-800/50">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Want more stories like this?</h3>
+        <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 max-w-md mx-auto">
+          Join our community to get monthly impact updates and news straight to your inbox.
+        </p>
+        <Link 
+          href="/newsletter"
+          className="inline-block bg-purple-600 text-white px-8 py-3 rounded-full font-bold hover:bg-purple-700 transition-colors"
+        >
+          Subscribe for Free
+        </Link>
       </div>
     </article>
   );

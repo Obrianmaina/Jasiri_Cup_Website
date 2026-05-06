@@ -30,10 +30,7 @@ export async function GET() {
 
     return NextResponse.json(
       { success: true, stats },
-      {
-        status: 200,
-        headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' },
-      },
+      { status: 200 }
     );
   } catch (error) {
     console.error('Impact stats error:', error);
