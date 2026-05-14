@@ -16,27 +16,32 @@ if (!MONGODB_URI.startsWith('mongodb://') && !MONGODB_URI.startsWith('mongodb+sr
 }
 
 // Connection options for security and performance
-const options = {
-  maxPoolSize: 10, // Maximum number of connections in the pool
-  serverSelectionTimeoutMS: 5000, // How long to wait for server selection
-  socketTimeoutMS: 45000, // How long to wait for socket operations
-  family: 4, // Use IPv4, skip trying IPv6
-  retryWrites: true, // Retry writes on network errors
-  w: 'majority', // Write concern - wait for majority of replica set
-  journal: true, // Wait for journal confirmation
-  // Connection pool options
-  minPoolSize: 1, // Minimum connections to maintain
-  maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-  // Monitoring options
-  heartbeatFrequencyMS: 10000, // Send heartbeat every 10 seconds
+const options: mongoose.ConnectOptions = {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4,
+  retryWrites: true,
+  w: 'majority', 
+  journal: true,
+  minPoolSize: 1,
+  maxIdleTimeMS: 30000,
+  heartbeatFrequencyMS: 10000,
 };
+
+// 1. FIXED: Create a strict interface for the global cache instead of 'any'
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
 
 // Global mongoose instance to prevent multiple connections
 declare global {
-  var mongoose: any;
+  // eslint-disable-next-line no-var
+  var mongoose: MongooseCache | undefined;
 }
 
-let cached = global.mongoose;
+let cached = global.mongoose as MongooseCache;
 
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
@@ -59,17 +64,14 @@ async function connectWithRetry(retries = MAX_RETRIES): Promise<typeof mongoose>
 }
 
 const connectDB = async () => {
-  // Return existing connection if available
   if (cached.conn) {
     console.log('Using existing MongoDB connection');
     return cached.conn;
   }
 
-  // Return existing promise if connection is in progress
   if (!cached.promise) {
     console.log('Establishing new MongoDB connection...');
     
-    // Set up connection event listeners for monitoring
     mongoose.connection.on('connected', () => {
       console.log('✅ MongoDB connected successfully');
     });
@@ -82,27 +84,30 @@ const connectDB = async () => {
       console.log('⚠️ MongoDB disconnected');
     });
 
-    // Handle application termination
     process.on('SIGINT', async () => {
       await mongoose.connection.close();
       console.log('MongoDB connection closed through app termination');
       process.exit(0);
     });
 
-    // Create new connection promise
-    cached.promise = connectWithRetry().then((mongoose) => {
-      return mongoose;
+    cached.promise = connectWithRetry().then((mongooseInstance) => {
+      return mongooseInstance;
     });
   }
 
   try {
     cached.conn = await cached.promise;
     return cached.conn;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // 2. FIXED: Catch block now safely handles 'unknown' types
     cached.promise = null;
-    console.error('Failed to establish MongoDB connection:', error.message);
     
-    // Don't expose internal error details in production
+    if (error instanceof Error) {
+      console.error('Failed to establish MongoDB connection:', error.message);
+    } else {
+      console.error('Failed to establish MongoDB connection:', String(error));
+    }
+    
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Database connection failed');
     }
@@ -114,8 +119,8 @@ const connectDB = async () => {
 export const checkDatabaseHealth = async (): Promise<boolean> => {
   try {
     if (mongoose.connection.readyState === 1) {
-      // Ping the database
-      await mongoose.connection.db.admin().ping();
+      // Safely check if db is available before pinging
+      await mongoose.connection.db?.admin().ping();
       return true;
     }
     return false;
