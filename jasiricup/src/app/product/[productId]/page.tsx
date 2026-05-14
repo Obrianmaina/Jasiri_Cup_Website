@@ -1,11 +1,16 @@
+// src/app/product/[productId]/page.tsx
+
+// 1. Update the interface so params is a Promise
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     productId: string;
-  };
+  }>;
 }
 
-export default function DynamicProductPage({ params }: ProductPageProps) {
-  const { productId } = params;
+// 2. Make the component async
+export default async function DynamicProductPage({ params }: ProductPageProps) {
+  // 3. Await the params before destructuring
+  const { productId } = await params;
 
   return (
     <div className="container mx-auto px-4 sm:px-6 md:px-16 py-8">
@@ -21,7 +26,6 @@ export default function DynamicProductPage({ params }: ProductPageProps) {
         {/* Placeholder image */}
         <div className="w-full md:w-1/2 flex justify-center md:justify-start">
           <div className="relative w-full max-w-sm aspect-square overflow-hidden rounded-lg bg-gray-100">
-            {/* Replace with your actual Image component */}
             <img
               src="/placeholder-product.png"
               alt={`Product ${productId}`}
