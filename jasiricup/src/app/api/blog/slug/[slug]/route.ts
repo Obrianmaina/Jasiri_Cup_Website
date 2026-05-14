@@ -6,11 +6,13 @@ import BlogPost from "@/lib/models/BlogPost";
 /**
  * GET a single published blog post by its slug (for public viewing)
  */
-export async function GET(req: Request, { params }: { params: { slug: string } }) {
+// 1. CHANGE: params is now a Promise
+export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
     await connectDB();
     
-    const { slug } = params;
+    // 2. CHANGE: await the params before extracting the slug
+    const { slug } = await params;
     console.log('API: Fetching blog post with slug:', slug);
     
     // Find the blog post by its slug and ensure it's published
