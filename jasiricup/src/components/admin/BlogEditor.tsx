@@ -35,7 +35,6 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
     tags: initialData?.tags || [],
     status: initialData?.status || 'draft',
     featured: initialData?.featured || false,
-    ...initialData
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -47,28 +46,42 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    return title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      title,
-      slug: generateSlug(title)
+    setFormData(prev => ({ 
+      ...prev, 
+      title, 
+      slug: generateSlug(title) 
     }));
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleSharedChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  const insertFormatting = (before: string, after: string = '') => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    const newText = before + selectedText + after;
+    const newContent = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
+
+    setFormData(prev => ({ ...prev, content: newContent }));
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+    }, 0);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,39 +150,14 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
     }));
   };
 
-  const insertFormatting = (before: string, after: string = '') => {
-    const textarea = contentRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = textarea.value.substring(start, end);
-    
-    const newText = before + selectedText + after;
-    const newContent = 
-      textarea.value.substring(0, start) + 
-      newText + 
-      textarea.value.substring(end);
-
-    setFormData(prev => ({ ...prev, content: newContent }));
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(
-        start + before.length,
-        start + before.length + selectedText.length
-      );
-    }, 0);
+  const removeCurrentImage = () => {
+    setFormData(prev => ({ ...prev, heroImage: '' }));
+    setUploadError('');
   };
 
   const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'published') => {
     e.preventDefault();
     await onSave({ ...formData, status });
-  };
-
-  const removeCurrentImage = () => {
-    setFormData(prev => ({ ...prev, heroImage: '' }));
-    setUploadError('');
   };
 
   return (
@@ -183,7 +171,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               id="title"
               name="title"
               label="Article Title*"
-              value={formData.title}
+              value={formData.title} 
               onChange={handleTitleChange}
               placeholder="Enter a captivating title"
               required
@@ -195,7 +183,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               name="slug"
               label="URL Slug*"
               value={formData.slug}
-              onChange={handleInputChange}
+              onChange={handleSharedChange} 
               placeholder="url-friendly-slug"
               required
             />
@@ -203,17 +191,18 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               /blog/{formData.slug || 'slug'}
             </p>
           </div>
+          {/* Author Input */}
           <div>
             <Input
               id="author"
               name="author"
               label="Author Name"
-              value={formData.author}
-              onChange={handleInputChange}
+              value={formData.author} 
+              onChange={handleSharedChange}
               placeholder="Who wrote this?"
             />
           </div>
-        </div>
+        </div>  
 
         {/* Hero Image Section */}
         <div className="bg-gray-50/50 dark:bg-gray-800/30 p-6 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
@@ -226,7 +215,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                 type="checkbox"
                 name="featured"
                 checked={formData.featured}
-                onChange={handleInputChange}
+                onChange={handleSharedChange}
                 className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-500 rounded border-gray-300 dark:border-gray-600 focus:ring-purple-500 bg-white dark:bg-gray-800"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Feature this post on home page</span>
@@ -253,7 +242,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                   type="text"
                   name="heroImage"
                   value={formData.heroImage}
-                  onChange={handleInputChange}
+                  onChange={handleSharedChange}
                   placeholder="https://example.com/image.jpg"
                   className="w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors"
                 />
@@ -334,8 +323,8 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             <textarea
               ref={contentRef}
               name="content"
-              value={formData.content}
-              onChange={handleInputChange}
+              value={formData.content} 
+              onChange={handleSharedChange}    
               rows={16}
               className={`w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm leading-relaxed p-4 transition-colors ${showToolbar ? 'rounded-b-xl' : 'rounded-xl'}`}
               placeholder="Write your blog content here using Markdown syntax..."
@@ -351,8 +340,8 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               id="metaDescription"
               name="metaDescription"
               label="Meta Description (SEO)"
-              value={formData.metaDescription}
-              onChange={handleInputChange}
+              value={formData.metaDescription} 
+              onChange={handleSharedChange}               
               placeholder="Brief description for search engines..."
               rows={4}
             />

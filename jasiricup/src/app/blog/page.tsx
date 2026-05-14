@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
-import { BlogSearchClient } from "@/components/blog/BlogSearchClient"; 
+import { BlogSearchClient } from "@/components/blog/BlogSearchClient";
 
 const stripFormatting = (text: string): string => {
   if (!text) return '';
@@ -21,12 +21,15 @@ const truncateDescription = (text: string, maxLength: number): string => {
     : truncatedText + '...';
 };
 
+// 1. Defined right here at the top!
+
 interface BlogPost {
   id: string;
   imageSrc: string;
   title: string;
   description: string;
   linkHref: string;
+  
 }
 
 interface BlogPostResponse {
@@ -39,6 +42,7 @@ interface BlogPostResponse {
   publishedDate: string;
   featured?: boolean;
   status: string;
+  
 }
 
 const DEFAULT_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/forest_ganolr.png";
@@ -62,13 +66,13 @@ export default async function BlogPage() {
 
     if (!response.ok) throw new Error('Failed to fetch blog posts');
     const data = await response.json();
-    
+
     const publishedPosts = data.data
       .filter((post: BlogPostResponse) => post.status === 'published')
       .sort((a: BlogPostResponse, b: BlogPostResponse) => {
         const dateA = new Date(a.publishedDate).getTime();
         const dateB = new Date(b.publishedDate).getTime();
-        return dateB - dateA; 
+        return dateB - dateA;
       });
 
     const allPosts = publishedPosts.map((post: BlogPostResponse) => ({
@@ -77,31 +81,33 @@ export default async function BlogPage() {
       title: post.title,
       description: truncateDescription(post.content, 150),
       linkHref: `/blog/${post.slug}`,
+      
     }));
 
     const featuredPostData = publishedPosts.find((post: BlogPostResponse) => post.featured === true);
-    
+
     if (featuredPostData) {
       featuredPost = {
         id: featuredPostData._id,
-        imageSrc: (featuredPostData.heroImage && featuredPostData.heroImage.trim()) 
-          ? featuredPostData.heroImage 
+        imageSrc: (featuredPostData.heroImage && featuredPostData.heroImage.trim())
+          ? featuredPostData.heroImage
           : DEFAULT_HERO_IMAGE,
         title: featuredPostData.title,
         description: truncateDescription(featuredPostData.content, 200),
         linkHref: `/blog/${featuredPostData.slug}`,
+        
       };
-    } 
-    else if (publishedPosts.length > 0) {
+    } else if (publishedPosts.length > 0) {
       const latestPost = publishedPosts[0];
       featuredPost = {
         id: latestPost._id,
-        imageSrc: (latestPost.heroImage && latestPost.heroImage.trim()) 
-          ? latestPost.heroImage 
+        imageSrc: (latestPost.heroImage && latestPost.heroImage.trim())
+          ? latestPost.heroImage
           : DEFAULT_HERO_IMAGE,
         title: latestPost.title,
         description: truncateDescription(latestPost.content, 200),
         linkHref: `/blog/${latestPost.slug}`,
+        
       };
     }
 
@@ -110,7 +116,6 @@ export default async function BlogPage() {
     } else {
       blogPosts = allPosts;
     }
-
   } catch (err) {
     console.error('Error fetching blog posts:', err);
     error = 'Failed to load blog posts. Please try again later.';
@@ -120,7 +125,8 @@ export default async function BlogPage() {
     title: "Sustainable Periods",
     description: "This initiative targets girls in rural areas (ASAL Regions that remain inadequately served), who often lack access to affordable menstrual products and adequate education.",
     imageSrc: DEFAULT_HERO_IMAGE,
-    linkHref: "/blog"
+    linkHref: "/blog",
+    translations: {}
   };
 
   const heroContent = featuredPost || defaultHero;
@@ -129,7 +135,6 @@ export default async function BlogPage() {
     <div className="container mx-auto px-4 sm:px-8 md:px-16 py-8">
       <Breadcrumbs items={breadcrumbs} />
 
-      {/* Dynamic Hero Section */}
       <section className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg p-6 sm:p-8 mb-12 flex flex-col md:flex-row items-center justify-between transition-colors duration-300">
         <div className="w-full md:w-1/2 pr-0 md:pr-8 text-center md:text-left">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800 dark:text-white transition-colors">
@@ -157,7 +162,6 @@ export default async function BlogPage() {
         </div>
       </section>
 
-      {/* Blog Posts Grid */}
       <section>
         <BlogSearchClient posts={blogPosts} error={error} />
       </section>

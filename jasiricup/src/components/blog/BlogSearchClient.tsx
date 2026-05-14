@@ -1,17 +1,24 @@
 'use client';
 import { useState } from 'react';
 import { BlogPostCard } from './BlogPostCard';
+import { useLanguage } from '@/components/common/LanguageToggle';
 
-// 1. Define the exact shape of a blog post based on what BlogPostCard expects
+// 1. Defined right here at the top!
+interface BlogPostTranslation {
+  title?: string;
+  content?: string;
+  metaDescription?: string;
+}
+
 interface BlogPost {
   id: string;
   title: string;
   description: string;
   imageSrc: string;
   linkHref: string;
+  translations?: Record<string, BlogPostTranslation>;
 }
 
-// 2. Replace any[] with BlogPost[]
 interface BlogSearchClientProps {
   posts: BlogPost[];
   error: string | null;
@@ -19,11 +26,15 @@ interface BlogSearchClientProps {
 
 export const BlogSearchClient = ({ posts, error }: BlogSearchClientProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const { lang } = useLanguage();
 
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPosts = posts.filter(post => {
+    const currentTitle = lang === 'en' ? post.title : (post.translations?.[lang]?.title || post.title);
+    const currentDesc = lang === 'en' ? post.description : (post.translations?.[lang]?.metaDescription || post.description);
+
+    return currentTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           currentDesc.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
     <div>
@@ -48,15 +59,20 @@ export const BlogSearchClient = ({ posts, error }: BlogSearchClientProps) => {
         )}
         
         {filteredPosts.length > 0 ? (
-          filteredPosts.map(post => (
-            <BlogPostCard 
-              key={post.id} 
-              imageSrc={post.imageSrc}
-              title={post.title}
-              description={post.description}
-              linkHref={post.linkHref}
-            />
-          ))
+          filteredPosts.map(post => {
+            const displayTitle = lang === 'en' ? post.title : (post.translations?.[lang]?.title || post.title);
+            const displayDesc = lang === 'en' ? post.description : (post.translations?.[lang]?.metaDescription || post.description);
+            
+            return (
+              <BlogPostCard 
+                key={post.id} 
+                imageSrc={post.imageSrc}
+                title={displayTitle}
+                description={displayDesc}
+                linkHref={post.linkHref}
+              />
+            );
+          })
         ) : (
           !error && (
             <div className="col-span-full text-center py-12">

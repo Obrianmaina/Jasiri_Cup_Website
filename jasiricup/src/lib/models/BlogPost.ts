@@ -17,6 +17,13 @@ interface IBlogPost extends Document {
   viewCount: number;
   ipAddress: string;
   lastModifiedBy: string;
+  translations?: {
+    [key: string]: {
+      title: string;
+      content: string;
+      metaDescription: string;
+    }
+  };
 }
 
 // Typed interfaces to replace `any`
