@@ -7,12 +7,15 @@ export const metadata: Metadata = {
   description: 'Thank you for your donation to JasiriCup.',
 };
 
-export default function ThankYouPage({
+// 1. CHANGE: Make the component async and type searchParams as a Promise
+export default async function ThankYouPage({
   searchParams,
 }: {
-  searchParams: { ref?: string };
+  searchParams: Promise<{ ref?: string }>;
 }) {
-  const ref = searchParams.ref ?? '';
+  // 2. CHANGE: await the searchParams before using them
+  const resolvedParams = await searchParams;
+  const ref = resolvedParams.ref ?? '';
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
