@@ -22,11 +22,32 @@ export async function POST(req: NextRequest) {
     await Order.create({ clientInfo, items });
 
     for (const item of items) {
-      if (item.productId) {
-        await Product.updateOne(
-          { _id: item.productId, "variations.color": item.color, "variations.size": item.size },
-          { $inc: { "variations.$.stockQuantity": -item.quantity } }
+      // Find this block in src/app/api/send-order/route.ts
+
+      const updateResult = await Product.updateOne(
+        {
+          _id: item.productId,
+          "variations.color": item.color,
+          "variations.size": item.size,
+          // THE FIX: Ensure we have enough stock BEFORE deducting
+          "variations.stockQuantity": { $gte: item.quantity }
+        },
+        {
+          $inc: { "variations.$.stockQuantity": -item.quantity }
+        }
+      );
+
+      // Add this check right below it to catch if someone tried to buy an out-of-stock item
+      if (updateResult.modifiedCount === 0) {
+        return NextResponse.json(
+          { success: false, error: `Insufficient stock for product ${item.productId}` },
+          { status: 400 }
         );
+      }
+
+      if (updateResult.modifiedCount === 0) {
+        // Rollback logic or throw error:
+        throw new Error(`Insufficient stock for product ${item.productId}`);
       }
     }
 

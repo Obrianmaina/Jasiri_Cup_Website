@@ -14,6 +14,8 @@ const DonationSchema = new mongoose.Schema(
     payMethod: { type: String, enum: ['mpesa', 'card'], required: true },
     status:    { type: String, enum: ['pending', 'complete', 'failed'], default: 'pending' },
     reference: { type: String },
+    mpesaCheckoutId: { type: String }, // Added to track Safaricom's session
+    mpesaReceipt:    { type: String }, // Added to store the final receipt code
   },
   { timestamps: true },
 );
@@ -48,6 +50,11 @@ async function stkPush(phone: string, amount: number, reference: string) {
   // Normalise phone to 254XXXXXXXXX
   const normalised = phone.replace(/^0/, '254').replace(/^\+/, '');
 
+  // CRITICAL SECURITY FIX: Append the secret token to the callback URL
+  const callbackSecret = process.env.ADMIN_SECRET_TOKEN;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://jasiricup.org';
+  const callBackURL = `${baseUrl}/api/donate/callback?secret=${callbackSecret}`;
+
   const res = await fetch(
     'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
     {
@@ -65,7 +72,7 @@ async function stkPush(phone: string, amount: number, reference: string) {
         PartyA: normalised,
         PartyB: process.env.MPESA_SHORTCODE,
         PhoneNumber: normalised,
-        CallBackURL: process.env.MPESA_CALLBACK_URL,
+        CallBackURL: callBackURL,
         AccountReference: reference,
         TransactionDesc: 'JasiriCup Donation',
       }),
@@ -100,8 +107,8 @@ export async function POST(req: NextRequest) {
 
     const reference = `JC-${Date.now()}`;
 
-    // Save record
-    await Donation.create({ name, email, phone, amount, cups, payMethod, reference });
+    // Save initial pending record
+    const newDonation = await Donation.create({ name, email, phone, amount, cups, payMethod, reference });
 
     // ── M-Pesa ──
     if (payMethod === 'mpesa') {
@@ -113,8 +120,14 @@ export async function POST(req: NextRequest) {
           reference,
         });
       }
+      
       const mpesaRes = await stkPush(phone, amount, reference);
+      
       if (mpesaRes.ResponseCode === '0') {
+        // CRITICAL UPDATE: Save the CheckoutRequestID so the callback route can find this specific donation
+        newDonation.mpesaCheckoutId = mpesaRes.CheckoutRequestID;
+        await newDonation.save();
+        
         return NextResponse.json({ success: true, reference });
       }
       return NextResponse.json(

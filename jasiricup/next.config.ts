@@ -19,25 +19,8 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              // Removed unsafe-eval. If TipTap/Slate requires it, scope it to admin only.
-              "script-src 'self' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com data:",
-              "img-src 'self' data: blob: https://res.cloudinary.com https://upload.wikimedia.org",
-              "media-src 'self' https://res.cloudinary.com",
-              // Allow Anthropic API calls from artifacts
-              "connect-src 'self' https://api.cloudinary.com https://api.anthropic.com https://nominatim.openstreetmap.org",
-              "frame-src 'none'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "upgrade-insecure-requests",
-            ].join('; '),
-          },
+          // ❌ The Content-Security-Policy block has been completely removed from here
+          // because it is now securely generated in src/middleware.ts
         ],
       },
       {
@@ -45,33 +28,17 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'Cache-Control', value: 'no-store, max-age=0' },
           { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
-          // CSRF protection hint
           { key: 'X-Content-Type-Options', value: 'nosniff' },
         ],
       },
       {
         source: '/admin/(.*)',
         headers: [
-          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, private' },
-          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
         ],
       },
     ];
   },
-
-  async redirects() {
-    return [
-      { source: '/admin', destination: '/admin/dashboard', permanent: true },
-      { source: '/.env', destination: '/404', permanent: true },
-      { source: '/.env.local', destination: '/404', permanent: true },
-      { source: '/package.json', destination: '/404', permanent: true },
-    ];
-  },
-
-  async rewrites() {
-    return [{ source: '/health', destination: '/api/health' }];
-  },
-
   images: {
     remotePatterns: [
       {
@@ -84,22 +51,18 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
     dangerouslyAllowSVG: false,
   },
-
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,
   output: 'standalone',
-
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
       ? { exclude: ['error', 'warn'] }
       : false,
   },
-
   serverExternalPackages: ['mongoose'],
   typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: process.env.NODE_ENV !== 'production' },
-
   webpack(config, { isServer }) {
     config.resolve = config.resolve || {};
     config.resolve.fallback = {
@@ -108,16 +71,6 @@ const nextConfig: NextConfig = {
       net: false,
       tls: false,
     };
-
-    if (isServer && process.env.NODE_ENV === 'development') {
-      console.log('\n--- Next.js env check ---');
-      console.log('DB_CONNECTION_STRING:', process.env.DB_CONNECTION_STRING ? '✅' : '❌ MISSING');
-      console.log('ADMIN_SECRET_TOKEN:  ', process.env.ADMIN_SECRET_TOKEN ? '✅' : '❌ MISSING');
-      console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅' : '❌ MISSING');
-      console.log('NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL ? '✅' : '❌ MISSING');
-      console.log('-------------------------\n');
-    }
-
     return config;
   },
 };

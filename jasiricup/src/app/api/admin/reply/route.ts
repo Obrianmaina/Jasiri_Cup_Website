@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { checkAdminAuth } from "@/lib/auth-middleware";
 import { generateBrandedEmail } from "@/lib/email-template";
+import DOMPurify from 'isomorphic-dompurify';
 
 export async function POST(req: NextRequest) {
   // Verify admin authorization
@@ -30,8 +31,14 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Convert plain text newlines from the textarea to HTML breaks
-    const formattedMessage = message.replace(/\n/g, '<br>');
+    // 1. Sanitize the raw message first to prevent XSS
+    const sanitizedReply = DOMPurify.sanitize(message, {
+      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'], // Only allow safe formatting
+      ALLOWED_ATTR: ['href'] // Only allow links
+    });
+
+    // 2. Convert plain text newlines from the textarea to HTML breaks safely
+    const formattedMessage = sanitizedReply.replace(/\n/g, '<br>');
 
     const htmlContent = `
       <p style="font-size: 16px; margin-bottom: 20px;">Hi ${toName},</p>
