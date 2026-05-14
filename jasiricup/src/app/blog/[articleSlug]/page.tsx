@@ -5,10 +5,11 @@ import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
+// 1. CHANGE: params is now a Promise
 interface ArticlePageProps {
-  params: {
+  params: Promise<{
     articleSlug: string;
-  };
+  }>;
 }
 
 async function fetchArticle(slug: string) {
@@ -23,7 +24,8 @@ async function fetchArticle(slug: string) {
 
 // ─── Dynamic SEO metadata ──────────────────────────────────────────────────────
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
-  const { articleSlug } = params;
+  // 2. CHANGE: await the params
+  const { articleSlug } = await params;
   const article = await fetchArticle(articleSlug);
 
   if (!article) {
@@ -71,7 +73,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
 // ─── Page component ────────────────────────────────────────────────────────────
 export default async function ArticlePage({ params }: ArticlePageProps) {
-  const { articleSlug } = params;
+  // 3. CHANGE: await the params
+  const { articleSlug } = await params;
   const articleData = await fetchArticle(articleSlug);
 
   if (!articleData || !articleData.title || !articleData.content) {
