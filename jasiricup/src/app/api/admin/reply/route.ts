@@ -3,17 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { checkAdminAuth } from "@/lib/auth-middleware";
 import { generateBrandedEmail } from "@/lib/email-template";
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
+
+// Create a window/DOM instance for Purify to work on the server
+const window = new JSDOM('').window;
+const purify = DOMPurify(window);
 
 export async function POST(req: NextRequest) {
-  // Verify admin authorization
   const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
     const { toEmail, toName, subject, message } = await req.json();
 
-    // Use the exact same robust configuration as your contact route
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_SERVER_HOST,
       port: parseInt(process.env.EMAIL_SERVER_PORT || '587', 10),
@@ -22,22 +25,18 @@ export async function POST(req: NextRequest) {
         user: process.env.EMAIL_SERVER_USER,
         pass: process.env.EMAIL_SERVER_PASSWORD,
       },
-      connectionTimeout: 10000,
-      greetingTimeout: 5000,
-      socketTimeout: 10000,
       requireTLS: true,
       tls: {
         rejectUnauthorized: process.env.NODE_ENV === 'production'
       }
     });
 
-    // 1. Sanitize the raw message first to prevent XSS
-    const sanitizedReply = DOMPurify.sanitize(message, {
-      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'], // Only allow safe formatting
-      ALLOWED_ATTR: ['href'] // Only allow links
+    // 1. Sanitize using the manual server-side instance
+    const sanitizedReply = purify.sanitize(message, {
+      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'],
+      ALLOWED_ATTR: ['href']
     });
 
-    // 2. Convert plain text newlines from the textarea to HTML breaks safely
     const formattedMessage = sanitizedReply.replace(/\n/g, '<br>');
 
     const htmlContent = `
@@ -46,7 +45,6 @@ export async function POST(req: NextRequest) {
       <p style="font-size: 16px; margin-top: 30px;">Best regards,<br><strong>The JasiriCup Team</strong></p>
     `;
 
-    // Send the email
     await transporter.sendMail({
       from: `"JasiriCup" <${process.env.EMAIL_SERVER_USER}>`,
       to: toEmail,
@@ -56,19 +54,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown email error';
-    
-    // Log the exact error to your terminal so you can see what went wrong
-    console.error("Reply API Email Error:", errorMessage);
-    
-    // Safely check and log the error code without using 'any'
-    if (error && typeof error === 'object' && 'code' in error) {
-      console.error("Error Code:", (error as { code: unknown }).code);
-    }
-
-    return NextResponse.json(
-      { success: false, error: "Failed to send email" }, 
-      { status: 500 }
-    );
+    console.error("Reply API Email Error:", error);
+    return NextResponse.json({ success: false, error: "Failed to send email" }, { status: 500 });
   }
 }
