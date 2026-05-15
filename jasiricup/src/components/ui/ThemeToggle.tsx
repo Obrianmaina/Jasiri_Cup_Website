@@ -1,3 +1,4 @@
+// src/components/ui/ThemeToggle.tsx
 'use client';
 
 import { useTheme } from 'next-themes';
@@ -7,25 +8,25 @@ export const ThemeToggle = () => {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
 
-  // Ensure component is mounted on the client to avoid hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!mounted) {
-    // Return a silent placeholder of the exact same size and styling 
-    // instead of a pulsing skeleton to prevent the "lazy loading" look.
+    // Show a faded moon icon instead of an empty circle so the user 
+    // knows the button exists while waiting for hydration to finish.
     return (
       <button
-        className="flex items-center justify-center w-9 h-9 p-2 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors duration-200 cursor-default"
+        className="flex items-center justify-center w-9 h-9 p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 opacity-50 cursor-default transition-colors duration-200"
         aria-hidden="true"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="transparent" />
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
       </button>
     );
   }
 
-  // Use resolvedTheme to know exactly what is rendering, even if theme is "system"
   return (
     <button
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}

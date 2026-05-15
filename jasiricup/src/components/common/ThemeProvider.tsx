@@ -3,13 +3,20 @@
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ 
+  children, 
+  nonce 
+}: { 
+  children: React.ReactNode;
+  nonce?: string;
+}) {
   return (
     <NextThemesProvider 
       attribute="class" 
       defaultTheme="system" 
       enableSystem
-      disableTransitionOnChange // This line fixes the load-in flicker
+      disableTransitionOnChange 
+      nonce={nonce} 
     >
       {children}
     </NextThemesProvider>
