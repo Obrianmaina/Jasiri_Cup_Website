@@ -1,208 +1,115 @@
-// src/components/product/HowToUseSection.tsx
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 
-interface HowToUseStep {
+interface ProductStep {
   id: number;
   title: string;
   description: string;
   videoUrl: string;
 }
 
-interface HowToUseSectionProps {
-  steps: HowToUseStep[];
+interface HowToUseProps {
+  steps: ProductStep[];
 }
 
-export const HowToUseSection = ({ steps }: HowToUseSectionProps) => {
-  const [activeStep, setActiveStep] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const playPromiseRef = useRef<Promise<void> | null>(null);
+// A smart component that handles YouTube, Vimeo, and raw videos seamlessly
+const SmartVideoPlayer = ({ url }: { url: string }) => {
+  if (!url) return <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500">Video not available</div>;
 
-  const currentStep = steps.find(step => step.id === activeStep);
-
-  // Detect screen size client-side
-  useEffect(() => {
-    const checkSize = () => setIsDesktop(window.innerWidth >= 1024);
-    checkSize();
-    window.addEventListener('resize', checkSize);
-    return () => window.removeEventListener('resize', checkSize);
-  }, []);
-
-  // Safe play function that handles promises properly
-  const safePlay = useCallback(async () => {
-    if (!videoRef.current) return;
-    try {
-      if (playPromiseRef.current) {
-        await playPromiseRef.current;
-      }
+  // Handle YouTube Links
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    const videoId = url.includes('youtube.com/watch?v=') 
+      ? url.split('v=')[1]?.split('&')[0] 
+      : url.split('youtu.be/')[1]?.split('?')[0];
       
-      const playPromise = videoRef.current.play();
-      playPromiseRef.current = playPromise;
-      
-      await playPromise;
-      playPromiseRef.current = null;
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Error playing video:', err);
-      }
-      playPromiseRef.current = null;
-    }
-  }, []);
+    return (
+      <iframe
+        className="w-full h-full absolute inset-0"
+        src={`https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`}
+        title="YouTube video player"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      ></iframe>
+    );
+  }
 
-  // Safe pause function
-  const safePause = useCallback(async () => {
-    if (!videoRef.current) return;
-    try {
-      if (playPromiseRef.current) {
-        await playPromiseRef.current;
-      }
-      
-      if (!videoRef.current.paused) {
-        videoRef.current.pause();
-      }
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Error pausing video:', err);
-      }
-    } finally {
-      playPromiseRef.current = null;
-    }
-  }, []);
+  // Handle Vimeo Links
+  if (url.includes('vimeo.com')) {
+    const vimeoId = url.split('vimeo.com/')[1]?.split('?')[0];
+    return (
+      <iframe
+        className="w-full h-full absolute inset-0"
+        src={`https://player.vimeo.com/video/${vimeoId}`}
+        frameBorder="0"
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+      ></iframe>
+    );
+  }
 
-  // Handle video playback when step changes
-  useEffect(() => {
-    if (videoRef.current && currentStep) {
-      videoRef.current.load();
-      if (isPlaying) {
-        safePlay();
-      }
-    }
-  }, [activeStep, currentStep, isPlaying, safePlay]);
+  // Handle Raw Video Files (.mp4, .webm, etc.)
+  return (
+    <video
+      className="w-full h-full absolute inset-0 object-cover"
+      src={url}
+      controls
+      playsInline // Required for iOS to not force fullscreen
+      preload="metadata"
+    >
+      Your browser does not support the video tag.
+    </video>
+  );
+};
 
-  const handleActivateStep = useCallback((stepId: number) => {
-    setActiveStep(stepId);
-    setIsPlaying(true);
-  }, []);
+export const HowToUseSection = ({ steps }: HowToUseProps) => {
+  const [activeStep, setActiveStep] = useState(0);
 
-  const handleStepLeave = useCallback(() => {
-    if (isDesktop) {
-      setIsPlaying(false);
-      safePause();
-    }
-  }, [isDesktop, safePause]);
-
-  const handleVideoLoad = useCallback(() => {
-    if (videoRef.current && isPlaying) {
-      safePlay();
-    }
-  }, [isPlaying, safePlay]);
+  if (!steps || steps.length === 0) return null;
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-8 mb-12 transition-colors duration-300">
-      <h2 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white transition-colors">How to Use</h2>
+    <section className="mb-20">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center transition-colors">How to Use JasiriCup</h2>
       
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* Steps List */}
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
+        
+        {/* Left Side: The Interactive Steps */}
         <div className="w-full lg:w-1/2 space-y-4">
-          {steps.map(step => (
-            <button
-              key={step.id}
-              type="button"
-              className={`w-full text-left p-6 rounded-lg transition-all duration-300 ${
-                activeStep === step.id
-                  ? 'bg-[#1AA75B] text-white shadow-lg transform scale-105'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-md'
+          {steps.map((step, index) => (
+            <div 
+              key={step.id || index} 
+              onClick={() => setActiveStep(index)}
+              className={`p-6 rounded-2xl cursor-pointer transition-all duration-300 border-2 ${
+                activeStep === index 
+                  ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20 shadow-md' 
+                  : 'border-transparent bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
-              onMouseEnter={() => isDesktop && handleActivateStep(step.id)}
-              onMouseLeave={handleStepLeave}
-              onClick={() => handleActivateStep(step.id)}
-              aria-selected={activeStep === step.id}
             >
-              <h3
-                className={`text-xl font-semibold mb-2 ${
-                  activeStep === step.id ? 'text-white' : 'text-gray-800 dark:text-gray-100'
-                }`}
-              >
-                {step.title}
-              </h3>
-              <p
-                className={`text-sm ${
-                  activeStep === step.id ? 'text-gray-100' : 'text-gray-600 dark:text-gray-400'
-                }`}
-              >
+              <div className="flex items-center gap-4 mb-3">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm transition-colors ${
+                  activeStep === index ? 'bg-purple-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}>
+                  {index + 1}
+                </div>
+                <h3 className={`text-xl font-bold transition-colors ${activeStep === index ? 'text-purple-700 dark:text-purple-400' : 'text-gray-900 dark:text-white'}`}>
+                  {step.title}
+                </h3>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 pl-12 transition-colors">
                 {step.description}
               </p>
-              
-              {/* Step indicator */}
-              <div className="flex items-center mt-4">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    activeStep === step.id
-                      ? 'bg-white text-[#1AA75B]'
-                      : 'bg-[#1AA75B] text-white'
-                  }`}
-                >
-                  {step.id}
-                </div>
-                {step.id < steps.length && (
-                  <div
-                    className={`flex-1 h-0.5 ml-2 ${
-                      activeStep === step.id ? 'bg-white' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  />
-                )}
-              </div>
-            </button>
+            </div>
           ))}
         </div>
 
-        {/* Video Player */}
-        <div className="w-full lg:w-1/2">
-          <div className="relative bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg transition-colors">
-            <video
-              ref={videoRef}
-              key={currentStep?.videoUrl || 'fallback'}
-              className="w-full h-auto min-h-[300px] lg:min-h-[400px] object-cover"
-              muted
-              loop
-              playsInline
-              onLoadedData={handleVideoLoad}
-              poster={
-                activeStep === 0
-                  ? "https://res.cloudinary.com/dsvexizbx/image/upload/v1777718008/Vibrant_pink_menstrual_cup_illustration_bogdv8.png"
-                  : undefined
-              }
-            >
-              {currentStep && (
-                <source src={currentStep.videoUrl} type="video/mp4" />
-              )}
-              Your browser does not support the video tag.
-            </video>
-            
-            {/* Overlay info only when a step is active */}
-            {currentStep && (
-              <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-70 dark:bg-opacity-80 text-white p-4 rounded-lg">
-                <h4 className="font-semibold text-lg mb-1">{currentStep.title}</h4>
-                <p className="text-sm opacity-90">{currentStep.description}</p>
-              </div>
-            )}
-            
-            {/* Play indicator */}
-            {currentStep && !isPlaying && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center">
-                  <span className="text-white text-lg">▶</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="mt-4 text-center text-gray-600 dark:text-gray-400 text-sm transition-colors">
-            <p>Tap or hover over steps to play corresponding videos</p>
+        {/* Right Side: The Smart Video Player */}
+        <div className="w-full lg:w-1/2 lg:sticky lg:top-24">
+          <div className="aspect-video w-full relative rounded-2xl bg-black dark:bg-gray-900 overflow-hidden shadow-xl border border-gray-100 dark:border-gray-800">
+            <SmartVideoPlayer url={steps[activeStep]?.videoUrl} />
           </div>
         </div>
+
       </div>
     </section>
   );
