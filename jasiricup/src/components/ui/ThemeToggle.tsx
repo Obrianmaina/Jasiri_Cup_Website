@@ -13,15 +13,23 @@ export const ThemeToggle = () => {
   }, []);
 
   if (!mounted) {
-    // Return a placeholder of the same size to prevent layout shift
-    return <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse"></div>;
+    // Return a silent placeholder of the exact same size and styling 
+    // instead of a pulsing skeleton to prevent the "lazy loading" look.
+    return (
+      <button
+        className="flex items-center justify-center w-9 h-9 p-2 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors duration-200 cursor-default"
+        aria-hidden="true"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="transparent" />
+      </button>
+    );
   }
 
   // Use resolvedTheme to know exactly what is rendering, even if theme is "system"
   return (
     <button
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+      className="flex items-center justify-center w-9 h-9 p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
       aria-label="Toggle Dark Mode"
     >
       {resolvedTheme === 'dark' ? (
