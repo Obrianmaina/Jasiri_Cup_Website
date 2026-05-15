@@ -11,7 +11,6 @@ export const metadata: Metadata = {
   description: 'See the real-world impact of JasiriCup.',
 };
 
-// Revalidate every 60 seconds instead of force-dynamic for instant page loads
 export const revalidate = 60;
 
 interface MapCounty {
@@ -38,57 +37,22 @@ interface ImpactStats {
   volunteersActive: number;
 }
 
-const fallbackContent: ImpactPageContent = {
-  hero: {
-    subtitle: "Real Change, Real Numbers",
-    title: "Our Impact Across Kenya",
-    description: "Every cup donated keeps a girl in school. Here is what we have achieved together and why we are just getting started."
-  },
-  testimonials: [
-    { quote: 'Before JasiriCup, I missed school every month. Now I never miss a single day.', name: 'Amina W.', location: 'Garissa County', role: 'Form 3', avatar: '👩🏾' },
-  ],
-  map: {
-    title: "Where We Work",
-    subtitle: "Active in multiple counties across Kenya",
-    expansionNote: "Expanding to 5 new counties in 2025",
-    counties: [
-      {
-        name: 'Garissa',
-        region: 'North Eastern',
-        girls: 2400,
-        color: 'purple',
-        image: 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/happy_girl-5_ljvnx3.png',
-        imageAttribution: 'By <a href="//commons.wikimedia.org/wiki/User:Bahnfrend" class="underline">Bahnfrend</a> - Own work, CC BY-SA 4.0'
-      },
-      {
-        name: 'Nairobi',
-        region: 'Central',
-        girls: 4200,
-        color: 'green',
-        image: 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754082792/happy_girl-5_ljvnx3.png'
-      }
-    ]
-  }
-};
-
 const breadcrumbs = [{ label: 'Home', href: '/' }, { label: 'Our Impact', href: '/impact' }];
 
 async function getImpactPageData() {
   try {
     await connectDB();
 
-    // Query BOTH the main content and the admin stats directly from MongoDB in parallel
     const [siteData, statsData] = await Promise.all([
       SiteContent.findOne({ page: 'impact', section: 'main' }).lean() as { content?: ImpactPageContent } | null,
       SiteContent.findOne({ page: 'impact', section: 'stats' }).lean() as { content?: ImpactStats } | null
     ]);
 
-    const content = siteData?.content || fallbackContent;
+    const content = siteData?.content || null;
     
-    // Default fallback stats
-    let stats: ImpactStats = { cupsDonated: 5000, girlsImpacted: 12000, schoolsReached: 45, countiesReached: 8, periodsManaged: 60000, volunteersActive: 120 };
+    // Default stats to 0 instead of fake numbers
+    let stats: ImpactStats = { cupsDonated: 0, girlsImpacted: 0, schoolsReached: 0, countiesReached: 0, periodsManaged: 0, volunteersActive: 0 };
     
-    // If admin stats exist in the DB, override the defaults
     if (statsData?.content) {
       stats = { ...stats, ...statsData.content };
     }
@@ -97,14 +61,33 @@ async function getImpactPageData() {
   } catch (error) {
     console.error("Error fetching impact data:", error);
     return { 
-      stats: { cupsDonated: 5000, girlsImpacted: 12000, schoolsReached: 45, countiesReached: 8, periodsManaged: 60000, volunteersActive: 120 }, 
-      content: fallbackContent 
+      stats: { cupsDonated: 0, girlsImpacted: 0, schoolsReached: 0, countiesReached: 0, periodsManaged: 0, volunteersActive: 0 }, 
+      content: null 
     };
   }
 }
 
 export default async function ImpactPage() {
   const { stats, content } = await getImpactPageData();
+
+  if (!content) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 md:px-16 py-8">
+        <Breadcrumbs items={breadcrumbs} />
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-full mb-6">
+            <svg className="w-12 h-12 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">Impact Data Compiling</h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+            We are currently aggregating our latest field data and impact metrics. Please check back soon to see the numbers.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const statCards = [
     { value: stats.cupsDonated, label: 'Cups Donated', description: 'Safe, reusable menstrual cups', icon: '🩸', color: 'from-purple-500 to-purple-700' },

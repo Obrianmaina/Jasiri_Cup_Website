@@ -8,10 +8,8 @@ import connectDB from "@/lib/dbConnect";
 import BlogPost from "@/lib/models/BlogPost";
 import SiteContent from "@/lib/models/SiteContent";
 
-// Tell Next.js to revalidate this page's cache periodically so it stays fast
 export const revalidate = 60; 
 
-// Helper function to strip HTML tags and Markdown formatting
 const stripFormatting = (text: string): string => {
   if (!text) return '';
   let cleanText = text.replace(/<[^>]*>/g, '');
@@ -38,33 +36,6 @@ interface HomeContent {
   };
 }
 
-const DEFAULT_BANNER_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082805/impact-story-hero_ilth4o.png";
-
-const FALLBACK_HOME: HomeContent = {
-  about: {
-    title: 'About JasiriCup',
-    content: 'This initiative targets girls in rural areas...',
-    imageSrc: 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754082804/about-jasiricup_y8uq1m.png'
-  },
-  vision: {
-    title: 'Jasiri Initiative Vision',
-    content: 'Empowering girls through sustainable menstrual solutions...'
-  },
-  mission: {
-    title: 'Jasiri Initiative Mission',
-    content: 'To provide safe, eco-friendly menstrual products...'
-  },
-  stats: {
-    title: "Help Us Reach More Girls",
-    description: "Your contribution directly funds menstrual cups and health education for girls across Kenya.",
-    numbers: [
-      { label: "Cups Donated", value: "5,000+" },
-      { label: "Girls Impacted", value: "12,000" },
-      { label: "Schools Reached", value: "45" }
-    ]
-  }
-};
-
 interface IBlogPostDoc {
   _id: { toString: () => string };
   heroImage?: string;
@@ -77,12 +48,18 @@ interface ISiteContentDoc {
   content?: Partial<HomeContent>;
 }
 
-// Fetch data directly on the server
+interface BannerData {
+  id: string;
+  imageSrc: string;
+  title: string;
+  description: string;
+  linkHref: string;
+}
+
 async function getHomeData() {
   try {
     await connectDB();
     
-    // Tell TypeScript exactly what the Mongoose .lean() queries are returning
     const [postsRes, contentRes] = await Promise.all([
       BlogPost.find({ status: 'published' })
         .sort({ publishedDate: -1 })
@@ -92,36 +69,29 @@ async function getHomeData() {
         .lean() as unknown as ISiteContentDoc | null
     ]);
 
-    let banners = [];
+    // 2. Explicitly tell TypeScript that this array holds BannerData objects
+    let banners: BannerData[] = [];
+    
     if (postsRes && postsRes.length > 0) {
       banners = postsRes.map((post: IBlogPostDoc) => ({
         id: post._id.toString(),
-        imageSrc: post.heroImage?.trim() ? post.heroImage : DEFAULT_BANNER_IMAGE,
+        imageSrc: post.heroImage?.trim() ? post.heroImage : "",
         title: post.title,
         description: truncateDescription(post.content, 180),
         linkHref: `/blog/${post.slug}`,
       }));
-    } else {
-      banners = [{ id: "fallback-1", imageSrc: DEFAULT_BANNER_IMAGE, title: "Empowering Girls", description: "Providing resources for self-sufficiency.", linkHref: "/blog" }];
     }
 
-    // TypeScript now safely recognizes that contentRes has an optional 'content' property
-    const homeContent = contentRes?.content 
-      ? { ...FALLBACK_HOME, ...contentRes.content } as HomeContent
-      : FALLBACK_HOME;
+    const homeContent = contentRes?.content ? (contentRes.content as HomeContent) : null;
 
     return { banners, homeContent };
   } catch (error) {
     console.error("Error fetching home data:", error);
-    return { 
-      banners: [{ id: "fallback-1", imageSrc: DEFAULT_BANNER_IMAGE, title: "Empowering Girls", description: "Providing resources.", linkHref: "/blog" }], 
-      homeContent: FALLBACK_HOME 
-    };
+    return { banners: [], homeContent: null };
   }
 }
 
 export default async function HomePage() {
-  // All data is gathered before the HTML is sent to the user
   const { banners, homeContent } = await getHomeData();
   const homeBreadcrumbs = [{ label: 'Home', href: '/' }];
 
@@ -129,25 +99,39 @@ export default async function HomePage() {
     <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-4">
       <Breadcrumbs items={homeBreadcrumbs} />
       
-      <HeroBanner banners={banners} />
+      {banners.length > 0 && <HeroBanner banners={banners} />}
 
-      <AboutSection 
-        title={homeContent.about.title} 
-        content={homeContent.about.content} 
-        imageUrl={homeContent.about.imageSrc} 
-      />
-
-      <VisionMissionCards 
-        vision={homeContent.vision} 
-        mission={homeContent.mission} 
-      />
-
-      {homeContent.stats && homeContent.stats.numbers && (
-        <StatsSection 
-          stats={homeContent.stats.numbers}
-          ctaTitle={homeContent.stats.title}
-          ctaDescription={homeContent.stats.description}
-        />
+      {homeContent ? (
+        <>
+          <AboutSection 
+            title={homeContent.about.title} 
+            content={homeContent.about.content} 
+            imageUrl={homeContent.about.imageSrc} 
+          />
+          <VisionMissionCards 
+            vision={homeContent.vision} 
+            mission={homeContent.mission} 
+          />
+          {homeContent.stats && homeContent.stats.numbers && (
+            <StatsSection 
+              stats={homeContent.stats.numbers}
+              ctaTitle={homeContent.stats.title}
+              ctaDescription={homeContent.stats.description}
+            />
+          )}
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-full mb-6">
+            <svg className="w-12 h-12 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">Welcome to JasiriCup</h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+            We are currently updating our homepage content. Please check back shortly to learn more about our mission and initiatives.
+          </p>
+        </div>
       )}
     </div>
   );
