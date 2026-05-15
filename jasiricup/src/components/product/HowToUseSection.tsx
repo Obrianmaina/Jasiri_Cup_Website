@@ -1,118 +1,102 @@
 // src/components/product/HowToUseSection.tsx
 'use client';
 
-import { useState } from 'react';
-
 interface ProductStep {
   id: number;
   title: string;
   description: string;
-  videoUrl: string;
+  videoUrl: string; // Kept for database backwards compatibility, but no longer rendered
 }
 
 interface HowToUseProps {
   steps: ProductStep[];
+  mainVideoUrl?: string; // New optional prop for the bottom video
 }
 
 const SmartVideoPlayer = ({ url }: { url: string }) => {
-  if (!url) return <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500">Video not available</div>;
+  if (!url) return null;
+
+  const lowerUrl = url.toLowerCase();
 
   // Handle YouTube Links
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    const videoId = url.includes('youtube.com/watch?v=') 
+  if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+    const videoId = lowerUrl.includes('youtube.com/watch?v=') 
       ? url.split('v=')[1]?.split('&')[0] 
       : url.split('youtu.be/')[1]?.split('?')[0];
       
     return (
-      <iframe
-        className="w-full h-full absolute inset-0"
-        src={`https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`}
-        title="YouTube video player"
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      ></iframe>
+      <iframe className="w-full h-full absolute inset-0" src={`https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
     );
   }
 
   // Handle Vimeo Links
-  if (url.includes('vimeo.com')) {
+  if (lowerUrl.includes('vimeo.com')) {
     const vimeoId = url.split('vimeo.com/')[1]?.split('?')[0];
     return (
-      <iframe
-        className="w-full h-full absolute inset-0"
-        src={`https://player.vimeo.com/video/${vimeoId}`}
-        frameBorder="0"
-        allow="autoplay; fullscreen; picture-in-picture"
-        allowFullScreen
-      ></iframe>
+      <iframe className="w-full h-full absolute inset-0" src={`https://player.vimeo.com/video/${vimeoId}`} frameBorder="0" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen></iframe>
     );
   }
 
-  // Handle Raw Video Files (.mp4, .webm, Cloudinary links)
+  // --- THE CLOUDINARY FIX ---
+  // Intercept the URL and inject web-optimization flags
+  let optimizedUrl = url;
+  if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+    // If the URL doesn't already have optimization flags, add them.
+    // f_auto = automatic format, q_auto = optimal quality/compression
+    if (!url.includes('f_auto')) {
+      optimizedUrl = url.replace('/upload/', '/upload/f_auto,q_auto/');
+    }
+  }
+
+  // Handle Raw Video Files
   return (
-    <video
-      key={url} /* THIS IS THE FIX: Forces React to build a fresh player when the URL changes */
-      className="w-full h-full absolute inset-0 object-cover bg-black"
-      controls
-      playsInline
-      preload="metadata"
+    <video 
+      key={optimizedUrl} 
+      className="w-full h-full absolute inset-0 object-cover bg-black" 
+      controls 
+      playsInline 
+      preload="auto" /* Forces the browser to aggressively fetch the start of the video */
     >
-      {/* Using the source tag is much more reliable across different mobile browsers */}
-      <source src={url} type={url.includes('.webm') ? 'video/webm' : 'video/mp4'} />
+      <source src={optimizedUrl} type={optimizedUrl.includes('.webm') ? 'video/webm' : 'video/mp4'} />
       Your browser does not support the video tag.
     </video>
   );
 };
 
-export const HowToUseSection = ({ steps }: HowToUseProps) => {
-  const [activeStep, setActiveStep] = useState(0);
-
+export const HowToUseSection = ({ steps, mainVideoUrl }: HowToUseProps) => {
   if (!steps || steps.length === 0) return null;
 
   return (
-    <section className="mb-20">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center transition-colors">How to Use JasiriCup</h2>
+    <section className="mb-24">
+      <div className="text-center mb-16">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-4 transition-colors">How to Use JasiriCup</h2>
+        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Three simple steps to safe, comfortable, and sustainable period management.</p>
+      </div>
       
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
-        
-        {/* Left Side: The Interactive Steps */}
-        <div className="w-full lg:w-1/2 space-y-4">
-          {steps.map((step, index) => (
-            <div 
-              key={step.id || index} 
-              onClick={() => setActiveStep(index)}
-              className={`p-6 rounded-2xl cursor-pointer transition-all duration-300 border-2 ${
-                activeStep === index 
-                  ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20 shadow-md' 
-                  : 'border-transparent bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-            >
-              <div className="flex items-center gap-4 mb-3">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm transition-colors ${
-                  activeStep === index ? 'bg-purple-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {index + 1}
-                </div>
-                <h3 className={`text-xl font-bold transition-colors ${activeStep === index ? 'text-purple-700 dark:text-purple-400' : 'text-gray-900 dark:text-white'}`}>
-                  {step.title}
-                </h3>
-              </div>
-              <p className="text-gray-600 dark:text-gray-300 pl-12 transition-colors">
-                {step.description}
-              </p>
+      {/* Clean Grid Layout for Steps */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 mb-16">
+        {steps.map((step, index) => (
+          <div key={step.id || index} className="bg-white dark:bg-gray-900 p-8 pt-10 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 relative hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+            <div className="absolute -top-6 left-6 bg-purple-600 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold border-4 border-white dark:border-gray-950 shadow-sm transition-colors">
+              {index + 1}
             </div>
-          ))}
-        </div>
+            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white transition-colors">{step.title}</h3>
+            <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base transition-colors">
+              {step.description}
+            </p>
+          </div>
+        ))}
+      </div>
 
-        {/* Right Side: The Smart Video Player */}
-        <div className="w-full lg:w-1/2 lg:sticky lg:top-24">
-          <div className="aspect-video w-full relative rounded-2xl bg-black dark:bg-gray-900 overflow-hidden shadow-xl border border-gray-100 dark:border-gray-800">
-            <SmartVideoPlayer url={steps[activeStep]?.videoUrl} />
+      {/* Optional Main Video at the bottom */}
+      {mainVideoUrl && mainVideoUrl.trim() !== '' && (
+        <div className="max-w-4xl mx-auto mt-20">
+          <h3 className="text-2xl font-bold text-center mb-8 text-gray-900 dark:text-white transition-colors">Watch the Tutorial</h3>
+          <div className="aspect-video w-full relative rounded-3xl bg-black dark:bg-gray-900 overflow-hidden shadow-xl border border-gray-100 dark:border-gray-800">
+            <SmartVideoPlayer url={mainVideoUrl} />
           </div>
         </div>
-
-      </div>
+      )}
     </section>
   );
 };

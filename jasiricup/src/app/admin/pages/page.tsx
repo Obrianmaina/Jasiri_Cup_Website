@@ -6,7 +6,14 @@ import toast from "react-hot-toast";
 // --- Types ---
 interface TeamMember { id: string; name: string; role: string; description: string; imageSrc: string; cardColor: string; socials?: { platform: string; url: string }[]; }
 interface ProductStep { id: number; title: string; description: string; videoUrl: string; }
-interface ProductContent { title: string; description: string; heroImage: string; steps: ProductStep[]; downloadCards: { title: string; description: string; downloadLink: string }[]; }
+interface ProductContent { 
+  title: string; 
+  description: string; 
+  heroImage: string; 
+  mainVideoUrl?: string; // Add this line
+  steps: ProductStep[]; 
+  downloadCards: { title: string; description: string; downloadLink: string }[]; 
+}
 interface SectionData<T> { section: string; content?: T; }
 interface HomeContent { about: { title: string; content: string; imageSrc: string }; vision: { title: string; content: string }; mission: { title: string; content: string }; stats: { title: string; description: string; numbers: { label: string; value: string }[]; }; }
 interface Story { id: number; name: string; age: number; county: string; school: string; image: string; headline: string; story: string; quote: string; impact: string[]; }
@@ -131,6 +138,7 @@ function TeamEditor({ data, onChange }: { data: TeamMember[]; onChange: (d: Team
 function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d: ProductContent) => void; }) {
   const updateStep = (id: number, field: keyof ProductStep, value: string | number) => { onChange({ ...data, steps: data.steps.map((s) => s.id === id ? { ...s, [field]: value } : s ) }); };
   const updateCard = (index: number, field: string, value: string) => { const cards = [...data.downloadCards]; cards[index] = { ...cards[index], [field]: value }; onChange({ ...data, downloadCards: cards }); };
+  
   return (
     <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
@@ -139,6 +147,14 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
           <div><label className="block text-xs mb-1">Title</label><input type="text" value={data.title} onChange={(e) => onChange({ ...data, title: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
           <div><label className="block text-xs mb-1">Description</label><textarea value={data.description} onChange={(e) => onChange({ ...data, description: e.target.value }) } rows={3} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
           <div><label className="block text-xs mb-1">Hero Image URL</label><input type="text" value={data.heroImage} onChange={(e) => onChange({ ...data, heroImage: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
+          
+          {/* NEW BLOCK ADDED HERE */}
+          <div>
+            <label className="block text-xs mb-1 text-purple-600 font-semibold">Main Tutorial Video URL (Optional)</label>
+            <input type="text" value={data.mainVideoUrl || ""} onChange={(e) => onChange({ ...data, mainVideoUrl: e.target.value })} placeholder="YouTube, Vimeo, or MP4 link" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 focus:border-purple-500" />
+          </div>
+          {/* END NEW BLOCK */}
+
         </div>
       </div>
       <div>
@@ -149,7 +165,7 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
               <p className="text-xs font-semibold text-purple-600">Step {step.id}</p>
               <input type="text" value={step.title} onChange={(e) => updateStep(step.id, "title", e.target.value)} placeholder="Title" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
               <textarea value={step.description} onChange={(e) => updateStep(step.id, "description", e.target.value) } rows={2} placeholder="Description" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-              <input type="text" value={step.videoUrl} onChange={(e) => updateStep(step.id, "videoUrl", e.target.value) } placeholder="Video URL" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
+              {/* I also removed the individual step video URL input here since we aren't using them anymore! */}
             </div>
           ))}
         </div>

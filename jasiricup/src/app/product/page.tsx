@@ -22,6 +22,7 @@ interface ProductContent {
   title: string;
   description: string;
   heroImage: string;
+  mainVideoUrl?: string; // Add this line!
   steps: ProductStep[];
   downloadCards: DownloadCardData[];
 }
@@ -171,7 +172,10 @@ export default async function ProductPage() {
 
       {/* How to Use */}
       <div id="how-to-use">
-        <HowToUseSection steps={content.steps} />
+        <HowToUseSection 
+  steps={content.steps} 
+  mainVideoUrl={content.mainVideoUrl} 
+/>
       </div>
 
       {/* Download Cards */}

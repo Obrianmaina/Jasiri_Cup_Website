@@ -56,6 +56,9 @@ interface BannerData {
   linkHref: string;
 }
 
+// Add this line right here!
+const DEFAULT_BANNER_IMAGE = "https://res.cloudinary.com/dsvexizbx/image/upload/v1754082805/impact-story-hero_ilth4o.png";
+
 async function getHomeData() {
   try {
     await connectDB();
@@ -80,6 +83,15 @@ async function getHomeData() {
         description: truncateDescription(post.content, 180),
         linkHref: `/blog/${post.slug}`,
       }));
+    } else {
+      // THE FIX: Provide a default, permanent welcome slide if there are no blog posts
+      banners = [{
+        id: "default-welcome-banner",
+        imageSrc: DEFAULT_BANNER_IMAGE,
+        title: "Welcome to JasiriCup",
+        description: "Empowering girls through sustainable menstrual solutions and comprehensive education. Discover our mission to keep girls in school.",
+        linkHref: "/product", // Redirects to the product page instead of a non-existent blog
+      }];
     }
 
     const homeContent = contentRes?.content ? (contentRes.content as HomeContent) : null;

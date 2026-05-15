@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
@@ -36,22 +36,24 @@ const sanitizeSchema = {
 
 export const ArticleContent = ({ article }: ArticleContentProps) => {
   const { lang } = useLanguage();
+  const [articleUrl, setArticleUrl] = useState('');
 
-  // Dynamically pick the right title and content, with a strict fallback to an empty string to satisfy TypeScript
+  // Use useEffect to set the URL only after mounting on the client.
+  // This prevents the server/client HTML mismatch error.
+  useEffect(() => {
+    setArticleUrl(`${window.location.origin}/blog/${article.slug}`);
+  }, [article.slug]);
+
   const displayTitle = (lang === 'en' ? article.title : (article.translations?.[lang]?.title || article.title)) || '';
   const displayContent = (lang === 'en' ? article.content : (article.translations?.[lang]?.content || article.content)) || '';
-
   const heroImageSource = article.heroImage && article.heroImage.trim() ? article.heroImage : DEFAULT_HERO_IMAGE;
   
   const formattedDate = article.publishedDate
     ? new Date(article.publishedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
 
-  const articleUrl = typeof window !== 'undefined' ? `${window.location.origin}/blog/${article.slug}` : '';
-
   return (
     <article className="bg-white dark:bg-gray-800 rounded-lg p-8 transition-colors duration-300 shadow-sm border border-transparent dark:border-gray-700">
-      {/* Header */}
       <header className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4 leading-tight transition-colors">
           {displayTitle}
@@ -65,7 +67,6 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
             </>
           )}
         </div>
-        {/* Tags */}
         {article.tags && article.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center mb-4">
             {article.tags.map(tag => (
@@ -77,27 +78,24 @@ export const ArticleContent = ({ article }: ArticleContentProps) => {
         )}
       </header>
 
-      {/* Hero Image */}
       <div className="mb-8 flex justify-center">
         <div className="relative w-full h-80 max-w-4xl overflow-hidden rounded-lg shadow-lg">
           <Image src={heroImageSource} alt={displayTitle} fill className="object-cover" priority />
         </div>
       </div>
 
-      {/* Content */}
       <div className="article-content max-w-none text-gray-700 dark:text-gray-300 leading-relaxed mx-auto prose transition-colors duration-300">
         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}>
           {displayContent}
         </ReactMarkdown>
       </div>
 
-      {/* Share Buttons */}
       <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
         <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Share this article</p>
-        <ShareButtons title={displayTitle} url={articleUrl} />
+        {/* Only render share buttons once we have a URL to share */}
+        {articleUrl && <ShareButtons title={displayTitle} url={articleUrl} />}
       </div>
 
-      {/* Newsletter */}
       <div className="mt-12 bg-purple-50 dark:bg-purple-900/20 p-6 sm:p-8 rounded-2xl text-center border border-purple-100 dark:border-purple-800/50">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Want more stories like this?</h3>
         <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 max-w-md mx-auto">
