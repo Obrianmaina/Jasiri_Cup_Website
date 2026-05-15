@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   description: 'See the real-world impact of JasiriCup.',
 };
 
-export const dynamic = 'force-dynamic';
+// Revalidate every 60 seconds instead of force-dynamic for instant page loads
+export const revalidate = 60;
 
 interface MapCounty {
   name: string;
@@ -26,6 +27,15 @@ interface ImpactPageContent {
   hero: { subtitle: string; title: string; description: string; };
   testimonials: Testimonial[];
   map: { title: string; subtitle: string; expansionNote: string; counties: MapCounty[]; };
+}
+
+interface ImpactStats {
+  cupsDonated: number;
+  girlsImpacted: number;
+  schoolsReached: number;
+  countiesReached: number;
+  periodsManaged: number;
+  volunteersActive: number;
 }
 
 const fallbackContent: ImpactPageContent = {
@@ -64,21 +74,33 @@ const fallbackContent: ImpactPageContent = {
 const breadcrumbs = [{ label: 'Home', href: '/' }, { label: 'Our Impact', href: '/impact' }];
 
 async function getImpactPageData() {
-  const statsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/impact`, { 
-  next: { tags: ['site-content-impact'], revalidate: 3600 } 
-}).catch(() => null);
-  let stats = { cupsDonated: 5000, girlsImpacted: 12000, schoolsReached: 45, countiesReached: 8, periodsManaged: 60000, volunteersActive: 120 };
-  
-  if (statsRes?.ok) {
-    const data = await statsRes.json();
-    if (data.stats) stats = data.stats;
+  try {
+    await connectDB();
+
+    // Query BOTH the main content and the admin stats directly from MongoDB in parallel
+    const [siteData, statsData] = await Promise.all([
+      SiteContent.findOne({ page: 'impact', section: 'main' }).lean() as { content?: ImpactPageContent } | null,
+      SiteContent.findOne({ page: 'impact', section: 'stats' }).lean() as { content?: ImpactStats } | null
+    ]);
+
+    const content = siteData?.content || fallbackContent;
+    
+    // Default fallback stats
+    let stats: ImpactStats = { cupsDonated: 5000, girlsImpacted: 12000, schoolsReached: 45, countiesReached: 8, periodsManaged: 60000, volunteersActive: 120 };
+    
+    // If admin stats exist in the DB, override the defaults
+    if (statsData?.content) {
+      stats = { ...stats, ...statsData.content };
+    }
+
+    return { stats, content };
+  } catch (error) {
+    console.error("Error fetching impact data:", error);
+    return { 
+      stats: { cupsDonated: 5000, girlsImpacted: 12000, schoolsReached: 45, countiesReached: 8, periodsManaged: 60000, volunteersActive: 120 }, 
+      content: fallbackContent 
+    };
   }
-
-  await connectDB();
-  const siteData = await SiteContent.findOne({ page: 'impact', section: 'main' }).lean() as { content?: ImpactPageContent } | null;
-  const content = siteData?.content || fallbackContent;
-
-  return { stats, content };
 }
 
 export default async function ImpactPage() {
