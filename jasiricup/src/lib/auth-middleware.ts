@@ -1,3 +1,4 @@
+// src/lib/auth-middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-options";
@@ -8,15 +9,23 @@ export async function checkAdminAuth(request: NextRequest) {
     const origin = request.headers.get('origin');
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     
-    // If an origin is present, it MUST match your base URL
-    if (origin && baseUrl && !origin.startsWith(baseUrl)) {
-      return {
-        isAuthorized: false,
-        response: NextResponse.json(
-          { success: false, error: 'CSRF validation failed' },
-          { status: 403 }
-        )
-      };
+    if (origin && baseUrl) {
+      // Clean up both URLs by removing any trailing slashes to prevent mismatches
+      const cleanOrigin = origin.trim().replace(/\/$/, '');
+      const cleanBase = baseUrl.trim().replace(/\/$/, '');
+      
+      if (cleanOrigin !== cleanBase) {
+        // Log the exact mismatch to the server console for easy debugging
+        console.error(`CSRF Failure: Origin (${cleanOrigin}) does not match Base URL (${cleanBase})`);
+        
+        return {
+          isAuthorized: false,
+          response: NextResponse.json(
+            { success: false, error: 'CSRF validation failed' },
+            { status: 403 }
+          )
+        };
+      }
     }
   }
 
