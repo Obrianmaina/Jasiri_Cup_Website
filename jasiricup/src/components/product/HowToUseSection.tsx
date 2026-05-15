@@ -1,3 +1,4 @@
+// src/components/product/HowToUseSection.tsx
 'use client';
 
 import { useState } from 'react';
@@ -13,7 +14,6 @@ interface HowToUseProps {
   steps: ProductStep[];
 }
 
-// A smart component that handles YouTube, Vimeo, and raw videos seamlessly
 const SmartVideoPlayer = ({ url }: { url: string }) => {
   if (!url) return <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500">Video not available</div>;
 
@@ -49,15 +49,17 @@ const SmartVideoPlayer = ({ url }: { url: string }) => {
     );
   }
 
-  // Handle Raw Video Files (.mp4, .webm, etc.)
+  // Handle Raw Video Files (.mp4, .webm, Cloudinary links)
   return (
     <video
-      className="w-full h-full absolute inset-0 object-cover"
-      src={url}
+      key={url} /* THIS IS THE FIX: Forces React to build a fresh player when the URL changes */
+      className="w-full h-full absolute inset-0 object-cover bg-black"
       controls
-      playsInline // Required for iOS to not force fullscreen
+      playsInline
       preload="metadata"
     >
+      {/* Using the source tag is much more reliable across different mobile browsers */}
+      <source src={url} type={url.includes('.webm') ? 'video/webm' : 'video/mp4'} />
       Your browser does not support the video tag.
     </video>
   );

@@ -12,7 +12,28 @@ export interface Testimonial {
 export const TestimonialsSection = ({ testimonials }: { testimonials: Testimonial[] }) => {
   const [active, setActive] = useState(0);
 
-  if (!testimonials || testimonials.length === 0) return null;
+  // Fallback UI when there are no testimonials
+  if (!testimonials || testimonials.length === 0) {
+    return (
+      <section className="mb-20">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Voices of Change</h2>
+          <p className="text-gray-500 dark:text-gray-400">Real stories from girls, parents, and educators</p>
+        </div>
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-gray-100 dark:border-gray-800">
+          <div className="bg-purple-100 dark:bg-purple-900/40 p-5 rounded-full mb-5">
+            <svg className="w-10 h-10 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Testimonials Updating</h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md">
+            We are currently collecting the latest stories and feedback from our community. Check back soon!
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const t = testimonials[active] || testimonials[0];
 
