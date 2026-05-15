@@ -15,10 +15,8 @@ interface BannerPost {
 
 export const HeroBanner = ({ banners }: { banners: BannerPost[] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     if (banners.length <= 1) return;
     
     const interval = setInterval(() => {
@@ -26,8 +24,6 @@ export const HeroBanner = ({ banners }: { banners: BannerPost[] }) => {
     }, 5000);
     return () => clearInterval(interval);
   }, [banners.length]);
-
-  if (!mounted) return null; // Prevent hydration flash on the image
 
   const currentBanner = banners[currentIndex];
   if (!currentBanner) return null;
