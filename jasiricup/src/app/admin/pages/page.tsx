@@ -12,7 +12,7 @@ interface HomeContent { about: { title: string; content: string; imageSrc: strin
 interface Story { id: number; name: string; age: number; county: string; school: string; image: string; headline: string; story: string; quote: string; impact: string[]; }
 interface PressCoverage { outlet: string; headline: string; date: string; url: string; logo: string; }
 interface PressDownload { name: string; desc: string; icon: string; file: string; }
-interface Partner { name: string; county: string; girls: number; type: string; since: string; }
+interface Partner { name: string; county: string; girls: number; type: string; since: string; image?: string; }
 interface VolunteerRole { icon: string; title: string; desc: string; commitment: string; location: string; image?: string; }
 interface Testimonial { quote: string; name: string; location: string; role: string; avatar: string; }
 interface MapCounty { name: string; region: string; girls: number; color: string; image?: string; imageAttribution?: string; }
@@ -437,10 +437,11 @@ export default function AdminPagesPage() {
         ) : activeTab === "partners" ? (
           <GenericArrayEditor
             data={partners} onChange={setPartners} title="Partner"
-            defaultItem={{ name: "", county: "", girls: 0, type: "School", since: "" }}
+            defaultItem={{ name: "", county: "", girls: 0, type: "School", since: "", image: "" }}
             fields={[
               { key: "name", label: "Partner Name", type: "text" }, { key: "county", label: "County/Region", type: "text" }, { key: "girls", label: "Girls Supported", type: "number" },
               { key: "type", label: "Type (School, NGO, etc)", type: "text" }, { key: "since", label: "Since Year", type: "text" },
+              { key: "image", label: "Logo/Image URL", type: "text" },
             ]}
           />
         ) : activeTab === 'volunteer' ? (
