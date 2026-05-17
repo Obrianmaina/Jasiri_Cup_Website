@@ -3,11 +3,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Modal, SuccessModal } from '@/components/ui/Modal';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+// Strict Types
 interface ITransaction {
   _id: string;
   type: 'income' | 'expense';
@@ -56,16 +56,19 @@ export default function FinancesClient() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
+  // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
   
+  // Report Builder State
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     isOpen: false,
     title: 'Financial Transparency Report',
     message: 'We are deeply grateful for your continuous support. Below is the summary of our financial activities, ensuring complete transparency in how every contribution empowers our mission.',
-    period: 'Year to Date'
+    period: 'All Time'
   });
 
+  // Form State
   const initialFormState: TransactionFormData = {
     type: 'income',
     category: 'Donation',
@@ -133,11 +136,13 @@ export default function FinancesClient() {
 
   const executePrint = () => {
     setReportConfig(prev => ({ ...prev, isOpen: false }));
+    // A small timeout ensures the modal closes before the browser takes a screenshot of the DOM
     setTimeout(() => {
       window.print();
     }, 300);
   };
 
+  // Helpers
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
   };
@@ -147,13 +152,8 @@ export default function FinancesClient() {
     date.setMonth(monthNumber - 1);
     return date.toLocaleString('default', { month: 'short' });
   };
-  
-  const getFullMonthName = (monthNumber: number) => {
-    const date = new Date();
-    date.setMonth(monthNumber - 1);
-    return date.toLocaleString('default', { month: 'long' });
-  };
 
+  // Calculations
   const totalLifetimeIncome = metrics.reduce((sum, m) => sum + m.totalIncome, 0);
   const totalLifetimeExpense = metrics.reduce((sum, m) => sum + m.totalExpense, 0);
   const netBalance = totalLifetimeIncome - totalLifetimeExpense;
@@ -161,6 +161,7 @@ export default function FinancesClient() {
   const incomeCategories = ['Donation', 'Grant', 'Merchandise', 'Other'];
   const expenseCategories = ['Logistics', 'Marketing', 'Operations', 'Tax', 'Supplies', 'Other'];
 
+  // Prepare Chart Data (Chronological order: oldest to newest)
   const chartData = [...metrics].reverse().map(m => ({
     name: `${getMonthName(m._id.month)} ${m._id.year}`,
     Income: m.totalIncome,
@@ -169,29 +170,10 @@ export default function FinancesClient() {
 
   return (
     <>
-      {/* Pure standard printing styles using an inline style tag */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          body > div:not(.print-report-container), 
-          header, footer, main, nav, aside, button, .print\\:hidden {
-            display: none !important;
-          }
-          html, body {
-            background: #ffffff !important;
-            color: #000000 !important;
-          }
-          .print-report-container {
-            display: block !important;
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-        }
-      `}} />
-
-      {/* --- NORMAL DASHBOARD VIEW --- */}
+      {/* --- NORMAL DASHBOARD VIEW (Hidden during print) --- */}
       <div className="pt-12 pb-24 space-y-6 md:space-y-8 max-w-6xl mx-auto px-4 sm:px-6 print:hidden">
+        
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
           <div>
             <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline mb-4">
@@ -202,9 +184,9 @@ export default function FinancesClient() {
           </div>
           <div className="flex gap-2">
             <button onClick={() => setReportConfig(prev => ({...prev, isOpen: true}))} className="w-full sm:w-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm text-center">
-              Generate Report
+              Export Report
             </button>
-            <button onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-emerald-700 dark:bg-emerald-50 transition-colors shadow-sm text-center">
+            <button onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-emerald-700 dark:bg-emerald-500 transition-colors shadow-sm text-center">
               + Log Transaction
             </button>
           </div>
@@ -214,6 +196,7 @@ export default function FinancesClient() {
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>
         ) : (
           <>
+            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm">
                 <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Income</p>
@@ -229,21 +212,21 @@ export default function FinancesClient() {
               </div>
             </div>
 
-            {/* Cash Flow Line Chart */}
+            {/* Cash Flow Graph */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-5">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-6">Cash Flow Trends</h3>
-              <div className="h-80 w-full">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-6">Cash Flow Overview</h3>
+              <div className="h-72 w-full">
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <BarChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.2} />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={(value) => `Ksh ${value >= 1000 ? (value/1000)+'k' : value}`} />
-                      <Tooltip cursor={{ stroke: '#374151', strokeWidth: 1, strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(value) => `Ksh ${value >= 1000 ? (value/1000)+'k' : value}`} />
+                      <Tooltip cursor={{ fill: '#374151', opacity: 0.1 }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                       <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                      <Line type="monotone" dataKey="Income" stroke="#059669" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                      <Line type="monotone" dataKey="Expense" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                    </LineChart>
+                      <Bar dataKey="Income" fill="#059669" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                      <Bar dataKey="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                    </BarChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full flex items-center justify-center text-gray-500">Not enough data to display graph.</div>
@@ -252,61 +235,72 @@ export default function FinancesClient() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Monthly Breakdown Table */}
               <div className="lg:col-span-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
                   <h3 className="font-bold text-gray-900 dark:text-white">Monthly Reports</h3>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
-                  {metrics.map((m) => (
-                    <div key={`${m._id.year}-${m._id.month}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex justify-between items-center">
-                      <div>
-                        <p className="font-bold text-sm text-gray-900 dark:text-white">{getMonthName(m._id.month)} {m._id.year}</p>
-                        <p className="text-xs text-gray-500 mt-1">Net: <span className={m.totalIncome - m.totalExpense >= 0 ? 'text-emerald-600' : 'text-red-500'}>{formatCurrency(m.totalIncome - m.totalExpense)}</span></p>
+                  {metrics.length === 0 ? (
+                    <p className="p-5 text-sm text-gray-500 text-center">No data available.</p>
+                  ) : (
+                    metrics.map((m) => (
+                      <div key={`${m._id.year}-${m._id.month}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-sm text-gray-900 dark:text-white">{getMonthName(m._id.month)} {m._id.year}</p>
+                          <p className="text-xs text-gray-500 mt-1">Net: <span className={m.totalIncome - m.totalExpense >= 0 ? 'text-emerald-600' : 'text-red-500'}>{formatCurrency(m.totalIncome - m.totalExpense)}</span></p>
+                        </div>
+                        <div className="text-right text-xs space-y-1">
+                          <p className="text-emerald-600 font-medium">+{formatCurrency(m.totalIncome)}</p>
+                          <p className="text-red-500 font-medium">-{formatCurrency(m.totalExpense)}</p>
+                        </div>
                       </div>
-                      <div className="text-right text-xs space-y-1">
-                        <p className="text-emerald-600 font-medium">+{formatCurrency(m.totalIncome)}</p>
-                        <p className="text-red-500 font-medium">-{formatCurrency(m.totalExpense)}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
+              {/* Recent Transactions List */}
               <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
                   <h3 className="font-bold text-gray-900 dark:text-white">Recent Ledger Entries</h3>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {transactions.map(tx => (
-                    <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
-                      <div className="flex gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                          {tx.type === 'income' ? '↓' : '↑'}
-                        </div>
-                        <div>
-                          <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{tx.category}</p>
-                          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5">{tx.description}</p>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{new Date(tx.date).toLocaleDateString()}</span>
-                            <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{tx.paymentMethod}</span>
+                  {transactions.length === 0 ? (
+                    <div className="p-12 text-center text-gray-500">No transactions recorded yet.</div>
+                  ) : (
+                    transactions.map(tx => (
+                      <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
+                        <div className="flex gap-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                            {tx.type === 'income' ? '↓' : '↑'}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{tx.category}</p>
+                            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5">{tx.description}</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{new Date(tx.date).toLocaleDateString()}</span>
+                              <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{tx.paymentMethod}</span>
+                              {tx.status === 'voided' && <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded">VOIDED</span>}
+                            </div>
                           </div>
                         </div>
+                        <div className="text-left sm:text-right flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
+                          <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                            {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                          </p>
+                          {tx.donorName && <p className="text-xs text-gray-500 mt-1">From: {tx.donorName}</p>}
+                        </div>
                       </div>
-                      <div className="text-left sm:text-right flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
-                        <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
-                          {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                        </p>
-                        {tx.donorName && <p className="text-xs text-gray-500 mt-1">From: {tx.donorName}</p>}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
           </>
         )}
 
-        {/* Modal: Add Log */}
+        {/* Add Transaction Modal */}
         <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Log New Transaction" size="large">
           <form onSubmit={handleSaveTransaction} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -379,20 +373,20 @@ export default function FinancesClient() {
           </form>
         </Modal>
 
-        {/* Modal: Report Customizer */}
-        <Modal isOpen={reportConfig.isOpen} onClose={() => setReportConfig(prev => ({ ...prev, isOpen: false }))} title="Configure Formal Report" size="large">
+        {/* Report Builder Modal */}
+        <Modal isOpen={reportConfig.isOpen} onClose={() => setReportConfig(prev => ({ ...prev, isOpen: false }))} title="Configure Report" size="large">
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Report Document Title</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Report Title</label>
               <input type="text" value={reportConfig.title} onChange={(e) => setReportConfig({...reportConfig, title: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reporting Period</label>
-              <input type="text" value={reportConfig.period} onChange={(e) => setReportConfig({...reportConfig, period: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period / Subtitle</label>
+              <input type="text" value={reportConfig.period} onChange={(e) => setReportConfig({...reportConfig, period: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" placeholder="e.g., Year End 2026" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Executive Summary Message</label>
-              <textarea rows={5} value={reportConfig.message} onChange={(e) => setReportConfig({...reportConfig, message: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500 resize-none" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Executive Summary / Message</label>
+              <textarea rows={5} value={reportConfig.message} onChange={(e) => setReportConfig({...reportConfig, message: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500 resize-none" placeholder="Enter a message to your donors..." />
             </div>
             
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
@@ -400,7 +394,7 @@ export default function FinancesClient() {
                 Cancel
               </button>
               <button onClick={executePrint} className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2">
-                Generate Official PDF
+                Export to PDF
               </button>
             </div>
           </div>
@@ -415,118 +409,74 @@ export default function FinancesClient() {
       </div>
 
 
-      {/* --- FORMAL A4 REPORT TEMPLATE --- */}
-      {/* Hidden strictly on layout screens. Populated strictly on printing scopes. */}
-      <div className="hidden print:block bg-white text-black min-h-screen print-report-container">
-        <div className="max-w-[210mm] mx-auto p-12 bg-white text-black font-sans">
-          
-          {/* Formal Header Section with Cloudinary Logo */}
-          <div className="flex justify-between items-center border-b-4 border-emerald-950 pb-6 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16 bg-emerald-950 rounded-xl p-2 flex items-center justify-center">
-                <Image 
-                  src="https://res.cloudinary.com/dsvexizbx/image/upload/v1754083461/whitelogo_bpym4s.png" 
-                  alt="JaSiriCup Logo" 
-                  width={64} 
-                  height={64} 
-                  className="w-auto h-auto object-contain"
-                  priority
-                />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black text-emerald-950 uppercase tracking-tight leading-none">JaSiriCup</h1>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1">Change Initiative Ecosystem</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-gray-800 text-xs uppercase tracking-wider">Official Statement</p>
-              <p className="text-lg font-bold text-gray-900 mt-0.5">{reportConfig.title}</p>
-              <p className="text-xs text-emerald-800 font-semibold mt-1">Timeline: {reportConfig.period}</p>
-            </div>
+      {/* --- PRINTABLE REPORT VIEW (Hidden on screen, Visible only in PDF/Print) --- */}
+      <div className="hidden print:block w-full max-w-4xl mx-auto bg-white text-black p-8 font-sans">
+        
+        {/* Report Header */}
+        <div className="border-b-2 border-black pb-6 mb-6 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-black text-black tracking-tight uppercase">JasiriCup</h1>
+            <p className="text-lg font-bold text-gray-600 mt-1">{reportConfig.title}</p>
           </div>
-
-          {/* Meta Data Grid Box */}
-          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200 mb-8 text-xs">
-            <div>
-              <p className="text-gray-500 font-medium">Report Type: <span className="text-black font-bold">Financial Transparency Ledger</span></p>
-              <p className="text-gray-500 font-medium mt-1">Generated By: <span className="text-black font-bold">Admin Ledger Central</span></p>
-            </div>
-            <div className="text-right">
-              <p className="text-gray-500 font-medium">Date Issued: <span className="text-black font-bold">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
-              <p className="text-gray-500 font-medium mt-1">System Status: <span className="text-emerald-700 font-bold">Audited & Verified</span></p>
-            </div>
+          <div className="text-right">
+            <p className="font-bold text-gray-800">Date Generated</p>
+            <p className="text-gray-600">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-gray-500 mt-1">Period: {reportConfig.period}</p>
           </div>
+        </div>
 
-          {/* Statement Message Body */}
-          <div className="mb-8">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-950 border-b border-gray-300 pb-1.5 mb-3">Executive Statement</h2>
-            <p className="text-gray-800 leading-relaxed text-xs text-justify whitespace-pre-wrap">{reportConfig.message}</p>
+        {/* Executive Summary */}
+        <div className="mb-10">
+          <h2 className="text-xl font-bold border-b border-gray-300 pb-2 mb-4">Executive Summary</h2>
+          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{reportConfig.message}</p>
+        </div>
+
+        {/* Top Level Metrics */}
+        <div className="grid grid-cols-3 gap-6 mb-10">
+          <div className="border-2 border-gray-200 p-4 rounded-lg">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Income</p>
+            <p className="text-2xl font-black text-emerald-700 mt-1">{formatCurrency(totalLifetimeIncome)}</p>
           </div>
-
-          {/* Summary Matrix Cards */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="border border-gray-200 p-4 rounded-xl bg-emerald-50/40">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Gross Capital Inflow</p>
-              <p className="text-xl font-black text-emerald-800 mt-1">{formatCurrency(totalLifetimeIncome)}</p>
-            </div>
-            <div className="border border-gray-200 p-4 rounded-xl bg-red-50/40">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Gross Capital Outflow</p>
-              <p className="text-xl font-black text-red-800 mt-1">{formatCurrency(totalLifetimeExpense)}</p>
-            </div>
-            <div className="border-2 border-emerald-950 p-4 rounded-xl bg-white">
-              <p className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider">Net Retained Capital</p>
-              <p className="text-xl font-black text-black mt-1">{formatCurrency(netBalance)}</p>
-            </div>
+          <div className="border-2 border-gray-200 p-4 rounded-lg">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Expenses</p>
+            <p className="text-2xl font-black text-red-700 mt-1">{formatCurrency(totalLifetimeExpense)}</p>
           </div>
+          <div className="border-2 border-black bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm font-bold text-black uppercase tracking-wider">Net Balance</p>
+            <p className="text-2xl font-black text-black mt-1">{formatCurrency(netBalance)}</p>
+          </div>
+        </div>
 
-          {/* Historical Data Balance Table */}
-          <div className="mb-12 break-inside-avoid">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-950 border-b border-gray-300 pb-1.5 mb-4">Account Balance History</h2>
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-2.5 px-4 font-bold text-xs uppercase text-gray-600 border-b border-gray-300">Accounting Month</th>
-                  <th className="py-2.5 px-4 font-bold text-xs uppercase text-gray-600 border-b border-gray-300 text-right">Inflow</th>
-                  <th className="py-2.5 px-4 font-bold text-xs uppercase text-gray-600 border-b border-gray-300 text-right">Outflow</th>
-                  <th className="py-2.5 px-4 font-bold text-xs uppercase text-gray-600 border-b border-gray-300 text-right">Net Growth</th>
+        {/* Monthly Breakdown Table */}
+        <h2 className="text-xl font-bold border-b border-gray-300 pb-2 mb-4">Monthly Breakdown</h2>
+        <table className="w-full text-left border-collapse mb-10">
+          <thead>
+            <tr className="bg-gray-100 border-b border-gray-300">
+              <th className="py-3 px-4 font-bold text-sm uppercase">Month / Year</th>
+              <th className="py-3 px-4 font-bold text-sm uppercase text-right">Income</th>
+              <th className="py-3 px-4 font-bold text-sm uppercase text-right">Expense</th>
+              <th className="py-3 px-4 font-bold text-sm uppercase text-right">Net</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metrics.map((m) => {
+              const net = m.totalIncome - m.totalExpense;
+              return (
+                <tr key={`${m._id.year}-${m._id.month}`} className="border-b border-gray-200">
+                  <td className="py-3 px-4 font-medium">{getMonthName(m._id.month)} {m._id.year}</td>
+                  <td className="py-3 px-4 text-right text-emerald-700">+{formatCurrency(m.totalIncome)}</td>
+                  <td className="py-3 px-4 text-right text-red-700">-{formatCurrency(m.totalExpense)}</td>
+                  <td className="py-3 px-4 text-right font-bold">{formatCurrency(net)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {metrics.map((m, index) => {
-                  const net = m.totalIncome - m.totalExpense;
-                  return (
-                    <tr key={`${m._id.year}-${m._id.month}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
-                      <td className="py-2.5 px-4 border-b border-gray-200 font-semibold text-xs">{getFullMonthName(m._id.month)} {m._id.year}</td>
-                      <td className="py-2.5 px-4 border-b border-gray-200 text-right text-emerald-700 text-xs">+{formatCurrency(m.totalIncome)}</td>
-                      <td className="py-2.5 px-4 border-b border-gray-200 text-right text-red-700 text-xs">-{formatCurrency(m.totalExpense)}</td>
-                      <td className="py-2.5 px-4 border-b border-gray-200 text-right font-bold text-xs">{formatCurrency(net)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+              );
+            })}
+          </tbody>
+        </table>
 
-          {/* Official Signature Lines */}
-          <div className="mt-24 pt-8 border-t border-gray-200 grid grid-cols-2 gap-12 break-inside-avoid">
-            <div>
-              <div className="border-b border-gray-400 mb-1.5 h-8 w-56"></div>
-              <p className="font-bold text-xs text-gray-800">Prepared By</p>
-              <p className="text-[10px] text-gray-500">Financial Management Desk, JaSiriCup</p>
-            </div>
-            <div>
-              <div className="border-b border-gray-400 mb-1.5 h-8 w-56"></div>
-              <p className="font-bold text-xs text-gray-800">Authorized Signatory</p>
-              <p className="text-[10px] text-gray-500">Executive Committee, JaSiriCup</p>
-            </div>
-          </div>
-
-          {/* Document Verification Footnote */}
-          <div className="mt-16 text-center text-[10px] text-gray-400">
-            <p>This statement is generated securely through the JaSiriCup dashboard platform architecture.</p>
-            <p className="mt-0.5">All transaction reference records are kept on an audit-ready immutable distributed ledger.</p>
-          </div>
-
+        {/* Sign off */}
+        <div className="mt-16 pt-8 border-t border-gray-300 text-center text-sm text-gray-500">
+          <p>This report was automatically generated from the JasiriCup secure ledger.</p>
+          <p>For questions or detailed auditing, please contact our financial team.</p>
         </div>
       </div>
     </>
