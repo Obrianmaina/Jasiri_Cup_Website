@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/dbConnect';
 import mongoose from 'mongoose';
+import Transaction from '@/lib/models/Transaction'; // Imported the Transaction model
 
-// ─── Donation record model (Ensures it works even on Vercel cold starts) ───
+// Donation record model (Ensures it works even on Vercel cold starts)
 const DonationSchema = new mongoose.Schema(
   {
     name:      { type: String, required: true },
@@ -21,14 +22,12 @@ const DonationSchema = new mongoose.Schema(
 
 const Donation = mongoose.models.Donation || mongoose.model('Donation', DonationSchema);
 
-// ─── M-Pesa Item Interface for strict typing ───
 interface MpesaItem {
   Name: string;
   Value: string | number;
 }
 
 export async function POST(req: NextRequest) {
-  // 1. Verify the secret in the URL (Authenticates Safaricom)
   const { searchParams } = new URL(req.url);
   const secret = searchParams.get('secret');
 
@@ -39,52 +38,61 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    
-    // Safaricom nests the data under Body.stkCallback
     const callbackData = body?.Body?.stkCallback;
+    
     if (!callbackData) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
     await connectDB();
 
-    // 2. Find the donation using the CheckoutRequestID we saved in the previous step
     const donation = await Donation.findOne({ mpesaCheckoutId: callbackData.CheckoutRequestID });
     
     if (!donation) {
       return NextResponse.json({ error: 'Donation not found' }, { status: 404 });
     }
 
-    // 3. Process the ResultCode (0 means success in Safaricom's system)
     if (callbackData.ResultCode === 0) {
       // Payment Successful
       donation.status = 'complete';
       
-      // Extract the exact M-Pesa receipt number from the metadata array
       const receiptItem = callbackData.CallbackMetadata?.Item?.find(
         (item: MpesaItem) => item.Name === 'MpesaReceiptNumber'
       );
       
+      const receiptCode = receiptItem ? String(receiptItem.Value) : callbackData.CheckoutRequestID;
+      
       if (receiptItem) {
-        donation.mpesaReceipt = String(receiptItem.Value);
+        donation.mpesaReceipt = receiptCode;
       }
       
       await donation.save();
+
+      // NEW: Automatically log this directly to the Finances Ledger!
+      await Transaction.create({
+        type: 'income',
+        category: 'Donation',
+        amount: donation.amount,
+        currency: 'KES',
+        date: new Date(),
+        description: `Website Donation (${donation.cups} cups sponsored)`,
+        donorName: donation.name,
+        donorEmail: donation.email,
+        status: 'completed',
+        paymentMethod: 'M-Pesa',
+        referenceNumber: receiptCode
+      });
+
     } else {
-      // Payment Failed (Insufficient funds, cancelled by user, timeout, etc.)
+      // Payment Failed
       donation.status = 'failed';
       await donation.save();
     }
 
-    // 4. Safaricom expects a simple success response to acknowledge we received it
     return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
 
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error("M-Pesa Callback Error:", error.message);
-    } else {
-      console.error("M-Pesa Callback Error:", error);
-    }
+    console.error("M-Pesa Callback Error:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: 'Server Error' }, { status: 500 });
   }
 }

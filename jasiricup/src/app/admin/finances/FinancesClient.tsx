@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Modal, SuccessModal } from '@/components/ui/Modal';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { FinancialReportTemplate } from '@/components/admin/FinancialReportTemplate';
 
-// Strict Types
 interface ITransaction {
   _id: string;
   type: 'income' | 'expense';
@@ -47,7 +47,11 @@ interface ReportConfig {
   isOpen: boolean;
   title: string;
   message: string;
-  period: string;
+  periodFilter: string;
+  periodLabel: string;
+  preparedBy: string;
+  preparedBySignature: string;
+  authorizedSignatorySignature: string;
 }
 
 export default function FinancesClient() {
@@ -55,20 +59,22 @@ export default function FinancesClient() {
   const [metrics, setMetrics] = useState<MonthlyMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [uploadingSig, setUploadingSig] = useState<'preparedBy' | 'authorized' | null>(null);
 
-  // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
   
-  // Report Builder State
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     isOpen: false,
     title: 'Financial Transparency Report',
     message: 'We are deeply grateful for your continuous support. Below is the summary of our financial activities, ensuring complete transparency in how every contribution empowers our mission.',
-    period: 'All Time'
+    periodFilter: 'all',
+    periodLabel: 'Lifetime / All-Time Record',
+    preparedBy: 'Admin Ledger Central',
+    preparedBySignature: '',
+    authorizedSignatorySignature: ''
   });
 
-  // Form State
   const initialFormState: TransactionFormData = {
     type: 'income',
     category: 'Donation',
@@ -134,15 +140,77 @@ export default function FinancesClient() {
     }
   };
 
-  const executePrint = () => {
-    setReportConfig(prev => ({ ...prev, isOpen: false }));
-    // A small timeout ensures the modal closes before the browser takes a screenshot of the DOM
-    setTimeout(() => {
-      window.print();
-    }, 300);
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'preparedBySignature' | 'authorizedSignatorySignature') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingSig(target === 'preparedBySignature' ? 'preparedBy' : 'authorized');
+    const toastId = toast.loading('Uploading signature...');
+
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      const response = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formDataUpload,
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.url) {
+        setReportConfig(prev => ({ ...prev, [target]: data.url }));
+        toast.success('Signature uploaded!', { id: toastId });
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (error) {
+      toast.error('Failed to upload signature', { id: toastId });
+    } finally {
+      setUploadingSig(null);
+      e.target.value = ''; // Reset input
+    }
   };
 
-  // Helpers
+  const executePrint = async () => {
+    // 1. Generate unique file name: Jasiricup_YYYYMMDD_RANDOM
+    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const uniqueFileName = `Jasiricup_${dateStr}_${randomCode}`;
+
+    // 2. Save it to state so the template can print it on the document
+    setReportConfig(prev => ({ ...prev, isOpen: false, reportId: uniqueFileName }));
+    
+    // 3. Silently save the log to MongoDB
+    try {
+      await fetch('/api/admin/report-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId: uniqueFileName,
+          title: reportConfig.title,
+          periodLabel: reportConfig.periodLabel || 'Lifetime / All-Time Record',
+          preparedBy: reportConfig.preparedBy,
+          totalIncome: reportIncome,
+          totalExpense: reportExpense,
+          netBalance: reportNet
+        })
+      });
+    } catch (error) {
+      console.error("Non-fatal error: Failed to save report log to DB", error);
+    }
+    
+    // 4. Wait for modal to close, change document title, and trigger print
+    setTimeout(() => {
+      const originalTitle = document.title;
+      document.title = uniqueFileName; 
+      
+      window.print();
+      
+      document.title = originalTitle; 
+    }, 400); // Slightly increased timeout to ensure state and DB complete smoothly
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
   };
@@ -152,16 +220,44 @@ export default function FinancesClient() {
     date.setMonth(monthNumber - 1);
     return date.toLocaleString('default', { month: 'short' });
   };
+  
+  const getFullMonthName = (monthNumber: number) => {
+    const date = new Date();
+    date.setMonth(monthNumber - 1);
+    return date.toLocaleString('default', { month: 'long' });
+  };
 
-  // Calculations
+  const handleFilterChange = (val: string) => {
+    let newLabel = 'Lifetime / All-Time Record';
+    if (val !== 'all') {
+      const [year, month] = val.split('-');
+      newLabel = `${getFullMonthName(parseInt(month))} ${year}`;
+    }
+    setReportConfig({ ...reportConfig, periodFilter: val, periodLabel: newLabel });
+  };
+
   const totalLifetimeIncome = metrics.reduce((sum, m) => sum + m.totalIncome, 0);
   const totalLifetimeExpense = metrics.reduce((sum, m) => sum + m.totalExpense, 0);
   const netBalance = totalLifetimeIncome - totalLifetimeExpense;
 
+  const filteredMetrics = reportConfig.periodFilter === 'all' 
+    ? metrics 
+    : metrics.filter(m => `${m._id.year}-${m._id.month}` === reportConfig.periodFilter);
+
+  const filteredTransactions = reportConfig.periodFilter === 'all'
+    ? transactions
+    : transactions.filter(tx => {
+        const d = new Date(tx.date);
+        return `${d.getFullYear()}-${d.getMonth() + 1}` === reportConfig.periodFilter;
+      });
+
+  const reportIncome = filteredMetrics.reduce((sum, m) => sum + m.totalIncome, 0);
+  const reportExpense = filteredMetrics.reduce((sum, m) => sum + m.totalExpense, 0);
+  const reportNet = reportIncome - reportExpense;
+
   const incomeCategories = ['Donation', 'Grant', 'Merchandise', 'Other'];
   const expenseCategories = ['Logistics', 'Marketing', 'Operations', 'Tax', 'Supplies', 'Other'];
 
-  // Prepare Chart Data (Chronological order: oldest to newest)
   const chartData = [...metrics].reverse().map(m => ({
     name: `${getMonthName(m._id.month)} ${m._id.year}`,
     Income: m.totalIncome,
@@ -170,10 +266,7 @@ export default function FinancesClient() {
 
   return (
     <>
-      {/* --- NORMAL DASHBOARD VIEW (Hidden during print) --- */}
       <div className="pt-12 pb-24 space-y-6 md:space-y-8 max-w-6xl mx-auto px-4 sm:px-6 print:hidden">
-        
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
           <div>
             <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline mb-4">
@@ -184,7 +277,7 @@ export default function FinancesClient() {
           </div>
           <div className="flex gap-2">
             <button onClick={() => setReportConfig(prev => ({...prev, isOpen: true}))} className="w-full sm:w-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm text-center">
-              Export Report
+              Generate Report
             </button>
             <button onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-emerald-700 dark:bg-emerald-500 transition-colors shadow-sm text-center">
               + Log Transaction
@@ -196,7 +289,6 @@ export default function FinancesClient() {
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>
         ) : (
           <>
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm">
                 <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Income</p>
@@ -212,21 +304,20 @@ export default function FinancesClient() {
               </div>
             </div>
 
-            {/* Cash Flow Graph */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-5">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-6">Cash Flow Overview</h3>
-              <div className="h-72 w-full">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-6">Cash Flow Trends</h3>
+              <div className="h-80 w-full">
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.2} />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(value) => `Ksh ${value >= 1000 ? (value/1000)+'k' : value}`} />
-                      <Tooltip cursor={{ fill: '#374151', opacity: 0.1 }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={(value) => `Ksh ${value >= 1000 ? (value/1000)+'k' : value}`} />
+                      <Tooltip cursor={{ stroke: '#374151', strokeWidth: 1, strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                       <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                      <Bar dataKey="Income" fill="#059669" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                      <Bar dataKey="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                    </BarChart>
+                      <Line type="monotone" dataKey="Income" stroke="#059669" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                      <Line type="monotone" dataKey="Expense" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                    </LineChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full flex items-center justify-center text-gray-500">Not enough data to display graph.</div>
@@ -235,72 +326,61 @@ export default function FinancesClient() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Monthly Breakdown Table */}
               <div className="lg:col-span-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
                   <h3 className="font-bold text-gray-900 dark:text-white">Monthly Reports</h3>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
-                  {metrics.length === 0 ? (
-                    <p className="p-5 text-sm text-gray-500 text-center">No data available.</p>
-                  ) : (
-                    metrics.map((m) => (
-                      <div key={`${m._id.year}-${m._id.month}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-sm text-gray-900 dark:text-white">{getMonthName(m._id.month)} {m._id.year}</p>
-                          <p className="text-xs text-gray-500 mt-1">Net: <span className={m.totalIncome - m.totalExpense >= 0 ? 'text-emerald-600' : 'text-red-500'}>{formatCurrency(m.totalIncome - m.totalExpense)}</span></p>
-                        </div>
-                        <div className="text-right text-xs space-y-1">
-                          <p className="text-emerald-600 font-medium">+{formatCurrency(m.totalIncome)}</p>
-                          <p className="text-red-500 font-medium">-{formatCurrency(m.totalExpense)}</p>
-                        </div>
+                  {metrics.map((m) => (
+                    <div key={`${m._id.year}-${m._id.month}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-sm text-gray-900 dark:text-white">{getMonthName(m._id.month)} {m._id.year}</p>
+                        <p className="text-xs text-gray-500 mt-1">Net: <span className={m.totalIncome - m.totalExpense >= 0 ? 'text-emerald-600' : 'text-red-500'}>{formatCurrency(m.totalIncome - m.totalExpense)}</span></p>
                       </div>
-                    ))
-                  )}
+                      <div className="text-right text-xs space-y-1">
+                        <p className="text-emerald-600 font-medium">+{formatCurrency(m.totalIncome)}</p>
+                        <p className="text-red-500 font-medium">-{formatCurrency(m.totalExpense)}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Recent Transactions List */}
               <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
                   <h3 className="font-bold text-gray-900 dark:text-white">Recent Ledger Entries</h3>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {transactions.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">No transactions recorded yet.</div>
-                  ) : (
-                    transactions.map(tx => (
-                      <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
-                        <div className="flex gap-4">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                            {tx.type === 'income' ? '↓' : '↑'}
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{tx.category}</p>
-                            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5">{tx.description}</p>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{new Date(tx.date).toLocaleDateString()}</span>
-                              <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{tx.paymentMethod}</span>
-                              {tx.status === 'voided' && <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded">VOIDED</span>}
-                            </div>
-                          </div>
+                  {transactions.map(tx => (
+                    <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
+                      <div className="flex gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                          {tx.type === 'income' ? '↓' : '↑'}
                         </div>
-                        <div className="text-left sm:text-right flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
-                          <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
-                            {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                          </p>
-                          {tx.donorName && <p className="text-xs text-gray-500 mt-1">From: {tx.donorName}</p>}
+                        <div>
+                          <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{tx.category}</p>
+                          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5">{tx.description}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{new Date(tx.date).toLocaleDateString()}</span>
+                            <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{tx.paymentMethod}</span>
+                          </div>
                         </div>
                       </div>
-                    ))
-                  )}
+                      <div className="text-left sm:text-right flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
+                        <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                          {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                        </p>
+                        {tx.donorName && <p className="text-xs text-gray-500 mt-1">From: {tx.donorName}</p>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </>
         )}
 
-        {/* Add Transaction Modal */}
+        {/* Modal: Add Log */}
         <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Log New Transaction" size="large">
           <form onSubmit={handleSaveTransaction} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -373,20 +453,85 @@ export default function FinancesClient() {
           </form>
         </Modal>
 
-        {/* Report Builder Modal */}
-        <Modal isOpen={reportConfig.isOpen} onClose={() => setReportConfig(prev => ({ ...prev, isOpen: false }))} title="Configure Report" size="large">
+        {/* Modal: Report Customizer */}
+        <Modal isOpen={reportConfig.isOpen} onClose={() => setReportConfig(prev => ({ ...prev, isOpen: false }))} title="Configure Formal Report" size="large">
           <div className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Report Title</label>
-              <input type="text" value={reportConfig.title} onChange={(e) => setReportConfig({...reportConfig, title: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Report Document Title</label>
+                <input type="text" value={reportConfig.title} onChange={(e) => setReportConfig({...reportConfig, title: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prepared By (Name / Role)</label>
+                <input type="text" value={reportConfig.preparedBy} onChange={(e) => setReportConfig({...reportConfig, preparedBy: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" placeholder="e.g. John Doe, Treasurer" />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period / Subtitle</label>
-              <input type="text" value={reportConfig.period} onChange={(e) => setReportConfig({...reportConfig, period: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" placeholder="e.g., Year End 2026" />
+
+            {/* NEW: Dynamic Signatures Uploader */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prepared By Signature</label>
+                {reportConfig.preparedBySignature ? (
+                  <div className="flex items-center gap-3 bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <img src={reportConfig.preparedBySignature} alt="Signature" className="h-8 object-contain" />
+                    <button type="button" onClick={() => setReportConfig(p => ({...p, preparedBySignature: ''}))} className="text-red-500 text-xs font-semibold hover:underline ml-auto">Remove</button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input type="file" accept="image/*" onChange={(e) => handleSignatureUpload(e, 'preparedBySignature')} disabled={uploadingSig === 'preparedBy'} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer disabled:opacity-50" />
+                    {uploadingSig === 'preparedBy' && <span className="absolute right-2 top-2 text-xs text-purple-600 animate-pulse">Uploading...</span>}
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Authorized Signatory</label>
+                {reportConfig.authorizedSignatorySignature ? (
+                  <div className="flex items-center gap-3 bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <img src={reportConfig.authorizedSignatorySignature} alt="Signature" className="h-8 object-contain" />
+                    <button type="button" onClick={() => setReportConfig(p => ({...p, authorizedSignatorySignature: ''}))} className="text-red-500 text-xs font-semibold hover:underline ml-auto">Remove</button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input type="file" accept="image/*" onChange={(e) => handleSignatureUpload(e, 'authorizedSignatorySignature')} disabled={uploadingSig === 'authorized'} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer disabled:opacity-50" />
+                    {uploadingSig === 'authorized' && <span className="absolute right-2 top-2 text-xs text-purple-600 animate-pulse">Uploading...</span>}
+                  </div>
+                )}
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Data Filter</label>
+                <select 
+                  value={reportConfig.periodFilter} 
+                  onChange={(e) => handleFilterChange(e.target.value)} 
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All-Time Lifetime Record</option>
+                  {metrics.map(m => (
+                    <option key={`${m._id.year}-${m._id.month}`} value={`${m._id.year}-${m._id.month}`}>
+                      {getFullMonthName(m._id.month)} {m._id.year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Printed Timeline Label</label>
+                <input 
+                  type="text" 
+                  value={reportConfig.periodLabel} 
+                  onChange={(e) => setReportConfig({...reportConfig, periodLabel: e.target.value})} 
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" 
+                  placeholder="e.g. Q1 2026 or Annual Report" 
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Executive Summary / Message</label>
-              <textarea rows={5} value={reportConfig.message} onChange={(e) => setReportConfig({...reportConfig, message: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500 resize-none" placeholder="Enter a message to your donors..." />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Executive Summary Message</label>
+              <textarea rows={5} value={reportConfig.message} onChange={(e) => setReportConfig({...reportConfig, message: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500 resize-none" />
             </div>
             
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
@@ -394,7 +539,7 @@ export default function FinancesClient() {
                 Cancel
               </button>
               <button onClick={executePrint} className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2">
-                Export to PDF
+                Generate Official PDF
               </button>
             </div>
           </div>
@@ -408,77 +553,25 @@ export default function FinancesClient() {
         />
       </div>
 
-
-      {/* --- PRINTABLE REPORT VIEW (Hidden on screen, Visible only in PDF/Print) --- */}
-      <div className="hidden print:block w-full max-w-4xl mx-auto bg-white text-black p-8 font-sans">
-        
-        {/* Report Header */}
-        <div className="border-b-2 border-black pb-6 mb-6 flex justify-between items-end">
-          <div>
-            <h1 className="text-4xl font-black text-black tracking-tight uppercase">JasiriCup</h1>
-            <p className="text-lg font-bold text-gray-600 mt-1">{reportConfig.title}</p>
-          </div>
-          <div className="text-right">
-            <p className="font-bold text-gray-800">Date Generated</p>
-            <p className="text-gray-600">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <p className="text-gray-500 mt-1">Period: {reportConfig.period}</p>
-          </div>
-        </div>
-
-        {/* Executive Summary */}
-        <div className="mb-10">
-          <h2 className="text-xl font-bold border-b border-gray-300 pb-2 mb-4">Executive Summary</h2>
-          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{reportConfig.message}</p>
-        </div>
-
-        {/* Top Level Metrics */}
-        <div className="grid grid-cols-3 gap-6 mb-10">
-          <div className="border-2 border-gray-200 p-4 rounded-lg">
-            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Income</p>
-            <p className="text-2xl font-black text-emerald-700 mt-1">{formatCurrency(totalLifetimeIncome)}</p>
-          </div>
-          <div className="border-2 border-gray-200 p-4 rounded-lg">
-            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Expenses</p>
-            <p className="text-2xl font-black text-red-700 mt-1">{formatCurrency(totalLifetimeExpense)}</p>
-          </div>
-          <div className="border-2 border-black bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm font-bold text-black uppercase tracking-wider">Net Balance</p>
-            <p className="text-2xl font-black text-black mt-1">{formatCurrency(netBalance)}</p>
-          </div>
-        </div>
-
-        {/* Monthly Breakdown Table */}
-        <h2 className="text-xl font-bold border-b border-gray-300 pb-2 mb-4">Monthly Breakdown</h2>
-        <table className="w-full text-left border-collapse mb-10">
-          <thead>
-            <tr className="bg-gray-100 border-b border-gray-300">
-              <th className="py-3 px-4 font-bold text-sm uppercase">Month / Year</th>
-              <th className="py-3 px-4 font-bold text-sm uppercase text-right">Income</th>
-              <th className="py-3 px-4 font-bold text-sm uppercase text-right">Expense</th>
-              <th className="py-3 px-4 font-bold text-sm uppercase text-right">Net</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.map((m) => {
-              const net = m.totalIncome - m.totalExpense;
-              return (
-                <tr key={`${m._id.year}-${m._id.month}`} className="border-b border-gray-200">
-                  <td className="py-3 px-4 font-medium">{getMonthName(m._id.month)} {m._id.year}</td>
-                  <td className="py-3 px-4 text-right text-emerald-700">+{formatCurrency(m.totalIncome)}</td>
-                  <td className="py-3 px-4 text-right text-red-700">-{formatCurrency(m.totalExpense)}</td>
-                  <td className="py-3 px-4 text-right font-bold">{formatCurrency(net)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {/* Sign off */}
-        <div className="mt-16 pt-8 border-t border-gray-300 text-center text-sm text-gray-500">
-          <p>This report was automatically generated from the JasiriCup secure ledger.</p>
-          <p>For questions or detailed auditing, please contact our financial team.</p>
-        </div>
-      </div>
+      <FinancialReportTemplate 
+        config={{
+          title: reportConfig.title,
+          message: reportConfig.message,
+          periodLabel: reportConfig.periodLabel,
+          preparedBy: reportConfig.preparedBy,
+          preparedBySignature: reportConfig.preparedBySignature,
+          authorizedSignatorySignature: reportConfig.authorizedSignatorySignature
+        }}
+        metrics={filteredMetrics}
+        transactions={filteredTransactions}
+        totals={{
+          income: reportIncome,
+          expense: reportExpense,
+          net: reportNet
+        }}
+        formatCurrency={formatCurrency}
+        getFullMonthName={getFullMonthName}
+      />
     </>
   );
 }
