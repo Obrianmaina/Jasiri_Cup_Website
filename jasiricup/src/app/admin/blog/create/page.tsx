@@ -7,7 +7,6 @@ import { BlogEditor } from "@/components/admin/BlogEditor";
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-// Define the expected shape of the data coming from BlogEditor
 interface BlogPostData {
   _id?: string;
   title: string;
@@ -52,7 +51,7 @@ export default function CreateBlogPage() {
   };
 
   return (
-    <div className="space-y-8 w-1/2 mx-auto px-4 sm:px-6 md:px-16 py-8 transition-colors duration-300">
+    <div className="pt-12 space-y-8 w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-8 transition-colors duration-300">
       <div className="border-b border-gray-200 dark:border-gray-800 pb-4 transition-colors duration-300">
         <Link href="/admin/blog" className="inline-flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 mb-4 transition-colors">
           &larr; Back to Blog Posts

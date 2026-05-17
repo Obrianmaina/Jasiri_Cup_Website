@@ -161,11 +161,11 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 sm:p-8 transition-colors">
-      <form className="space-y-8">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-8 transition-colors">
+      <form className="space-y-6 sm:space-y-8">
         
         {/* Basic Info Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
           <div className="md:col-span-2">
             <Input
               id="title"
@@ -187,7 +187,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               placeholder="url-friendly-slug"
               required
             />
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 font-mono">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 font-mono break-all">
               /blog/{formData.slug || 'slug'}
             </p>
           </div>
@@ -205,24 +205,24 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
         </div>  
 
         {/* Hero Image Section */}
-        <div className="bg-gray-50/50 dark:bg-gray-800/30 p-6 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
+        <div className="bg-gray-50/50 dark:bg-gray-800/30 p-4 sm:p-6 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
               Hero Image
             </label>
-            <label className="flex items-center mt-2 sm:mt-0 cursor-pointer">
+            <label className="flex items-center mt-3 sm:mt-0 cursor-pointer w-fit">
               <input
                 type="checkbox"
                 name="featured"
                 checked={formData.featured}
                 onChange={handleSharedChange}
-                className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-500 rounded border-gray-300 dark:border-gray-600 focus:ring-purple-500 bg-white dark:bg-gray-800"
+                className="mr-2 h-5 w-5 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-500 rounded border-gray-300 dark:border-gray-600 focus:ring-purple-500 bg-white dark:bg-gray-800"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Feature this post on home page</span>
             </label>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-5 sm:space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Upload Image File</label>
@@ -244,7 +244,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                   value={formData.heroImage}
                   onChange={handleSharedChange}
                   placeholder="https://example.com/image.jpg"
-                  className="w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors"
+                  className="w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 sm:py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -263,16 +263,16 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             )}
             
             {formData.heroImage && formData.heroImage.trim() && (
-              <div className="relative inline-block mt-2 group">
+              <div className="relative inline-block mt-2 group w-full sm:w-auto">
                 <img
                   src={formData.heroImage}
                   alt="Hero preview"
-                  className="w-full sm:max-w-md h-48 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
+                  className="w-full sm:max-w-md h-48 sm:h-56 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={removeCurrentImage}
-                  className="absolute -top-3 -right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-red-500 dark:text-red-400 rounded-full w-8 h-8 flex items-center justify-center text-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300 shadow-sm transition-all"
+                  className="absolute -top-3 -right-3 sm:-right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-red-500 dark:text-red-400 rounded-full w-8 h-8 sm:w-8 sm:h-8 flex items-center justify-center text-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300 shadow-sm transition-all"
                   title="Remove image"
                 >
                   ✕
@@ -291,15 +291,15 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             <button
               type="button"
               onClick={() => setShowToolbar(!showToolbar)}
-              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors sm:hidden"
+              className="text-sm sm:text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors sm:hidden bg-purple-50 dark:bg-purple-900/30 px-3 py-1.5 rounded-lg"
             >
               {showToolbar ? 'Hide Formatting' : 'Show Formatting'}
             </button>
           </div>
           
           <div className="flex flex-col shadow-sm rounded-xl">
-            <div className={`border border-gray-200 dark:border-gray-700 border-b-0 rounded-t-xl p-2 bg-gray-50/50 dark:bg-gray-800/50 transition-colors ${showToolbar ? 'block' : 'hidden sm:block'}`}>
-              <div className="flex flex-wrap gap-1.5">
+            <div className={`border border-gray-200 dark:border-gray-700 border-b-0 rounded-t-xl p-3 sm:p-2 bg-gray-50/50 dark:bg-gray-800/50 transition-colors ${showToolbar ? 'block' : 'hidden sm:block'}`}>
+              <div className="flex flex-wrap gap-2 sm:gap-1.5">
                 {[
                   { label: 'H2', before: '## ' },
                   { label: 'H3', before: '### ' },
@@ -313,7 +313,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
                     key={btn.label}
                     type="button"
                     onClick={() => insertFormatting(btn.before, btn.after)}
-                    className="px-3 py-1.5 text-xs font-semibold bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300 hover:border-purple-200 dark:hover:border-purple-500/50 transition-colors"
+                    className="px-3.5 py-2 sm:px-3 sm:py-1.5 text-sm sm:text-xs font-semibold bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300 transition-colors shadow-sm sm:shadow-none"
                   >
                     {btn.label}
                   </button>
@@ -325,8 +325,8 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               name="content"
               value={formData.content} 
               onChange={handleSharedChange}    
-              rows={16}
-              className={`w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm leading-relaxed p-4 transition-colors ${showToolbar ? 'rounded-b-xl' : 'rounded-xl'}`}
+              rows={14}
+              className={`w-full bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 focus:ring-purple-500 focus:border-purple-500 font-mono text-base sm:text-sm leading-relaxed p-4 sm:p-5 transition-colors ${showToolbar ? 'rounded-b-xl' : 'rounded-xl'}`}
               placeholder="Write your blog content here using Markdown syntax..."
               required
             />
@@ -334,7 +334,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
         </div>
 
         {/* Meta & Tags */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           <div>
             <TextArea
               id="metaDescription"
@@ -346,8 +346,8 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
               rows={4}
             />
             <div className="flex justify-end mt-1">
-              <span className={`text-xs ${formData.metaDescription.length > 160 ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                {formData.metaDescription.length}/160
+              <span className={`text-xs font-medium ${formData.metaDescription.length > 160 ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                {formData.metaDescription.length}/160 characters
               </span>
             </div>
           </div>
@@ -356,34 +356,34 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
               Categories & Tags
             </label>
-            <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 mb-3">
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 placeholder="e.g. Education, Health"
-                className="flex-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 focus:ring-purple-500 focus:border-purple-500 text-sm transition-colors"
+                className="flex-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 sm:py-2.5 focus:ring-purple-500 focus:border-purple-500 text-base sm:text-sm transition-colors"
               />
-              <Button type="button" onClick={addTag} variant="secondary" className="whitespace-nowrap rounded-xl">
+              <Button type="button" onClick={addTag} variant="secondary" className="whitespace-nowrap rounded-xl py-3 sm:py-2.5 font-bold">
                 Add Tag
               </Button>
             </div>
             
-            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
+            <div className="flex flex-wrap gap-2 min-h-[50px] p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
               {formData.tags.length === 0 && (
-                <span className="text-sm text-gray-400 dark:text-gray-500 flex items-center px-2">No tags added yet.</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500 flex items-center px-1">No tags added yet.</span>
               )}
               {formData.tags.map((tag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm transition-colors"
+                  className="inline-flex items-center px-3 py-1.5 sm:py-1 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm transition-colors"
                 >
                   {tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="ml-2 text-purple-400 dark:text-purple-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md p-0.5 transition-colors"
+                    className="ml-2 text-purple-400 dark:text-purple-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md p-1 sm:p-0.5 transition-colors"
                   >
                     ✕
                   </button>
@@ -394,13 +394,13 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
         </div>
 
         {/* Actions */}
-        <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-end gap-3 transition-colors">
+        <div className="pt-6 sm:pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 transition-colors">
           <Button
             type="button"
             onClick={(e) => handleSubmit(e, 'draft')}
             disabled={saving}
             variant="secondary"
-            className="w-full sm:w-auto rounded-xl py-2.5 font-semibold"
+            className="w-full sm:w-auto rounded-xl py-3.5 sm:py-2.5 font-bold"
           >
             {saving ? 'Saving...' : 'Save as Draft'}
           </Button>
@@ -409,7 +409,7 @@ export const BlogEditor = ({ initialData, onSave, saving }: BlogEditorProps) => 
             onClick={(e) => handleSubmit(e, 'published')}
             disabled={saving}
             variant="primary"
-            className="w-full sm:w-auto rounded-xl py-2.5 font-semibold bg-purple-600 hover:bg-purple-700"
+            className="w-full sm:w-auto rounded-xl py-3.5 sm:py-2.5 font-bold bg-purple-600 hover:bg-purple-700"
           >
             {saving ? 'Publishing...' : 'Publish Post'}
           </Button>

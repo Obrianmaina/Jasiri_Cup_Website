@@ -77,7 +77,7 @@ export default function AdminImpactEditor() {
   };
 
   return (
-    <div className="pt-12 space-y-8 max-w-4xl mx-auto transition-colors duration-300">
+    <div className="pt-12 px-4 sm:px-6 space-y-6 sm:space-y-8 max-w-4xl mx-auto transition-colors duration-300">
       <div>
         <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 mb-4">
           &larr; Back to Dashboard
@@ -91,8 +91,8 @@ export default function AdminImpactEditor() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
             {Object.entries(stats).map(([key, val]) => (
               <div key={key}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
@@ -103,13 +103,14 @@ export default function AdminImpactEditor() {
                   name={key}
                   value={val}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none transition-colors"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 sm:py-2.5 text-base sm:text-sm bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none transition-colors"
                 />
               </div>
             ))}
           </div>
-          <div className="mt-8 flex justify-end">
-            <Button onClick={handleSave} disabled={saving} variant="primary" className="px-8 py-3 rounded-xl font-bold">
+          
+          <div className="mt-8 flex flex-col sm:flex-row justify-end">
+            <Button onClick={handleSave} disabled={saving} variant="primary" className="w-full sm:w-auto px-8 py-3.5 sm:py-3 rounded-xl font-bold">
               {saving ? 'Saving...' : 'Save Overrides'}
             </Button>
           </div>
