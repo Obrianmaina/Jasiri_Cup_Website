@@ -24,26 +24,23 @@ export const VolunteerForm = ({ roles }: { roles: string[] }) => {
     setStatus({ type: null, message: "" });
 
     try {
-      // We format the message so it looks great in your Admin Inbox
-      const formattedMessage = `Roles of Interest: ${formData.roles.length > 0 ? formData.roles.join(", ") : "None selected"}\nPhone Number: ${formData.phone}\n\nWhy I want to volunteer:\n${formData.message}`;
-
-      // We route it to your existing contact API so it drops right into your CMS Inbox
-      const res = await fetch("/api/contact", {
+      // Update: Point directly to the volunteer API and send the raw data
+      const res = await fetch("/api/volunteer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          topic: "Volunteer Application",
-          message: formattedMessage,
+          phone: formData.phone,
+          message: formData.message,
+          roles: formData.roles,
         }),
       });
 
       if (res.ok) {
         setStatus({
           type: "success",
-          message:
-            "Application submitted successfully! We will be in touch shortly.",
+          message: "Application submitted successfully! We will be in touch shortly.",
         });
         setFormData({ name: "", email: "", phone: "", message: "", roles: [] });
       } else {
@@ -51,10 +48,7 @@ export const VolunteerForm = ({ roles }: { roles: string[] }) => {
         throw new Error(errorData.message || "Submission failed");
       }
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.";
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setStatus({ type: "error", message: errorMessage });
     } finally {
       setLoading(false);

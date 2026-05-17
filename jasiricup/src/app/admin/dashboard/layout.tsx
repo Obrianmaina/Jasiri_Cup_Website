@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle"; // Added toggle
 
 const navLinks = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
+  { href: "/admin/finances", label: "Finances", icon: "💰" }, // Add this line!
   { href: "/admin/blog", label: "Blog Posts", icon: "✍️" },
   { href: "/admin/pages", label: "Page Content", icon: "📄" },
   { href: "/admin/impact", label: "Impact Stats", icon: "📊" },

@@ -2,6 +2,7 @@
 import connectDB from "@/lib/dbConnect";
 import ContactMessage from "@/lib/models/ContactMessage";
 import Order from "@/lib/models/Order";
+import Volunteer from "@/lib/models/Volunteer";
 import MessagesClient from "./MessagesClient";
 import { Types } from "mongoose";
 
@@ -13,7 +14,7 @@ interface IRawContactMessage {
   email: string;
   topic: string;
   message: string;
-  status?: string; // Added status
+  status?: string;
   createdAt: Date;
 }
 
@@ -32,7 +33,18 @@ interface IRawOrder {
     phone: string;
   };
   items: IRawOrderItem[];
-  status?: string; // Added status
+  status?: string;
+  createdAt: Date;
+}
+
+interface IRawVolunteer {
+  _id: Types.ObjectId;
+  name: string;
+  email: string;
+  phone: string;
+  roles: string[];
+  message: string;
+  status?: string;
   createdAt: Date;
 }
 
@@ -41,6 +53,7 @@ export default async function AdminMessagesPage() {
   
   const rawMessages = (await ContactMessage.find({}).sort({ createdAt: -1 }).lean()) as unknown as IRawContactMessage[];
   const rawOrders = (await Order.find({}).sort({ createdAt: -1 }).lean()) as unknown as IRawOrder[];
+  const rawVolunteers = (await Volunteer.find({}).sort({ createdAt: -1 }).lean()) as unknown as IRawVolunteer[];
 
   const messages = rawMessages.map((msg: IRawContactMessage) => ({
     _id: msg._id.toString(),
@@ -48,7 +61,7 @@ export default async function AdminMessagesPage() {
     email: msg.email,
     topic: msg.topic,
     message: msg.message,
-    status: msg.status || 'new', // Include status
+    status: msg.status || 'new',
     createdAt: msg.createdAt.toISOString()
   }));
 
@@ -65,9 +78,20 @@ export default async function AdminMessagesPage() {
       size: item.size,
       customNotes: item.customNotes || "" 
     })),
-    status: order.status || 'pending', // Include status
+    status: order.status || 'pending',
     createdAt: order.createdAt.toISOString()
   }));
 
-  return <MessagesClient initialMessages={messages} initialOrders={orders} />;
+  const volunteers = rawVolunteers.map((vol: IRawVolunteer) => ({
+    _id: vol._id.toString(),
+    name: vol.name,
+    email: vol.email,
+    phone: vol.phone,
+    roles: vol.roles || [],
+    message: vol.message,
+    status: vol.status || 'pending',
+    createdAt: vol.createdAt.toISOString()
+  }));
+
+  return <MessagesClient initialMessages={messages} initialOrders={orders} initialVolunteers={volunteers} />;
 }

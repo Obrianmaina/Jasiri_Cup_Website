@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { ConfirmModal } from "@/components/ui/Modal"; // Import the new modal
+import { ConfirmModal, SuccessModal } from "@/components/ui/Modal";
 
 interface IBlogListItem {
   _id: string;
@@ -34,11 +34,9 @@ export default function BlogListClient({
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // New state for delete confirmation
-  const [itemToDelete, setItemToDelete] = useState<{
-    id: string;
-    title: string;
-  } | null>(null);
+  // Updated state for modals
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: '', title: '' });
+  const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -105,26 +103,32 @@ export default function BlogListClient({
     setPage(1);
   };
 
-  // Setup the request
-  const handleDeleteRequest = (id: string, title: string) => {
-    setItemToDelete({ id, title });
+  // Setup the delete request via Modal
+  const confirmDelete = (id: string, title: string) => {
+    setDeleteModal({ isOpen: true, id, title });
   };
 
   // Execute the delete after confirmation
   const executeDelete = async () => {
-    if (!itemToDelete) return;
-    const { id, title } = itemToDelete;
-    setItemToDelete(null);
-
-    setProcessingId(id);
-    const tid = toast.loading("Deleting...");
+    if (!deleteModal.id) return;
+    const idToDelete = deleteModal.id;
+    
+    // Close confirmation modal immediately but keep ID processing
+    setDeleteModal({ isOpen: false, id: '', title: '' });
+    setProcessingId(idToDelete);
+    
+    const tid = toast.loading("Deleting post...");
 
     try {
-      const res = await fetch(`/api/admin/blog/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      const res = await fetch(`/api/admin/blog/${idToDelete}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
 
-      setBlogs((prev) => prev.filter((b) => b._id !== id));
-      toast.success("Deleted", { id: tid });
+      // Update state to remove the blog from the UI
+      setBlogs((prev) => prev.filter((b) => b._id !== idToDelete));
+      
+      toast.dismiss(tid);
+      // Show success modal
+      setSuccessModal({ isOpen: true, message: "Blog post deleted successfully!" });
     } catch {
       toast.error("Delete failed", { id: tid });
     } finally {
@@ -298,31 +302,13 @@ export default function BlogListClient({
                         >
                           Edit
                         </Link>
-                        {/* Updated to call handleDeleteRequest */}
+                        {/* Calls the new custom modal */}
                         <button
                           type="button"
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-
-                            // Use the native browser confirmation popup instead of the custom modal
-                            if (window.confirm(`Are you sure you want to delete "${blog.title}"? This cannot be undone.`)) {
-                              setProcessingId(blog._id);
-                              const tid = toast.loading("Deleting post...");
-
-                              try {
-                                const res = await fetch(`/api/admin/blog/${blog._id}`, { method: "DELETE" });
-                                if (!res.ok) throw new Error("Delete failed");
-
-                                // Immediately remove it from the screen
-                                setBlogs((prev) => prev.filter((b) => b._id !== blog._id));
-                                toast.success("Post deleted successfully!", { id: tid });
-                              } catch (error) {
-                                toast.error("Failed to delete post", { id: tid });
-                              } finally {
-                                setProcessingId(null);
-                              }
-                            }
+                            confirmDelete(blog._id, blog.title);
                           }}
                           disabled={processingId === blog._id}
                           className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium transition-colors disabled:opacity-50"
@@ -365,6 +351,24 @@ export default function BlogListClient({
           </div>
         </div>
       )}
+
+      {/* Render Custom Modals */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, id: '', title: '' })}
+        onConfirm={executeDelete}
+        title="Delete Blog Post"
+        message={`Are you sure you want to delete "${deleteModal.title}"? This action cannot be undone.`}
+        confirmText="Delete Post"
+      />
+
+      <SuccessModal
+        isOpen={successModal.isOpen}
+        onClose={() => setSuccessModal({ isOpen: false, message: '' })}
+        title="Success"
+        message={successModal.message}
+      />
+
     </div>
   );
 }

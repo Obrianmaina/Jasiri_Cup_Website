@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { SuccessModal } from '@/components/ui/Modal'; // Imported the SuccessModal
 
 // --- Types ---
 interface TeamMember { id: string; name: string; role: string; description: string; imageSrc: string; cardColor: string; socials?: { platform: string; url: string }[]; }
@@ -10,7 +11,7 @@ interface ProductContent {
   title: string; 
   description: string; 
   heroImage: string; 
-  mainVideoUrl?: string; // Add this line
+  mainVideoUrl?: string; 
   steps: ProductStep[]; 
   downloadCards: { title: string; description: string; downloadLink: string }[]; 
 }
@@ -148,13 +149,10 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
           <div><label className="block text-xs mb-1">Description</label><textarea value={data.description} onChange={(e) => onChange({ ...data, description: e.target.value }) } rows={3} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
           <div><label className="block text-xs mb-1">Hero Image URL</label><input type="text" value={data.heroImage} onChange={(e) => onChange({ ...data, heroImage: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
           
-          {/* NEW BLOCK ADDED HERE */}
           <div>
             <label className="block text-xs mb-1 text-purple-600 font-semibold">Main Tutorial Video URL (Optional)</label>
             <input type="text" value={data.mainVideoUrl || ""} onChange={(e) => onChange({ ...data, mainVideoUrl: e.target.value })} placeholder="YouTube, Vimeo, or MP4 link" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 focus:border-purple-500" />
           </div>
-          {/* END NEW BLOCK */}
-
         </div>
       </div>
       <div>
@@ -165,7 +163,6 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
               <p className="text-xs font-semibold text-purple-600">Step {step.id}</p>
               <input type="text" value={step.title} onChange={(e) => updateStep(step.id, "title", e.target.value)} placeholder="Title" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
               <textarea value={step.description} onChange={(e) => updateStep(step.id, "description", e.target.value) } rows={2} placeholder="Description" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-              {/* I also removed the individual step video URL input here since we aren't using them anymore! */}
             </div>
           ))}
         </div>
@@ -326,11 +323,11 @@ function GenericArrayEditor<T extends object>({
   );
 }
 
-// --- Main Page ---
+// --- Main Page (Updated with Grid Layout & Success Modal) ---
 type TabType = "home" | "team" | "product" | "stories" | "press" | "partners" | "volunteer" | "impact";
 
 export default function AdminPagesPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("home");
+  const [activeTab, setActiveTab] = useState<TabType | null>(null); // Starts null to show grid
   const [homeContent, setHomeContent] = useState<HomeContent>(DEFAULT_HOME);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(DEFAULT_TEAM_MEMBERS);
   const [productContent, setProductContent] = useState<ProductContent>(DEFAULT_PRODUCT);
@@ -341,6 +338,9 @@ export default function AdminPagesPage() {
   const [impactContent, setImpactContent] = useState<ImpactPageContent>(DEFAULT_IMPACT);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // NEW: Success Modal State
+  const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -369,6 +369,7 @@ export default function AdminPagesPage() {
   }, []);
 
   const handleSave = async () => {
+    if (!activeTab) return; 
     setSaving(true);
     const loadingToast = toast.loading("Saving changes...");
     try {
@@ -388,8 +389,12 @@ export default function AdminPagesPage() {
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) toast.success("Changes saved successfully!", { id: loadingToast });
-      else throw new Error("Failed to save");
+      if (res.ok) {
+        toast.dismiss(loadingToast); // Dismiss the loading toast
+        setSuccessModal({ isOpen: true, message: "Page content saved successfully!" }); // Show Success Modal
+      } else {
+        throw new Error("Failed to save");
+      }
     } catch {
       toast.error("Failed to save changes", { id: loadingToast });
     } finally {
@@ -397,105 +402,142 @@ export default function AdminPagesPage() {
     }
   };
 
-  const TABS: {id: TabType, label: string}[] = [
-    { id: "home", label: "Home" },
-    { id: "team", label: "Team" },
-    { id: "product", label: "Product" },
-    { id: "stories", label: "Stories" },
-    { id: "press", label: "Press" },
-    { id: "partners", label: "Partners" },
-    { id: "volunteer", label: "Volunteer" },
-    { id: "impact", label: "Impact Page" },
+  const TABS: {id: TabType, label: string, icon: string}[] = [
+    { id: "home", label: "Home", icon: "🏠" },
+    { id: "team", label: "Team", icon: "👥" },
+    { id: "product", label: "Product", icon: "📦" },
+    { id: "stories", label: "Stories", icon: "📖" },
+    { id: "press", label: "Press", icon: "📰" },
+    { id: "partners", label: "Partners", icon: "🤝" },
+    { id: "volunteer", label: "Volunteer", icon: "❤️" },
+    { id: "impact", label: "Impact", icon: "🌍" },
   ];
 
+  const activeTabData = TABS.find(t => t.id === activeTab);
+
   return (
-    <div className="pt-12 space-y-8 w-6xl mx-auto px-4 sm:px-6 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b pb-4">
-        <div>
-          <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 mb-4">
-            &larr; Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold dark:text-white">Page Content</h1>
-          <p className="mt-1 text-sm text-gray-500">Edit content for your website pages.</p>
-        </div>
-        <button onClick={handleSave} disabled={saving || loading} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium shadow-sm hover:bg-purple-700 disabled:opacity-50">
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-      </div>
-      <div className="flex gap-2 border-b overflow-x-auto">
-        {TABS.map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap border-b-2 ${activeTab === tab.id ? "border-purple-600 text-purple-700 bg-purple-50" : "border-transparent text-gray-600"}`}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border p-5 md:p-6">
-        {loading ? (
-          <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
-        ) : activeTab === "home" ? (
-          <HomeEditor data={homeContent} onChange={setHomeContent} />
-        ) : activeTab === "team" ? (
-          <TeamEditor data={teamMembers} onChange={setTeamMembers} />
-        ) : activeTab === "product" ? (
-          <ProductEditor data={productContent} onChange={setProductContent} />
-        ) : activeTab === "impact" ? (
-          <ImpactPageEditor data={impactContent} onChange={setImpactContent} />
-        ) : activeTab === "stories" ? (
-          <GenericArrayEditor
-            data={stories} onChange={setStories} title="Story"
-            defaultItem={{ id: 0, name: "", age: 15, county: "", school: "", image: "", headline: "", story: "", quote: "", impact: [] }}
-            fields={[
-              { key: "name", label: "Name", type: "text" }, { key: "age", label: "Age", type: "number" }, { key: "county", label: "County", type: "text" },
-              { key: "school", label: "School", type: "text" }, { key: "image", label: "Image URL", type: "text" }, { key: "headline", label: "Headline", type: "text" },
-              { key: "story", label: "Full Story", type: "textarea" }, { key: "quote", label: "Quote", type: "text" }, { key: "impact", label: "Impact Badges", type: "array" },
-            ]}
-          />
-        ) : activeTab === "partners" ? (
-          <GenericArrayEditor
-            data={partners} onChange={setPartners} title="Partner"
-            defaultItem={{ name: "", county: "", girls: 0, type: "School", since: "", image: "" }}
-            fields={[
-              { key: "name", label: "Partner Name", type: "text" }, { key: "county", label: "County/Region", type: "text" }, { key: "girls", label: "Girls Supported", type: "number" },
-              { key: "type", label: "Type (School, NGO, etc)", type: "text" }, { key: "since", label: "Since Year", type: "text" },
-              { key: "image", label: "Logo/Image URL", type: "text" },
-            ]}
-          />
-        ) : activeTab === 'volunteer' ? (
-          <GenericArrayEditor 
-            data={volunteerRoles} onChange={setVolunteerRoles} title="Role" 
-            defaultItem={{icon:' ', title:'', desc:'', commitment:'', location:'', image:''}} 
-            fields={[
-              {key:'icon', label:'Emoji Icon', type:'text'}, {key:'title', label:'Role Title', type:'text'}, {key:'desc', label:'Description', type:'textarea'}, 
-              {key:'commitment', label:'Time Commitment', type:'text'}, {key:'location', label:'Location', type:'text'}, {key:'image', label:'Background Image URL', type:'text'}
-            ]} 
-          />
-        ) : activeTab === "press" ? (
-          <div className="space-y-8">
+    <div className="pt-12 space-y-8 max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      {/* GRID VIEW (Master) */}
+      {activeTab === null ? (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b pb-4">
             <div>
-              <h3 className="font-bold mb-4">Media Coverage</h3>
-              <GenericArrayEditor
-                data={pressContent.coverage} onChange={(c) => setPressContent({ ...pressContent, coverage: c }) } title="Article"
-                defaultItem={{ outlet: "", headline: "", date: "", url: "", logo: "" }}
-                fields={[
-                  { key: "outlet", label: "Outlet Name", type: "text" }, { key: "headline", label: "Headline", type: "text" },
-                  { key: "date", label: "Date", type: "text" }, { key: "url", label: "Link", type: "text" }, { key: "logo", label: "Logo URL", type: "text" },
-                ]}
-              />
-            </div>
-            <div>
-              <h3 className="font-bold mb-4">Downloadable Assets</h3>
-              <GenericArrayEditor
-                data={pressContent.downloads} onChange={(d) => setPressContent({ ...pressContent, downloads: d }) } title="Asset"
-                defaultItem={{ name: "", desc: "", icon: " ", file: "" }}
-                fields={[
-                  { key: "name", label: "Asset Name", type: "text" }, { key: "desc", label: "Description", type: "text" },
-                  { key: "icon", label: "Emoji Icon", type: "text" }, { key: "file", label: "Download URL", type: "text" },
-                ]}
-              />
+              <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 mb-4 hover:underline">
+                &larr; Back to Dashboard
+              </Link>
+              <h1 className="text-3xl font-bold dark:text-white">Page Content</h1>
+              <p className="mt-1 text-sm text-gray-500">Select a page below to edit its content.</p>
             </div>
           </div>
-        ) : null}
-      </div>
+
+          {loading ? (
+            <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {TABS.map((tab) => (
+                <button 
+                  key={tab.id} 
+                  onClick={() => setActiveTab(tab.id)} 
+                  className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md hover:border-purple-300 dark:hover:border-purple-700 transition-all flex flex-col items-center justify-center gap-3 active:scale-95"
+                >
+                  <span className="text-4xl mb-1">{tab.icon}</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        /* EDITOR VIEW (Detail) */
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b pb-4">
+            <div>
+              <button onClick={() => setActiveTab(null)} className="inline-flex items-center text-sm font-medium text-purple-600 mb-4 hover:underline">
+                &larr; Back to Pages Grid
+              </button>
+              <h1 className="text-3xl font-bold dark:text-white">Editing {activeTabData?.label}</h1>
+              <p className="mt-1 text-sm text-gray-500">Make changes to the {activeTabData?.label} page.</p>
+            </div>
+            <button onClick={handleSave} disabled={saving || loading} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium shadow-sm hover:bg-purple-700 disabled:opacity-50">
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border p-5 md:p-6">
+            {activeTab === "home" ? (
+              <HomeEditor data={homeContent} onChange={setHomeContent} />
+            ) : activeTab === "team" ? (
+              <TeamEditor data={teamMembers} onChange={setTeamMembers} />
+            ) : activeTab === "product" ? (
+              <ProductEditor data={productContent} onChange={setProductContent} />
+            ) : activeTab === "impact" ? (
+              <ImpactPageEditor data={impactContent} onChange={setImpactContent} />
+            ) : activeTab === "stories" ? (
+              <GenericArrayEditor
+                data={stories} onChange={setStories} title="Story"
+                defaultItem={{ id: 0, name: "", age: 15, county: "", school: "", image: "", headline: "", story: "", quote: "", impact: [] }}
+                fields={[
+                  { key: "name", label: "Name", type: "text" }, { key: "age", label: "Age", type: "number" }, { key: "county", label: "County", type: "text" },
+                  { key: "school", label: "School", type: "text" }, { key: "image", label: "Image URL", type: "text" }, { key: "headline", label: "Headline", type: "text" },
+                  { key: "story", label: "Full Story", type: "textarea" }, { key: "quote", label: "Quote", type: "text" }, { key: "impact", label: "Impact Badges", type: "array" },
+                ]}
+              />
+            ) : activeTab === "partners" ? (
+              <GenericArrayEditor
+                data={partners} onChange={setPartners} title="Partner"
+                defaultItem={{ name: "", county: "", girls: 0, type: "School", since: "", image: "" }}
+                fields={[
+                  { key: "name", label: "Partner Name", type: "text" }, { key: "county", label: "County/Region", type: "text" }, { key: "girls", label: "Girls Supported", type: "number" },
+                  { key: "type", label: "Type (School, NGO, etc)", type: "text" }, { key: "since", label: "Since Year", type: "text" },
+                  { key: "image", label: "Logo/Image URL", type: "text" },
+                ]}
+              />
+            ) : activeTab === 'volunteer' ? (
+              <GenericArrayEditor 
+                data={volunteerRoles} onChange={setVolunteerRoles} title="Role" 
+                defaultItem={{icon:' ', title:'', desc:'', commitment:'', location:'', image:''}} 
+                fields={[
+                  {key:'icon', label:'Emoji Icon', type:'text'}, {key:'title', label:'Role Title', type:'text'}, {key:'desc', label:'Description', type:'textarea'}, 
+                  {key:'commitment', label:'Time Commitment', type:'text'}, {key:'location', label:'Location', type:'text'}, {key:'image', label:'Background Image URL', type:'text'}
+                ]} 
+              />
+            ) : activeTab === "press" ? (
+              <div className="space-y-8">
+                <div>
+                  <h3 className="font-bold mb-4">Media Coverage</h3>
+                  <GenericArrayEditor
+                    data={pressContent.coverage} onChange={(c) => setPressContent({ ...pressContent, coverage: c }) } title="Article"
+                    defaultItem={{ outlet: "", headline: "", date: "", url: "", logo: "" }}
+                    fields={[
+                      { key: "outlet", label: "Outlet Name", type: "text" }, { key: "headline", label: "Headline", type: "text" },
+                      { key: "date", label: "Date", type: "text" }, { key: "url", label: "Link", type: "text" }, { key: "logo", label: "Logo URL", type: "text" },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <h3 className="font-bold mb-4">Downloadable Assets</h3>
+                  <GenericArrayEditor
+                    data={pressContent.downloads} onChange={(d) => setPressContent({ ...pressContent, downloads: d }) } title="Asset"
+                    defaultItem={{ name: "", desc: "", icon: " ", file: "" }}
+                    fields={[
+                      { key: "name", label: "Asset Name", type: "text" }, { key: "desc", label: "Description", type: "text" },
+                      { key: "icon", label: "Emoji Icon", type: "text" }, { key: "file", label: "Download URL", type: "text" },
+                    ]}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </>
+      )}
+
+      {/* Render the Success Modal */}
+      <SuccessModal
+        isOpen={successModal.isOpen}
+        onClose={() => setSuccessModal({ isOpen: false, message: '' })}
+        title="Changes Saved"
+        message={successModal.message}
+      />
     </div>
   );
 }
