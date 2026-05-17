@@ -14,12 +14,14 @@ export default async function middleware(request: NextRequest, event: NextFetchE
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   
   // Build a strict CSP that uses the nonce
+  // ADDED: media-src directive to whitelist Cloudinary videos
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com data:;
     img-src 'self' data: blob: https://res.cloudinary.com;
+    media-src 'self' https://res.cloudinary.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

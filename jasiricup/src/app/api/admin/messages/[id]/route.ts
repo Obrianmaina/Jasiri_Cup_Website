@@ -1,19 +1,18 @@
-// src/app/api/admin/messages/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/dbConnect";
 import ContactMessage from "@/lib/models/ContactMessage";
 import { checkAdminAuth } from "@/lib/auth-middleware";
 
-// Flexible type to handle Next.js 14 (sync) and Next.js 15 (async) params
-type ParamsContext = { params: Promise<{ id: string }> | { id: string } };
-
-export async function PUT(req: NextRequest, context: ParamsContext) {
+export async function PUT(
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
     await connectDB();
-    const resolvedParams = await context.params;
+    const resolvedParams = await params;
     const id = resolvedParams.id;
     const { status } = await req.json();
     
@@ -25,13 +24,16 @@ export async function PUT(req: NextRequest, context: ParamsContext) {
   }
 }
 
-export async function DELETE(req: NextRequest, context: ParamsContext) {
+export async function DELETE(
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
     await connectDB();
-    const resolvedParams = await context.params;
+    const resolvedParams = await params;
     const id = resolvedParams.id;
     
     const deletedMessage = await ContactMessage.findByIdAndDelete(id);

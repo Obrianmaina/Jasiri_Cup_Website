@@ -32,14 +32,25 @@ export const ContactForm = () => {
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else {
+    
+    if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) newErrors.email = 'Invalid email';
     }
-    if (!formData.topic.trim()) newErrors.topic = 'Topic is required';
-    if (!formData.message.trim()) newErrors.message = 'Message is required';
+    
+    if (formData.topic.trim().length < 3) {
+      newErrors.topic = 'Topic must be at least 3 characters';
+    }
+    
+    if (formData.message.trim().length < 10) {
+      newErrors.message = 'Message must be at least 10 characters';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -76,7 +87,15 @@ export const ContactForm = () => {
         setFormData({ name: '', email: '', topic: '', message: '' });
         setErrors({});
       } else {
-        setStatus(data.message || 'Something went wrong. Please try again.');
+        // Extract and display specific backend validation errors
+        if (data.errors && data.errors.length > 0) {
+          const firstError = typeof data.errors[0] === 'string' 
+            ? data.errors[0] 
+            : data.errors[0].message || data.errors[0];
+          setStatus(firstError);
+        } else {
+          setStatus(data.message || 'Something went wrong. Please try again.');
+        }
       }
     } catch (error) {
       setStatus('Network error. Please try again.');
@@ -161,7 +180,7 @@ export const ContactForm = () => {
         {status && (
           <div
             className={`mt-6 p-4 rounded-md transition-colors duration-300 ${
-              status.toLowerCase().includes('error')
+              status.toLowerCase().includes('error') || status.toLowerCase().includes('must be') || status.toLowerCase().includes('failed')
                 ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                 : 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
             }`}
