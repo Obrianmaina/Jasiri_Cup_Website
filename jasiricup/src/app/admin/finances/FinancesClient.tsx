@@ -102,50 +102,55 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
     } catch { toast.error('Failed to log transaction', { id: toastId }); } finally { setProcessing(false); }
   };
 
+  // --- OPTIMIZED: Saves Config and Instantly Jumps to Documents List View ---
   const executeGenerate = async () => {
-    setReportConfig(prev => ({ ...prev, isOpen: false })); 
+    setProcessing(true);
+    const tid = toast.loading('Registering report document...');
     
     try {
-      await fetch('/api/admin/report-logs', {
+      const res = await fetch('/api/admin/report-logs', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           reportId: reportConfig.reportId, title: reportConfig.title, periodLabel: reportConfig.periodLabel,
-          preparedBy: reportConfig.preparedBy, generatedByEmail: userEmail,
+          preparedBy: reportConfig.preparedBy, generatedByEmail: userEmail, // Saves logged-in user email
           totalIncome: reportIncome, totalExpense: reportExpense, netBalance: reportNet
         })
       });
+      
+      if (!res.ok) throw new Error();
+      
+      toast.success('Report registered! You can now download or email it here.', { id: tid });
+      setReportConfig(prev => ({ ...prev, isOpen: false })); 
+      setActiveTab('documents'); // Direct redirect to list view
       fetchReports(); 
-    } catch (error) { console.error(error); }
-    
-    setTimeout(() => {
-      const originalTitle = document.title;
-      document.title = reportConfig.reportId || 'JasiriCup_Report'; 
-      window.print(); 
-      document.title = originalTitle; 
-    }, 500);
+    } catch (error) { 
+      toast.error('Failed to create report entry.', { id: tid });
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  // --- REPAIRED: PDF Engine Logic for Email ---
+  // --- REPAIRED: PDF Canvas Capture for Email Dispatches ---
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setProcessing(true);
-    const tid = toast.loading('Generating PDF attachment and dispatching email...');
+    const tid = toast.loading('Capturing PDF artifact and routing email layout...');
     
     try {
       let pdfBase64 = null;
-      const element = document.getElementById('financial-report-template');
+      const element = document.getElementById('financial-report-capture-zone');
       
       if (element) {
-        // Force the element to be visible to the canvas engine
-        element.classList.remove('hidden', 'print:block');
-        element.classList.add('block');
+        // Temporarily break out layout parameters for the canvas snapshots engine
+        element.style.position = 'static';
+        element.style.visibility = 'visible';
+        element.style.height = 'auto';
 
         const html2pdf = (await import('html2pdf.js')).default;
         
         const opt = {
           margin: 0,
           filename: `${emailModal.reportId}.pdf`,
-          // Lowered scale to 1.5 to prevent Base64 payload size errors
           image: { type: 'jpeg' as const, quality: 0.95 },
           html2canvas: { scale: 1.5, useCORS: true, logging: false },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
@@ -153,9 +158,10 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
 
         pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
         
-        // Hide it again
-        element.classList.remove('block');
-        element.classList.add('hidden', 'print:block');
+        // Re-wrap and hide cleanly
+        element.style.position = 'absolute';
+        element.style.visibility = 'hidden';
+        element.style.height = '0px';
       }
 
       const res = await fetch('/api/admin/finances/send-report', {
@@ -169,20 +175,19 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
         })
       });
 
-      if(!res.ok) throw new Error('API route failed to send email.');
+      if(!res.ok) throw new Error();
       
-      toast.success('Email dispatched successfully with attached PDF!', { id: tid });
+      toast.success('Email dispatched successfully with attached PDF document!', { id: tid });
       setEmailModal({ isOpen: false, reportId: '', recipient: '', message: '' });
     } catch (error) {
-      toast.error('Failed to send email. Ensure the file size is within limits.', { id: tid });
+      toast.error('Failed to dispatch email delivery pipeline.', { id: tid });
     } finally { setProcessing(false); }
   };
 
-  // --- NEW: Download Historical Report Logic ---
+  // --- REPAIRED: Direct Historical PDF Compilation and Download ---
   const handleDownloadHistorical = async (log: IReportLog) => {
-    const tid = toast.loading('Building PDF Document...');
+    const tid = toast.loading('Compiling historical sheet data into PDF format...');
     
-    // Temporarily set state to match the historical report
     setReportConfig(prev => ({
       ...prev, 
       title: log.title, 
@@ -191,13 +196,13 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
       preparedBy: log.preparedBy || prev.preparedBy
     }));
 
-    // Wait 500ms for React state to update the template DOM
     setTimeout(async () => {
       try {
-        const element = document.getElementById('financial-report-template');
+        const element = document.getElementById('financial-report-capture-zone');
         if (element) {
-          element.classList.remove('hidden', 'print:block');
-          element.classList.add('block');
+          element.style.position = 'static';
+          element.style.visibility = 'visible';
+          element.style.height = 'auto';
 
           const html2pdf = (await import('html2pdf.js')).default;
           
@@ -205,20 +210,21 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
             margin: 0,
             filename: `${log.reportId}.pdf`,
             image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
           };
 
           await html2pdf().set(opt).from(element).save();
           
-          element.classList.remove('block');
-          element.classList.add('hidden', 'print:block');
+          element.style.position = 'absolute';
+          element.style.visibility = 'hidden';
+          element.style.height = '0px';
         }
-        toast.success('Download complete!', { id: tid });
+        toast.success('Download initialized successfully!', { id: tid });
       } catch (error) {
-        toast.error('Download failed.', { id: tid });
+        toast.error('PDF render pipeline interrupted.', { id: tid });
       }
-    }, 500);
+    }, 400);
   };
 
   const formatCurrency = (amt: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amt);
@@ -246,9 +252,6 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
   const reportIncome = filteredMetrics.reduce((sum, m) => sum + m.totalIncome, 0);
   const reportExpense = filteredMetrics.reduce((sum, m) => sum + m.totalExpense, 0);
   const reportNet = reportIncome - reportExpense;
-
-  const incomeCategories = ['Donation', 'Grant', 'Merchandise', 'Other'];
-  const expenseCategories = ['Logistics', 'Marketing', 'Operations', 'Tax', 'Supplies', 'Other'];
 
   const chartData = [...metrics].reverse().map(m => ({
     name: `${getMonthName(m._id.month)} ${m._id.year}`, Income: m.totalIncome, Expense: m.totalExpense
@@ -318,10 +321,10 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.2} />
                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
                           <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={(value) => `Ksh ${value >= 1000 ? (value/1000)+'k' : value}`} />
-                          <Tooltip cursor={{ stroke: '#374151', strokeWidth: 1, strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                          <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB' }} />
                           <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                          <Line type="monotone" dataKey="Income" stroke="#059669" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                          <Line type="monotone" dataKey="Expense" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                          <Line type="monotone" dataKey="Income" stroke="#059669" strokeWidth={3} dot={{ r: 4 }} />
+                          <Line type="monotone" dataKey="Expense" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
@@ -333,11 +336,11 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                     <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
-                      <h3 className="font-bold text-gray-900 dark:text-white">Monthly Reports</h3>
+                      <h3 className="font-bold text-gray-900 dark:text-white">Monthly Summary</h3>
                     </div>
                     <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
                       {metrics.map((m) => (
-                        <div key={`${m._id.year}-${m._id.month}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex justify-between items-center">
+                        <div key={`${m._id.year}-${m._id.month}`} className="p-4 flex justify-between items-center">
                           <div>
                             <p className="font-bold text-sm text-gray-900 dark:text-white">{getMonthName(m._id.month)} {m._id.year}</p>
                             <p className="text-xs text-gray-500 mt-1">Net: <span className={m.totalIncome - m.totalExpense >= 0 ? 'text-emerald-600' : 'text-red-500'}>{formatCurrency(m.totalIncome - m.totalExpense)}</span></p>
@@ -357,25 +360,24 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                     </div>
                     <div className="divide-y divide-gray-100 dark:divide-gray-800">
                       {transactions.map(tx => (
-                        <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
+                        <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
                           <div className="flex gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
                               {tx.type === 'income' ? '↓' : '↑'}
                             </div>
                             <div>
                               <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{tx.category}</p>
                               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5">{tx.description}</p>
                               <div className="flex flex-wrap gap-2 mt-2">
-                                <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{new Date(tx.date).toLocaleDateString()}</span>
-                                <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{tx.paymentMethod}</span>
+                                <span className="text-[10px] bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{new Date(tx.date).toLocaleDateString()}</span>
+                                <span className="text-[10px] bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{tx.paymentMethod}</span>
                               </div>
                             </div>
                           </div>
-                          <div className="text-left sm:text-right flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
-                            <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                          <div className="text-left sm:text-right">
+                            <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600' : 'text-gray-900 dark:text-white'}`}>
                               {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                             </p>
-                            {tx.donorName && <p className="text-xs text-gray-500 mt-1">From: {tx.donorName}</p>}
                           </div>
                         </div>
                       ))}
@@ -398,19 +400,18 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                     </thead>
                     <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-800">
                       {reportLogs.map(log => (
-                        <tr key={log._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <tr key={log._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                           <td className="p-4 font-mono font-bold text-gray-900 dark:text-white">{log.reportId}</td>
                           <td className="p-4 text-gray-900 dark:text-white">{log.title}</td>
-                          {/* FIXED: Added fallback to log.preparedBy if the DB schema didn't save generatedByEmail */}
-                          <td className="p-4 text-gray-500 dark:text-gray-400">{log.generatedByEmail || log.preparedBy || 'Admin'}</td>
+                          {/* FIXED: Displays accurate .env parsed email string */}
+                          <td className="p-4 text-gray-500 dark:text-gray-400">{log.generatedByEmail || log.preparedBy}</td>
                           <td className="p-4 text-gray-500 dark:text-gray-400">{new Date(log.createdAt).toLocaleDateString()}</td>
                           <td className="p-4 text-right flex justify-end gap-2">
-                            {/* NEW: Download Button */}
                             <button onClick={() => handleDownloadHistorical(log)} className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                               Download
                             </button>
                             <button onClick={() => {
-                              setReportConfig(prev => ({...prev, title: log.title, periodLabel: log.periodLabel, reportId: log.reportId, preparedBy: log.preparedBy || prev.preparedBy}));
+                              setReportConfig(prev => ({...prev, title: log.title, periodLabel: log.periodLabel, reportId: log.reportId, preparedBy: log.preparedBy}));
                               setEmailModal({ isOpen: true, reportId: log.reportId, recipient: '', message: '' });
                             }} className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
                               Email
@@ -490,12 +491,8 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
             )}
 
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <button type="button" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 transition-colors">
-                Cancel
-              </button>
-              <button type="submit" disabled={processing} className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50 transition-colors">
-                {processing ? 'Saving...' : 'Save Transaction'}
-              </button>
+              <button type="button" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+              <button type="submit" disabled={processing} className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50 transition-colors">Save Transaction</button>
             </div>
           </form>
         </Modal>
@@ -534,17 +531,20 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
 
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prepared By Signature</label>
-              <input type="text" value={reportConfig.preparedBySignature} onChange={(e) => setReportConfig({...reportConfig, preparedBySignature: e.target.value})} placeholder="Type name to sign..." style={{ fontFamily: "'Ms Madi', cursive" }} className="w-full border rounded-xl px-3 py-2 text-2xl bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="text" value={reportConfig.preparedBySignature} onChange={(e) => setReportConfig({...reportConfig, preparedBySignature: e.target.value})} placeholder="Type name to sign..." style={{ fontFamily: "'Caveat', cursive" }} className="w-full border rounded-xl px-3 py-2 text-2xl bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
             </div>
 
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Authorized Signatory</label>
-              <input type="text" value={reportConfig.authorizedSignatorySignature} onChange={(e) => setReportConfig({...reportConfig, authorizedSignatorySignature: e.target.value})} placeholder="Type name to sign..." style={{ fontFamily: "'Ms Madi', cursive" }} className="w-full border rounded-xl px-3 py-2 text-2xl bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="text" value={reportConfig.authorizedSignatorySignature} onChange={(e) => setReportConfig({...reportConfig, authorizedSignatorySignature: e.target.value})} placeholder="Type name to sign..." style={{ fontFamily: "'Caveat', cursive" }} className="w-full border rounded-xl px-3 py-2 text-2xl bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
             </div>
             
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <button onClick={() => setReportConfig(prev => ({ ...prev, isOpen: false }))} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-700 dark:text-gray-300">Cancel</button>
-              <button onClick={executeGenerate} className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl">Generate Official PDF</button>
+              <button onClick={() => setReportConfig(prev => ({ ...prev, isOpen: false }))} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-700 dark:text-gray-200">Cancel</button>
+              {/* FIXED: Saves config parameters and routes user straight to Document listing view */}
+              <button onClick={executeGenerate} disabled={processing} className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl disabled:opacity-40">
+                {processing ? 'Processing...' : 'Generate Official PDF'}
+              </button>
             </div>
           </div>
         </Modal>
@@ -575,7 +575,11 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
         <SuccessModal isOpen={successModal.isOpen} onClose={() => setSuccessModal({ isOpen: false, message: '' })} title="Success" message={successModal.message} />
       </div>
 
-      <div id="financial-report-template" className="hidden print:block">
+      {/* FIXED: Strict clipping and absolute hide bounds ensure it is unseen by users but legible to html2pdf.js */}
+      <div 
+        id="financial-report-capture-zone" 
+        style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '210mm', height: '0px', overflow: 'hidden', visibility: 'hidden' }}
+      >
         <FinancialReportTemplate 
           config={reportConfig}
           metrics={filteredMetrics}
