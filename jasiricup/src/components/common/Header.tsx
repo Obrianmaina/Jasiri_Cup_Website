@@ -1,3 +1,4 @@
+// src/components/common/Header.tsx
 'use client';
 
 import Image from "next/image";
@@ -50,7 +51,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="relative z-50 transition-colors duration-300">
+    <header className="relative z-[100] transition-colors duration-300">
       
       {/* 1. TOP UTILITY BAR (STAFF LOGIN) */}
       <div className="bg-gray-900 dark:bg-black text-white py-1.5 px-4">
@@ -91,7 +92,7 @@ export const Header = () => {
             />
           </Link>
 
-          {/* Desktop Navigation (Grouped Dropdowns in the Round Rectangle Bubble) */}
+          {/* Desktop Navigation */}
           <div className="hidden xl:flex items-center justify-center flex-1">
             <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-6 py-2 space-x-6 transition-colors duration-300">
               
@@ -107,7 +108,6 @@ export const Header = () => {
                     }`}
                   >
                     {link.name}
-                    {/* The Green Highlighter */}
                     {isActive && (
                       <span className="absolute bottom-0 left-0 w-full h-0.5 bg-green-500 transform translate-y-2"></span>
                     )}
@@ -117,7 +117,6 @@ export const Header = () => {
 
               {/* Dropdown Groups */}
               {navGroups.map((group) => {
-                // Check if any link inside this dropdown group matches the current pathname
                 const isActive = group.links.some(link => pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)));
                 
                 return (
@@ -129,14 +128,13 @@ export const Header = () => {
                       <svg className="w-4 h-4 transition-transform duration-200 group-hover:-rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                      {/* The Green Highlighter for active groups */}
                       {isActive && (
                         <span className="absolute bottom-0 left-0 w-full h-0.5 bg-green-500 transform translate-y-2"></span>
                       )}
                     </button>
                     
                     {/* Dropdown Menu */}
-                    <div className="absolute top-full left-0 mt-3 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top -translate-y-2 group-hover:translate-y-0 z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 mt-3 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top -translate-y-2 group-hover:translate-y-0 z-[100] overflow-hidden">
                       <div className="py-2">
                         {group.links.map(link => (
                           <Link 
@@ -186,7 +184,7 @@ export const Header = () => {
 
         {/* 3. MOBILE MENU OVERLAY */}
         {isMobileMenuOpen && (
-          <div className="xl:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-900 shadow-xl z-50 border-t border-gray-100 dark:border-gray-800 transition-colors duration-300 max-h-[80vh] overflow-y-auto">
+          <div className="xl:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-900 shadow-xl z-[100] border-t border-gray-100 dark:border-gray-800 transition-colors duration-300 max-h-[80vh] overflow-y-auto">
             <div className="container mx-auto px-4 py-6">
               
               {/* Mobile Standalone Links */}
