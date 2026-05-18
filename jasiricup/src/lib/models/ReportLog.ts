@@ -7,9 +7,13 @@ const ReportLogSchema = new mongoose.Schema(
     title: { type: String, required: true },
     periodLabel: { type: String, required: true },
     preparedBy: { type: String, required: true },
+    generatedByEmail: { type: String, required: true }, // ADDED: Now Mongoose will save the email
     totalIncome: { type: Number, required: true, default: 0 },
     totalExpense: { type: Number, required: true, default: 0 },
     netBalance: { type: Number, required: true, default: 0 },
+    // Add these to your Mongoose Schema definition
+  preparedBySignature: { type: String, required: false },
+  authorizedSignatorySignature: { type: String, required: false },
   },
   { 
     timestamps: true 

@@ -20,15 +20,25 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function POST(req: NextRequest) {
+  // 1. Server-Side RBAC Verification (Security layer)
   const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
   try {
-    const { recipient, message, reportId, pdfBase64 } = await req.json();
+    // 2. Parse the multipart/form-data
+    const formData = await req.formData();
+    const recipient = formData.get("recipient") as string;
+    const message = formData.get("message") as string;
+    const reportId = formData.get("reportId") as string;
+    const file = formData.get("file") as File | null;
 
-    if (!recipient || !message || !reportId) {
-      return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
+    if (!recipient || !message || !reportId || !file) {
+      return NextResponse.json({ success: false, error: "Missing required fields or PDF attachment" }, { status: 400 });
     }
+
+    // 3. Convert the Blob/File into a Node Buffer for Nodemailer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
     const emailInnerHtml = `
       <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
@@ -48,25 +58,19 @@ export async function POST(req: NextRequest) {
       to: recipient,
       subject: `JasiriCup Financial Report: ${reportId}`,
       html: generateBrandedEmail(`Financial Report`, emailInnerHtml),
-    };
-
-    // Safely attach the captured PDF file if the client successfully generated it
-    if (pdfBase64 && pdfBase64.includes("base64,")) {
-      const base64Data = pdfBase64.split("base64,")[1];
-      mailOptions.attachments = [
+      attachments: [
         {
           filename: `${reportId}.pdf`,
-          content: base64Data,
-          encoding: 'base64',
+          content: buffer,
           contentType: 'application/pdf'
         }
-      ];
-    }
+      ]
+    };
 
     await transporter.sendMail(mailOptions);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to send report email:", error);
+    console.error("Failed to process FormData and send email:", error);
     return NextResponse.json({ success: false, error: "Dispatch failed" }, { status: 500 });
   }
 }

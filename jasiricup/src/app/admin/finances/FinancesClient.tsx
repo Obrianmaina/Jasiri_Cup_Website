@@ -2,11 +2,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Modal, SuccessModal } from '@/components/ui/Modal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { FinancialReportTemplate } from '@/components/admin/FinancialReportTemplate';
+import { toJpeg } from 'html-to-image';
+import { jsPDF } from 'jspdf';
+import { Montserrat } from 'next/font/google';
+
+const montserrat = Montserrat({ subsets: ['latin'], display: 'swap' });
 
 interface ITransaction {
   _id: string; type: 'income' | 'expense'; category: string; amount: number;
@@ -21,6 +25,8 @@ interface IReportLog {
   _id: string; reportId: string; title: string; periodLabel: string;
   preparedBy: string; generatedByEmail: string; totalIncome: number;
   totalExpense: number; netBalance: number; createdAt: string;
+  preparedBySignature?: string; 
+  authorizedSignatorySignature?: string;
 }
 
 interface ReportConfig {
@@ -102,7 +108,6 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
     } catch { toast.error('Failed to log transaction', { id: toastId }); } finally { setProcessing(false); }
   };
 
-  // --- OPTIMIZED: Saves Config and Instantly Jumps to Documents List View ---
   const executeGenerate = async () => {
     setProcessing(true);
     const tid = toast.loading('Registering report document...');
@@ -111,9 +116,16 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
       const res = await fetch('/api/admin/report-logs', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          reportId: reportConfig.reportId, title: reportConfig.title, periodLabel: reportConfig.periodLabel,
-          preparedBy: reportConfig.preparedBy, generatedByEmail: userEmail, // Saves logged-in user email
-          totalIncome: reportIncome, totalExpense: reportExpense, netBalance: reportNet
+          reportId: reportConfig.reportId, 
+          title: reportConfig.title, 
+          periodLabel: reportConfig.periodLabel,
+          preparedBy: reportConfig.preparedBy, 
+          generatedByEmail: userEmail, 
+          totalIncome: reportIncome, 
+          totalExpense: reportExpense, 
+          netBalance: reportNet,
+          preparedBySignature: reportConfig.preparedBySignature,
+          authorizedSignatorySignature: reportConfig.authorizedSignatorySignature
         })
       });
       
@@ -121,7 +133,7 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
       
       toast.success('Report registered! You can now download or email it here.', { id: tid });
       setReportConfig(prev => ({ ...prev, isOpen: false })); 
-      setActiveTab('documents'); // Direct redirect to list view
+      setActiveTab('documents'); 
       fetchReports(); 
     } catch (error) { 
       toast.error('Failed to create report entry.', { id: tid });
@@ -130,101 +142,128 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
     }
   };
 
-  // --- REPAIRED: PDF Canvas Capture for Email Dispatches ---
+  const waitForRender = async (element: HTMLElement) => {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await document.fonts.ready;
+    const images = Array.from(element.querySelectorAll('img'));
+    await Promise.all(images.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve; 
+      });
+    }));
+  };
+
+  const capturePDF = async (): Promise<Blob> => {
+    const element = document.getElementById('financial-report-capture-zone');
+    if (!element) throw new Error("Template container missing from DOM.");
+
+    await waitForRender(element);
+
+    try {
+      const dataUrl = await toJpeg(element, { 
+        quality: 0.90, 
+        backgroundColor: '#ffffff',
+        pixelRatio: 1.5,
+        filter: (node) => {
+          const tag = node.tagName;
+          return tag !== 'SCRIPT' && tag !== 'NOSCRIPT'; 
+        }
+      });
+      
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = 210; 
+      const pageHeight = (element.offsetHeight * pageWidth) / element.offsetWidth; 
+      
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, pageWidth, pageHeight);
+      return pdf.output('blob'); 
+    } catch (err: unknown) {
+      console.error("DOM Capture Error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Canvas generation failed.";
+      throw new Error(errorMessage);
+    }
+  };
+
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setProcessing(true);
-    const tid = toast.loading('Capturing PDF artifact and routing email layout...');
+    const tid = toast.loading('Generating PDF attachment and dispatching email...');
     
     try {
-      let pdfBase64 = null;
-      const element = document.getElementById('financial-report-capture-zone');
-      
-      if (element) {
-        // Temporarily break out layout parameters for the canvas snapshots engine
-        element.style.position = 'static';
-        element.style.visibility = 'visible';
-        element.style.height = 'auto';
-
-        const html2pdf = (await import('html2pdf.js')).default;
-        
-        const opt = {
-          margin: 0,
-          filename: `${emailModal.reportId}.pdf`,
-          image: { type: 'jpeg' as const, quality: 0.95 },
-          html2canvas: { scale: 1.5, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-        };
-
-        pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-        
-        // Re-wrap and hide cleanly
-        element.style.position = 'absolute';
-        element.style.visibility = 'hidden';
-        element.style.height = '0px';
-      }
+      const pdfBlob = await capturePDF();
+      const formData = new FormData();
+      formData.append("file", pdfBlob, `${emailModal.reportId}.pdf`);
+      formData.append("recipient", emailModal.recipient);
+      formData.append("message", emailModal.message);
+      formData.append("reportId", emailModal.reportId);
 
       const res = await fetch('/api/admin/finances/send-report', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          recipient: emailModal.recipient, 
-          message: emailModal.message, 
-          reportId: emailModal.reportId,
-          pdfBase64 
-        })
+        body: formData 
       });
 
-      if(!res.ok) throw new Error();
+      if(!res.ok) throw new Error('API route rejected transmission.');
       
-      toast.success('Email dispatched successfully with attached PDF document!', { id: tid });
+      toast.success('Dispatch complete!', { id: tid });
       setEmailModal({ isOpen: false, reportId: '', recipient: '', message: '' });
-    } catch (error) {
-      toast.error('Failed to dispatch email delivery pipeline.', { id: tid });
-    } finally { setProcessing(false); }
+      setSuccessModal({ 
+        isOpen: true, 
+        message: `The financial report has been successfully attached and dispatched to ${emailModal.recipient}.` 
+      });
+
+    } catch (error: unknown) {
+      console.error("Pipeline Error:", error);
+      toast.error(`Dispatch failed: Check console.`, { id: tid });
+    } finally { 
+      setProcessing(false); 
+    }
   };
 
-  // --- REPAIRED: Direct Historical PDF Compilation and Download ---
   const handleDownloadHistorical = async (log: IReportLog) => {
-    const tid = toast.loading('Compiling historical sheet data into PDF format...');
+    const tid = toast.loading('Compiling PDF format...');
     
     setReportConfig(prev => ({
       ...prev, 
       title: log.title, 
       periodLabel: log.periodLabel, 
-      reportId: log.reportId,
-      preparedBy: log.preparedBy || prev.preparedBy
+      reportId: log.reportId, 
+      preparedBy: log.preparedBy || prev.preparedBy,
+      // 🚨 SMART FALLBACK: If old doc has no signature, use the preparedBy name
+      preparedBySignature: log.preparedBySignature || log.preparedBy || 'Admin',
+      authorizedSignatorySignature: log.authorizedSignatorySignature || 'Authorized Signatory'
     }));
 
     setTimeout(async () => {
       try {
         const element = document.getElementById('financial-report-capture-zone');
-        if (element) {
-          element.style.position = 'static';
-          element.style.visibility = 'visible';
-          element.style.height = 'auto';
+        if (!element) throw new Error("Template container missing.");
 
-          const html2pdf = (await import('html2pdf.js')).default;
-          
-          const opt = {
-            margin: 0,
-            filename: `${log.reportId}.pdf`,
-            image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-          };
+        await waitForRender(element);
 
-          await html2pdf().set(opt).from(element).save();
-          
-          element.style.position = 'absolute';
-          element.style.visibility = 'hidden';
-          element.style.height = '0px';
-        }
-        toast.success('Download initialized successfully!', { id: tid });
-      } catch (error) {
+        const dataUrl = await toJpeg(element, { 
+          quality: 0.90, 
+          backgroundColor: '#ffffff', 
+          pixelRatio: 1.5, 
+          filter: (node) => {
+            const tag = node.tagName;
+            return tag !== 'SCRIPT' && tag !== 'NOSCRIPT';
+          }
+        });
+        
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const pageWidth = 210;
+        const pageHeight = (element.offsetHeight * pageWidth) / element.offsetWidth;
+        
+        pdf.addImage(dataUrl, 'JPEG', 0, 0, pageWidth, pageHeight);
+        pdf.save(`${log.reportId}.pdf`); 
+
+        toast.success('Download complete!', { id: tid });
+      } catch (error: unknown) {
+        console.error("Download Error:", error);
         toast.error('PDF render pipeline interrupted.', { id: tid });
       }
-    }, 400);
+    }, 150);
   };
 
   const formatCurrency = (amt: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amt);
@@ -233,10 +272,7 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
 
   const handleFilterChange = (val: string) => {
     let newLabel = 'Lifetime / All-Time Record';
-    if (val !== 'all') {
-      const [year, month] = val.split('-');
-      newLabel = `${getFullMonthName(parseInt(month))} ${year}`;
-    }
+    if (val !== 'all') { const [year, month] = val.split('-'); newLabel = `${getFullMonthName(parseInt(month))} ${year}`; }
     setReportConfig({ ...reportConfig, periodFilter: val, periodLabel: newLabel });
   };
 
@@ -245,23 +281,19 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
   const netBalance = totalLifetimeIncome - totalLifetimeExpense;
 
   const filteredMetrics = reportConfig.periodFilter === 'all' ? metrics : metrics.filter(m => `${m._id.year}-${m._id.month}` === reportConfig.periodFilter);
-  const filteredTransactions = reportConfig.periodFilter === 'all' ? transactions : transactions.filter(tx => {
-        const d = new Date(tx.date); return `${d.getFullYear()}-${d.getMonth() + 1}` === reportConfig.periodFilter;
-      });
+  const filteredTransactions = reportConfig.periodFilter === 'all' ? transactions : transactions.filter(tx => { const d = new Date(tx.date); return `${d.getFullYear()}-${d.getMonth() + 1}` === reportConfig.periodFilter; });
 
   const reportIncome = filteredMetrics.reduce((sum, m) => sum + m.totalIncome, 0);
   const reportExpense = filteredMetrics.reduce((sum, m) => sum + m.totalExpense, 0);
   const reportNet = reportIncome - reportExpense;
 
-  const chartData = [...metrics].reverse().map(m => ({
-    name: `${getMonthName(m._id.month)} ${m._id.year}`, Income: m.totalIncome, Expense: m.totalExpense
-  }));
+  const chartData = [...metrics].reverse().map(m => ({ name: `${getMonthName(m._id.month)} ${m._id.year}`, Income: m.totalIncome, Expense: m.totalExpense }));
 
   return (
     <>
       <div className="pt-8 pb-24 space-y-6 md:space-y-8 max-w-6xl mx-auto px-4 sm:px-6 print:hidden">
         
-        {/* Header & Tabs */}
+        {/* Header and Tabs */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Finances & Transparency</h1>
@@ -312,11 +344,11 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-5">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-5 min-w-0 w-full">
                   <h3 className="font-bold text-gray-900 dark:text-white mb-6">Cash Flow Trends</h3>
-                  <div className="h-80 w-full">
+                  <div className="h-80 w-full min-w-0 relative">
                     {chartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.2} />
                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
@@ -360,9 +392,9 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                     </div>
                     <div className="divide-y divide-gray-100 dark:divide-gray-800">
                       {transactions.map(tx => (
-                        <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
+                        <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
                           <div className="flex gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
                               {tx.type === 'income' ? '↓' : '↑'}
                             </div>
                             <div>
@@ -375,7 +407,7 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                             </div>
                           </div>
                           <div className="text-left sm:text-right">
-                            <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600' : 'text-gray-900 dark:text-white'}`}>
+                            <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
                               {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                             </p>
                           </div>
@@ -400,18 +432,26 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                     </thead>
                     <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-800">
                       {reportLogs.map(log => (
-                        <tr key={log._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <tr key={log._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                           <td className="p-4 font-mono font-bold text-gray-900 dark:text-white">{log.reportId}</td>
                           <td className="p-4 text-gray-900 dark:text-white">{log.title}</td>
-                          {/* FIXED: Displays accurate .env parsed email string */}
-                          <td className="p-4 text-gray-500 dark:text-gray-400">{log.generatedByEmail || log.preparedBy}</td>
+                          <td className="p-4 text-gray-500 dark:text-gray-400">{log.generatedByEmail || log.preparedBy || 'Admin'}</td>
                           <td className="p-4 text-gray-500 dark:text-gray-400">{new Date(log.createdAt).toLocaleDateString()}</td>
                           <td className="p-4 text-right flex justify-end gap-2">
                             <button onClick={() => handleDownloadHistorical(log)} className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                               Download
                             </button>
                             <button onClick={() => {
-                              setReportConfig(prev => ({...prev, title: log.title, periodLabel: log.periodLabel, reportId: log.reportId, preparedBy: log.preparedBy}));
+                              setReportConfig(prev => ({
+                                ...prev, 
+                                title: log.title, 
+                                periodLabel: log.periodLabel, 
+                                reportId: log.reportId, 
+                                preparedBy: log.preparedBy,
+                                // 🚨 SMART FALLBACK for emails too
+                                preparedBySignature: log.preparedBySignature || log.preparedBy || 'Admin',
+                                authorizedSignatorySignature: log.authorizedSignatorySignature || 'Authorized Signatory'
+                              }));
                               setEmailModal({ isOpen: true, reportId: log.reportId, recipient: '', message: '' });
                             }} className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
                               Email
@@ -431,6 +471,7 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
         {/* LOG TRANSACTION MODAL */}
         <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Log New Transaction" size="large">
           <form onSubmit={handleSaveTransaction} className="space-y-5">
+            {/* Form fields remain exactly the same */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
@@ -531,19 +572,18 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
 
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prepared By Signature</label>
-              <input type="text" value={reportConfig.preparedBySignature} onChange={(e) => setReportConfig({...reportConfig, preparedBySignature: e.target.value})} placeholder="Type name to sign..." style={{ fontFamily: "'Caveat', cursive" }} className="w-full border rounded-xl px-3 py-2 text-2xl bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="text" value={reportConfig.preparedBySignature} onChange={(e) => setReportConfig({...reportConfig, preparedBySignature: e.target.value})} placeholder="Type name to sign..." className={`w-full border rounded-xl px-3 py-2 text-xl italic font-semibold bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500 ${montserrat.className}`} />
             </div>
 
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Authorized Signatory</label>
-              <input type="text" value={reportConfig.authorizedSignatorySignature} onChange={(e) => setReportConfig({...reportConfig, authorizedSignatorySignature: e.target.value})} placeholder="Type name to sign..." style={{ fontFamily: "'Caveat', cursive" }} className="w-full border rounded-xl px-3 py-2 text-2xl bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="text" value={reportConfig.authorizedSignatorySignature} onChange={(e) => setReportConfig({...reportConfig, authorizedSignatorySignature: e.target.value})} placeholder="Type name to sign..." className={`w-full border rounded-xl px-3 py-2 text-xl italic font-semibold bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-purple-500 ${montserrat.className}`} />
             </div>
             
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
               <button onClick={() => setReportConfig(prev => ({ ...prev, isOpen: false }))} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-700 dark:text-gray-200">Cancel</button>
-              {/* FIXED: Saves config parameters and routes user straight to Document listing view */}
               <button onClick={executeGenerate} disabled={processing} className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl disabled:opacity-40">
-                {processing ? 'Processing...' : 'Generate Official PDF'}
+                {processing ? 'Processing...' : 'Register Official Document'}
               </button>
             </div>
           </div>
@@ -575,19 +615,24 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
         <SuccessModal isOpen={successModal.isOpen} onClose={() => setSuccessModal({ isOpen: false, message: '' })} title="Success" message={successModal.message} />
       </div>
 
-      {/* FIXED: Strict clipping and absolute hide bounds ensure it is unseen by users but legible to html2pdf.js */}
-      <div 
-        id="financial-report-capture-zone" 
-        style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '210mm', height: '0px', overflow: 'hidden', visibility: 'hidden' }}
-      >
-        <FinancialReportTemplate 
-          config={reportConfig}
-          metrics={filteredMetrics}
-          transactions={filteredTransactions}
-          totals={{ income: reportIncome, expense: reportExpense, net: reportNet }}
-          formatCurrency={formatCurrency}
-          getFullMonthName={getFullMonthName}
-        />
+      {/* OFF-SCREEN DOM CAPTURE AREA */}
+      <div style={{ 
+        position: 'fixed',
+        top: '-10000px', 
+        left: '-10000px', 
+        width: '1200px',
+        zIndex: -1 
+      }}>
+        <div id="financial-report-capture-zone" style={{ width: '800px', backgroundColor: '#ffffff', padding: '20px' }}>
+          <FinancialReportTemplate 
+            config={reportConfig}
+            metrics={filteredMetrics}
+            transactions={filteredTransactions}
+            totals={{ income: reportIncome, expense: reportExpense, net: reportNet }}
+            formatCurrency={formatCurrency}
+            getFullMonthName={getFullMonthName}
+          />
+        </div>
       </div>
     </>
   );
