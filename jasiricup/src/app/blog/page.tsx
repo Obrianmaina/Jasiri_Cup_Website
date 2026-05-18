@@ -114,26 +114,34 @@ export default async function BlogPage() {
   const blogPosts = allPosts.filter((post) => post.id !== featuredPost.id);
 
   return (
-    <div className="container mx-auto px-4 sm:px-8 md:px-16 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-16 py-8 overflow-hidden max-w-[100vw]">
       <Breadcrumbs items={breadcrumbs} />
 
-      <section className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg p-6 sm:p-8 mb-12 flex flex-col md:flex-row items-center justify-between transition-colors duration-300">
-        <div className="w-full md:w-1/2 pr-0 md:pr-8 text-center md:text-left">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800 dark:text-white transition-colors">
+      {/* Added min-w-0 and w-full max-w-full to prevent flexbox blowouts */}
+      <section className="relative bg-gradient-to-br from-gray-100 to-white dark:from-gray-800/80 dark:to-gray-900 rounded-3xl p-6 md:p-8 lg:p-12 mb-16 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-10 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors duration-300 w-full max-w-full min-w-0">
+        
+        {/* Added min-w-0 to the text container */}
+        <div className="w-full md:w-3/5 lg:w-1/2 text-center md:text-left order-2 md:order-1 min-w-0">
+          <span className="inline-block bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4">
+            Featured Story
+          </span>
+          {/* Added break-words to guarantee long titles wrap perfectly */}
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white transition-colors leading-tight break-words">
             {featuredPost.title}
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 transition-colors">
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-8 transition-colors leading-relaxed md:pr-4 break-words">
             {featuredPost.description}
           </p>
           <a
             href={featuredPost.linkHref}
-            className="inline-block bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors shadow-sm"
+            className="inline-block bg-purple-600 text-white px-8 py-3.5 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 font-semibold shadow-md hover:shadow-lg transition-all whitespace-nowrap"
           >
             Read Article
           </a>
         </div>
-        <div className="w-full md:w-1/2 mt-8 md:mt-0 flex justify-center md:justify-end">
-          <div className="relative w-full max-w-lg aspect-video rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
+
+        <div className="w-full md:w-2/5 lg:w-1/2 flex justify-center md:justify-end order-1 md:order-2 shrink-0">
+          <div className="relative w-full max-w-[320px] sm:max-w-md lg:max-w-lg aspect-[4/3] sm:aspect-video md:aspect-square lg:aspect-video rounded-2xl overflow-hidden shadow-lg border border-gray-100 dark:border-gray-700">
             <Image
               src={featuredPost.imageSrc}
               alt={featuredPost.title}
@@ -145,7 +153,7 @@ export default async function BlogPage() {
         </div>
       </section>
 
-      <section>
+      <section className="w-full max-w-full">
         <BlogSearchClient posts={blogPosts} error={null} />
       </section>
     </div>
