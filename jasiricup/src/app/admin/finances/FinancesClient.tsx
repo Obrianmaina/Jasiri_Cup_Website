@@ -9,6 +9,7 @@ import { FinancialReportTemplate } from '@/components/admin/FinancialReportTempl
 import { toJpeg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { Montserrat } from 'next/font/google';
+import Link from 'next/link';
 
 const montserrat = Montserrat({ subsets: ['latin'], display: 'swap' });
 
@@ -296,7 +297,22 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
         {/* Header and Tabs */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
           <div>
+            {/* 👇 ADDED: Back to Dashboard Link 👇 */}
+            <div className="mb-3">
+              <Link 
+                href="/admin/dashboard" 
+                className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Dashboard
+              </Link>
+            </div>
+            {/* 👆 END ADDED LINK 👆 */}
+
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Finances & Transparency</h1>
+            
             <div className="flex gap-4 mt-4">
               <button onClick={() => setActiveTab('ledger')} className={`text-sm font-bold pb-2 border-b-2 transition-colors ${activeTab === 'ledger' ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>
                 Transactions Ledger
