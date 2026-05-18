@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center justify-between h-16">
             <Link href="/admin/dashboard" className="flex items-center gap-2 shrink-0">
               <span className="text-lg font-bold text-purple-700 dark:text-purple-400 tracking-tight">
-                Admin Central
+                Admin Console
               </span>
             </Link>
 
@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </nav>
 
             <div className="flex items-center gap-3">
-              <ThemeToggle /> {/* Ensure you can toggle theme from Admin too */}
+              
               <button
                 onClick={handleLogout}
                 className="hidden sm:flex items-center gap-1 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg transition-colors"
