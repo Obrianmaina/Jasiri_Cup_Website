@@ -86,15 +86,15 @@ export default async function TeamPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 md:px-16 py-8">
+    <div className="container mx-auto px-4 md:px-8 lg:px-16 py-8">
       <Breadcrumbs items={breadcrumbs} />
 
       {/* Intro Section */}
-      <section className="bg-gray-100 dark:bg-gray-800/50 rounded-2xl p-6 md:p-10 mb-24 text-start shadow-sm transition-colors duration-300">
+      <section className="bg-gray-100 dark:bg-gray-800/50 rounded-2xl p-6 md:p-10 mb-16 md:mb-24 text-start shadow-sm transition-colors duration-300">
         <h1 className="text-3xl md:text-4xl font-bold mb-3 text-gray-800 dark:text-white leading-tight transition-colors">
           &ldquo;Empowering girls, one cup at a time.&rdquo;
         </h1>
-        <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 font-medium transition-colors">- The JasiriCup Team</p>
+        <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 font-medium transition-colors">The JasiriCup Team</p>
       </section>
 
       {/* Team Members Grid */}

@@ -137,9 +137,6 @@ function TeamEditor({ data, onChange }: { data: TeamMember[]; onChange: (d: Team
 }
 
 function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d: ProductContent) => void; }) {
-  const updateStep = (id: number, field: keyof ProductStep, value: string | number) => { onChange({ ...data, steps: data.steps.map((s) => s.id === id ? { ...s, [field]: value } : s ) }); };
-  const updateCard = (index: number, field: string, value: string) => { const cards = [...data.downloadCards]; cards[index] = { ...cards[index], [field]: value }; onChange({ ...data, downloadCards: cards }); };
-  
   return (
     <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
@@ -155,30 +152,36 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
           </div>
         </div>
       </div>
+      
+      {/* UPDATED: Converted Steps to use GenericArrayEditor so you can add/remove freely */}
       <div>
         <h4 className="font-semibold text-sm mb-3">How to Use Steps</h4>
-        <div className="space-y-3">
-          {data.steps.map((step) => (
-            <div key={step.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border space-y-2">
-              <p className="text-xs font-semibold text-purple-600">Step {step.id}</p>
-              <input type="text" value={step.title} onChange={(e) => updateStep(step.id, "title", e.target.value)} placeholder="Title" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-              <textarea value={step.description} onChange={(e) => updateStep(step.id, "description", e.target.value) } rows={2} placeholder="Description" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-            </div>
-          ))}
-        </div>
+        <GenericArrayEditor
+          data={data.steps || []}
+          onChange={(steps) => onChange({ ...data, steps })}
+          title="Step"
+          defaultItem={{ id: 0, title: "", description: "", videoUrl: "" }}
+          fields={[
+            { key: "title", label: "Title", type: "text" },
+            { key: "description", label: "Description", type: "textarea" },
+          ]}
+        />
       </div>
+
+      {/* UPDATED: Converted Download Cards to use GenericArrayEditor as well */}
       <div>
         <h4 className="font-semibold text-sm mb-3">Download Cards</h4>
-        <div className="space-y-3">
-          {data.downloadCards.map((card, i) => (
-            <div key={i} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border space-y-2">
-              <p className="text-xs font-semibold text-purple-600">Card {i + 1}</p>
-              <input type="text" value={card.title} onChange={(e) => updateCard(i, "title", e.target.value)} placeholder="Title" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-              <input type="text" value={card.description} onChange={(e) => updateCard(i, "description", e.target.value)} placeholder="Description" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-              <input type="text" value={card.downloadLink} onChange={(e) => updateCard(i, "downloadLink", e.target.value)} placeholder="URL" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-            </div>
-          ))}
-        </div>
+        <GenericArrayEditor
+          data={data.downloadCards || []}
+          onChange={(cards) => onChange({ ...data, downloadCards: cards })}
+          title="Download Card"
+          defaultItem={{ title: "", description: "", downloadLink: "" }}
+          fields={[
+            { key: "title", label: "Title", type: "text" },
+            { key: "description", label: "Description", type: "textarea" },
+            { key: "downloadLink", label: "Download URL", type: "text" },
+          ]}
+        />
       </div>
     </div>
   );

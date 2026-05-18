@@ -109,10 +109,11 @@ export default async function ProductPage() {
       <Breadcrumbs items={productBreadcrumbs} />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-purple-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 sm:p-10 mb-12 flex flex-col-reverse md:flex-row items-center justify-between gap-8 shadow-sm border border-purple-100 dark:border-gray-700 transition-colors duration-300">
+      <section className="bg-gradient-to-br from-purple-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 sm:p-8 lg:p-10 mb-12 flex flex-col-reverse md:flex-row items-center justify-between gap-8 shadow-sm border border-purple-100 dark:border-gray-700 transition-colors duration-300">
         
         {/* Text */}
-        <div className="w-full md:w-1/2 text-center md:text-left">
+        {/* OPTIMIZED: Changed from md:w-1/2 to md:w-3/5 to give text & buttons more room on iPad */}
+        <div className="w-full md:w-3/5 lg:w-1/2 text-center md:text-left">
           <span className="inline-block bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4 transition-colors">
             Our Product
           </span>
@@ -123,16 +124,17 @@ export default async function ProductPage() {
             {content.description}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+          {/* OPTIMIZED: Added flex-wrap and adjusted gap sizing */}
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 lg:gap-4 justify-center md:justify-start">
             <Link
               href="/order"
-              className="inline-flex items-center justify-center bg-purple-600 text-white px-8 py-3.5 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors font-semibold shadow-md hover:shadow-lg"
+              className="inline-flex items-center justify-center bg-purple-600 text-white px-6 sm:px-8 py-3.5 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors font-semibold shadow-md hover:shadow-lg whitespace-nowrap"
             >
               Order Now
             </Link>
             <a
               href="#how-to-use"
-              className="inline-flex items-center justify-center border-2 border-purple-200 dark:border-purple-500/50 text-purple-700 dark:text-purple-400 px-8 py-3.5 rounded-full hover:border-purple-400 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors font-semibold"
+              className="inline-flex items-center justify-center border-2 border-purple-200 dark:border-purple-500/50 text-purple-700 dark:text-purple-400 px-6 sm:px-8 py-3.5 rounded-full hover:border-purple-400 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors font-semibold whitespace-nowrap"
             >
               How to Use
             </a>
@@ -140,8 +142,9 @@ export default async function ProductPage() {
         </div>
 
         {/* Image */}
-        <div className="w-full md:w-1/2 flex justify-center">
-          <div className="relative w-72 h-72 sm:w-108 sm:h-108 rounded-2xl overflow-hidden  border-white dark:border-gray-800 transition-colors">
+        {/* OPTIMIZED: Changed from md:w-1/2 to md:w-2/5 to balance the grid and adjusted fixed image sizes */}
+        <div className="w-full md:w-2/5 lg:w-1/2 flex justify-center">
+          <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-2xl overflow-hidden border-white dark:border-gray-800 transition-colors">
             <Image
               src={content.heroImage}
               alt={content.title}
@@ -179,14 +182,16 @@ export default async function ProductPage() {
       </div>
 
       {/* Download Cards */}
-      <section className="mb-12">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2 transition-colors">Resources & Downloads</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base max-w-md mx-auto transition-colors">
+      <section className="mb-16">
+        <div className="text-center mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-3 transition-colors">Resources & Downloads</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base max-w-lg mx-auto transition-colors px-4">
             Access our guides, info sheets, and hygiene tips to get the most out of your JasiriCup.
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        
+        {/* UPDATED GRID CLASSES HERE */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
           {content.downloadCards.map((card, index) => (
             <DownloadCard
               key={index}

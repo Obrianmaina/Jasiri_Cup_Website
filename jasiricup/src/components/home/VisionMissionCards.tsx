@@ -8,7 +8,7 @@ interface VisionMissionProps {
 
 export const VisionMissionCards = ({ vision, mission }: VisionMissionProps) => {
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 lg:gap-24 mb-8 md:mb-12 px-4 lg:px-16 mt-8">
+    <section className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-24 mb-8 md:mb-12 px-4 md:px-8 lg:px-16 mt-8">
       {/* Vision Card */}
       <div className="text-white rounded-lg p-6 sm:p-8 shadow-md relative isolate" style={{ backgroundColor: '#7856BF' }}>
         <h3 className="text-xl sm:text-2xl font-bold mb-3 md:mb-4 relative z-10">

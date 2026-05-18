@@ -30,8 +30,8 @@ export const HeroBanner = ({ banners }: { banners: BannerPost[] }) => {
 
   return (
     <section className="relative bg-gray-100 dark:bg-gray-800/50 rounded-lg mb-6 overflow-hidden transition-colors duration-300">
-      <div className="p-4 sm:p-6 md:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
-        <div className="w-full lg:w-2/3 text-center lg:text-left order-2 lg:order-1">
+      <div className="p-4 sm:p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 lg:gap-12">
+        <div className="w-full md:w-3/5 lg:w-2/3 text-center md:text-left order-2 md:order-1">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 text-gray-800 dark:text-white leading-tight transition-colors duration-300">
             {currentBanner.title}
           </h1>
@@ -45,15 +45,15 @@ export const HeroBanner = ({ banners }: { banners: BannerPost[] }) => {
           </Link>
         </div>
         
-        <div className="w-full lg:w-1/3 flex justify-center lg:justify-end order-1 lg:order-2">
-          <div className="relative w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[280px] aspect-square rounded-lg shadow-lg overflow-hidden">
+        <div className="w-full md:w-2/5 lg:w-1/3 flex justify-center md:justify-end order-1 md:order-2">
+          <div className="relative w-full max-w-[280px] sm:max-w-[320px] md:max-w-[260px] lg:max-w-[280px] aspect-square rounded-lg shadow-lg overflow-hidden">
             <Image 
               src={currentBanner.imageSrc} 
               alt={currentBanner.title} 
               fill 
               style={{ objectFit: 'cover' }} 
               priority={currentIndex === 0} 
-              sizes="(max-width: 768px) 280px, 280px" 
+              sizes="(max-width: 768px) 320px, 280px" 
               className="rounded-lg" 
             />
           </div>
