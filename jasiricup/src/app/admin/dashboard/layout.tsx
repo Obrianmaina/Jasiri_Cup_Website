@@ -5,13 +5,17 @@ import React, { useState } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle"; // Added toggle
 
 const navLinks = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/admin/finances", label: "Finances", icon: "💰" }, // Add this line!
-  { href: "/admin/blog", label: "Blog Posts", icon: "✍️" },
-  { href: "/admin/pages", label: "Page Content", icon: "📄" },
-  { href: "/admin/impact", label: "Impact Stats", icon: "📊" },
-  { href: "/admin/products", label: "Products", icon: "🛍️" },
-  { href: "/admin/messages", label: "Messages", icon: "📩" },
+  { href: "/admin/dashboard", icon: "🏠" },
+  { href: "/admin/finances", icon: "💰" }, // Add this line!
+  { href: "/admin/blog", icon: "✍️" },
+  { href: "/admin/pages", icon: "📄" },
+  { href: "/admin/impact", icon: "📊" },
+  { href: "/admin/products", icon: "🛍️" },
+  { href: "/admin/messages", icon: "📩" },
+  {
+  href: "/admin/faq",
+  icon: "🤔", // Or whatever icon library you are using (e.g., Lucide React)
+},
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/admin/dashboard" className="flex items-center gap-2 shrink-0">
-              <span className="text-lg font-bold text-purple-700 dark:text-purple-400 tracking-tight">
+              <span className="text-lg font-bold text-purple-900 dark:text-green-500 tracking-tight">
                 Admin Console
               </span>
             </Link>
@@ -49,7 +53,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     }`}
                   >
                     <span>{link.icon}</span>
-                    <span>{link.label}</span>
                   </Link>
                 );
               })}

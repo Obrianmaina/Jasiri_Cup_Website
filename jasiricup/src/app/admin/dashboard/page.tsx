@@ -1,3 +1,4 @@
+// src/app/admin/dashboard/page.tsx
 import Link from "next/link";
 import connectDB from "@/lib/dbConnect";
 import BlogPost from "@/lib/models/BlogPost";
@@ -104,43 +105,80 @@ export default async function AdminDashboard() {
         {/* Quick Actions */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 md:p-6 transition-colors">
           <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Link 
               href="/admin/blog/create"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-center"
             >
               <div className="w-9 h-9 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-purple-600 dark:text-purple-400 text-lg font-bold">+</span>
               </div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-700 dark:group-hover:text-purple-400">New Post</span>
             </Link>
+            
             <Link 
               href="/admin/pages"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center"
             >
               <div className="w-9 h-9 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-blue-600 dark:text-blue-400 text-lg">📄</span>
               </div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-400">Edit Pages</span>
             </Link>
+
             <Link 
               href="/admin/products"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all text-center"
             >
               <div className="w-9 h-9 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-green-600 dark:text-green-400 text-lg">🛍️</span>
               </div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-700 dark:group-hover:text-green-400">Products</span>
             </Link>
+
             <Link 
               href="/admin/messages"
-              className="group flex flex-col items-center justify-center p-4 md:p-5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-center"
+              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-center"
             >
               <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <span className="text-amber-600 dark:text-amber-400 text-lg">📩</span>
               </div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-amber-700 dark:group-hover:text-amber-400">Messages</span>
             </Link>
+
+            {/* Added: Manage FAQs */}
+            <Link 
+              href="/admin/faq"
+              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-center"
+            >
+              <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <span className="text-indigo-600 dark:text-indigo-400 text-lg">🤔</span>
+              </div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-400">FAQs</span>
+            </Link>
+
+            {/* Added: Finances */}
+            <Link 
+              href="/admin/finances"
+              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-center"
+            >
+              <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <span className="text-emerald-600 dark:text-emerald-400 text-lg">💰</span>
+              </div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-700 dark:group-hover:text-emerald-400">Finances</span>
+            </Link>
+
+            {/* Added: Impact Stats */}
+            <Link 
+              href="/admin/impact"
+              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-cyan-500 dark:hover:border-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all text-center"
+            >
+              <div className="w-9 h-9 bg-cyan-100 dark:bg-cyan-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <span className="text-cyan-600 dark:text-cyan-400 text-lg">📊</span>
+              </div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-cyan-700 dark:group-hover:text-cyan-400">Impact</span>
+            </Link>
+
           </div>
         </div>
 

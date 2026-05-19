@@ -1,20 +1,14 @@
+// src/app/admin/pages/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { SuccessModal } from '@/components/ui/Modal'; // Imported the SuccessModal
+import { SuccessModal } from '@/components/ui/Modal'; 
 
 // --- Types ---
 interface TeamMember { id: string; name: string; role: string; description: string; imageSrc: string; cardColor: string; socials?: { platform: string; url: string }[]; }
 interface ProductStep { id: number; title: string; description: string; videoUrl: string; }
-interface ProductContent { 
-  title: string; 
-  description: string; 
-  heroImage: string; 
-  mainVideoUrl?: string; 
-  steps: ProductStep[]; 
-  downloadCards: { title: string; description: string; downloadLink: string }[]; 
-}
+interface ProductContent { title: string; description: string; heroImage: string; mainVideoUrl?: string; steps: ProductStep[]; downloadCards: { title: string; description: string; downloadLink: string }[]; }
 interface SectionData<T> { section: string; content?: T; }
 interface HomeContent { about: { title: string; content: string; imageSrc: string }; vision: { title: string; content: string }; mission: { title: string; content: string }; stats: { title: string; description: string; numbers: { label: string; value: string }[]; }; }
 interface Story { id: number; name: string; age: number; county: string; school: string; image: string; headline: string; story: string; quote: string; impact: string[]; }
@@ -26,6 +20,10 @@ interface Testimonial { quote: string; name: string; location: string; role: str
 interface MapCounty { name: string; region: string; girls: number; color: string; image?: string; imageAttribution?: string; }
 interface ImpactPageContent { hero: { subtitle: string; title: string; description: string; }; testimonials: Testimonial[]; map: { title: string; subtitle: string; expansionNote: string; counties: MapCounty[]; }; }
 
+// NEW: Block Builder Interfaces for Guide
+interface GuideBlock { blockType: 'heading' | 'paragraph' | 'bullets'; content: string; }
+interface GuideContent { title: string; intro: string; blocks: GuideBlock[]; }
+
 // --- Defaults ---
 const DEFAULT_HOME: HomeContent = { about: { title: "", content: "", imageSrc: "" }, vision: { title: "", content: "" }, mission: { title: "", content: "" }, stats: { title: "", description: "", numbers: [] } };
 const DEFAULT_TEAM_MEMBERS: TeamMember[] = [];
@@ -35,6 +33,7 @@ const DEFAULT_PRESS = { coverage: [] as PressCoverage[], downloads: [] as PressD
 const DEFAULT_PARTNERS: Partner[] = [];
 const DEFAULT_VOLUNTEER: VolunteerRole[] = [];
 const DEFAULT_IMPACT: ImpactPageContent = { hero: { subtitle: "", title: "", description: "" }, testimonials: [], map: { title: "", subtitle: "", expansionNote: "", counties: [] } };
+const DEFAULT_GUIDE: GuideContent = { title: "", intro: "", blocks: [] };
 
 // --- Sub-components ---
 function HomeEditor({ data, onChange }: { data: HomeContent; onChange: (d: HomeContent) => void; }) {
@@ -153,7 +152,6 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
         </div>
       </div>
       
-      {/* UPDATED: Converted Steps to use GenericArrayEditor so you can add/remove freely */}
       <div>
         <h4 className="font-semibold text-sm mb-3">How to Use Steps</h4>
         <GenericArrayEditor
@@ -168,7 +166,6 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
         />
       </div>
 
-      {/* UPDATED: Converted Download Cards to use GenericArrayEditor as well */}
       <div>
         <h4 className="font-semibold text-sm mb-3">Download Cards</h4>
         <GenericArrayEditor
@@ -190,8 +187,6 @@ function ProductEditor({ data, onChange }: { data: ProductContent; onChange: (d:
 function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChange: (d: ImpactPageContent) => void; }) {
   return (
     <div className="space-y-6">
-      
-      {/* 1. Hero Section */}
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
         <h4 className="font-semibold text-sm mb-3">Hero Section</h4>
         <div className="space-y-3">
@@ -201,7 +196,6 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
         </div>
       </div>
 
-      {/* 2. Testimonials (Quotes) Section */}
       <div>
         <h4 className="font-semibold text-sm mb-3">Testimonials (Quotes)</h4>
         <GenericArrayEditor
@@ -219,7 +213,6 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
         />
       </div>
 
-      {/* 3. Impact Section Settings */}
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
         <h4 className="font-semibold text-sm mb-3">Impact Section Settings</h4>
         <div className="space-y-3">
@@ -229,7 +222,6 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
         </div>
       </div>
 
-      {/* 4. Impact Cards */}
       <div>
         <h4 className="font-semibold text-sm mb-3">Impact Cards</h4>
         <GenericArrayEditor
@@ -248,24 +240,68 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
               label: "Theme Color", 
               type: "select",
               options: [
-                { label: "Purple", value: "purple" },
-                { label: "Green", value: "green" },
-                { label: "Blue", value: "blue" },
-                { label: "Amber", value: "amber" },
-                { label: "Pink", value: "pink" },
-                { label: "Red", value: "red" },
-                { label: "Teal", value: "teal" },
+                { label: "purple", value: "purple" },
+                { label: "green", value: "green" },
+                { label: "blue", value: "blue" },
+                { label: "amber", value: "amber" },
+                { label: "pink", value: "pink" },
+                { label: "red", value: "red" },
+                { label: "teal", value: "teal" },
               ]
             },
           ]}
         />
       </div>
-
     </div>
   );
 }
 
-// 1. Updated Interface to support select dropdowns
+// NEW: Guide Editor (Block Builder Pattern)
+function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: GuideContent) => void; }) {
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+        <h4 className="font-semibold text-sm mb-3">Guide Introduction</h4>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs mb-1">Title</label>
+            <input type="text" value={data.title} onChange={(e) => onChange({ ...data, title: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
+          </div>
+          <div>
+            <label className="block text-xs mb-1">Introductory Text</label>
+            <textarea rows={4} value={data.intro} onChange={(e) => onChange({ ...data, intro: e.target.value }) } className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 className="font-semibold text-sm mb-1">Content Blocks</h4>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Build your guide section by section.</p>
+        <GenericArrayEditor<GuideBlock> // Explicitly pass the GuideBlock type here
+          data={data.blocks || []}
+          onChange={(blocks) => onChange({ ...data, blocks })}
+          title="Content Block"
+          defaultItem={{ blockType: "paragraph", content: "" }} // This now matches GuideBlock
+          fields={[
+            { 
+              key: "blockType", 
+              label: "Block Type", 
+              type: "select", 
+              options: [
+                { label: "Heading", value: "heading" },
+                { label: "Paragraph", value: "paragraph" },
+                { label: "Bullet Points (Comma Separated)", value: "bullets" },
+              ] 
+            },
+            { key: "content", label: "Content", type: "textarea" },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Generic Array Editor (Upgraded with UP/DOWN Reorder Arrows)
 function GenericArrayEditor<T extends object>({ 
   data, 
   onChange, 
@@ -287,50 +323,80 @@ function GenericArrayEditor<T extends object>({
   const updateItem = (index: number, key: keyof T, val: T[keyof T]) => { const copy = [...data]; copy[index] = { ...copy[index], [key]: val }; onChange(copy); };
   const addItem = () => onChange([...data, { ...defaultItem, id: Date.now() } as unknown as T]);
   const removeItem = (index: number) => onChange(data.filter((_, i) => i !== index));
+  
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    const copy = [...data];
+    [copy[index - 1], copy[index]] = [copy[index], copy[index - 1]];
+    onChange(copy);
+  };
+
+  const moveDown = (index: number) => {
+    if (index === data.length - 1) return;
+    const copy = [...data];
+    [copy[index + 1], copy[index]] = [copy[index], copy[index + 1]];
+    onChange(copy);
+  };
+
   return (
     <div className="space-y-6">
       {data.map((item, i) => (
-        <div key={i} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 relative">
-          <button onClick={() => removeItem(i)} className="absolute top-4 right-4 text-xs text-red-500">Remove</button>
+        <div key={i} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 relative pt-10 sm:pt-4">
+          
+          {/* Action Buttons (Up, Down, Remove) */}
+          <div className="absolute top-3 right-3 flex items-center gap-1 sm:gap-2">
+            <button type="button" onClick={() => moveUp(i)} disabled={i === 0} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-30 bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+              ↑
+            </button>
+            <button type="button" onClick={() => moveDown(i)} disabled={i === data.length - 1} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-30 bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+              ↓
+            </button>
+            <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1"></div>
+            <button type="button" onClick={() => removeItem(i)} className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/30 dark:hover:bg-red-900/50 px-2.5 py-1.5 rounded-md transition-colors">
+              Remove
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             {fields.map(f => (
               <div key={String(f.key)} className={f.type === 'textarea' || f.type === 'array' ? 'sm:col-span-2' : ''}>
-                <label className="block text-xs mb-1">{f.label}</label>
+                <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-300">{f.label}</label>
                 
-                {/* 2. Added Select Rendering Logic */}
                 {f.type === 'select' ? (
                   <select 
                     value={item[f.key] as unknown as string} 
                     onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} 
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-purple-500 transition-colors"
                   >
-                    <option value="">Select an option...</option>
+                    <option value="">Select...</option>
                     {f.options?.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
                 ) : f.type === 'textarea' ? (
-                  <textarea value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} rows={3} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
+                  <textarea value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} rows={3} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 ) : f.type === 'array' ? (
-                  <input value={((item[f.key] as unknown as string[]) || []).join(', ')} onChange={e => updateItem(i, f.key, e.target.value.split(',').map(s => s.trim()) as unknown as T[keyof T])} placeholder="Comma separated" className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
+                  <input value={((item[f.key] as unknown as string[]) || []).join(', ')} onChange={e => updateItem(i, f.key, e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') as unknown as T[keyof T])} placeholder="Separate items with commas" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 ) : (
-                  <input type={f.type} value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, (f.type === 'number' ? Number(e.target.value) : e.target.value) as unknown as T[keyof T])} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
+                  <input type={f.type} value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, (f.type === 'number' ? Number(e.target.value) : e.target.value) as unknown as T[keyof T])} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 )}
               </div>
             ))}
           </div>
         </div>
       ))}
-      <button onClick={addItem} className="w-full py-2.5 border-2 border-dashed border-purple-300 text-purple-600 rounded-xl text-sm font-medium">+ Add {title}</button>
+      <button onClick={addItem} className="w-full py-3 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-400 rounded-xl text-sm font-bold transition-colors border border-purple-100 dark:border-purple-900/50">
+        + Add {title}
+      </button>
     </div>
   );
 }
 
-// --- Main Page (Updated with Grid Layout & Success Modal) ---
-type TabType = "home" | "team" | "product" | "stories" | "press" | "partners" | "volunteer" | "impact";
+// --- Main Page ---
+type TabType = "home" | "team" | "product" | "stories" | "press" | "partners" | "volunteer" | "impact" | "guide";
 
 export default function AdminPagesPage() {
-  const [activeTab, setActiveTab] = useState<TabType | null>(null); // Starts null to show grid
+  const [activeTab, setActiveTab] = useState<TabType | null>(null); 
   const [homeContent, setHomeContent] = useState<HomeContent>(DEFAULT_HOME);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(DEFAULT_TEAM_MEMBERS);
   const [productContent, setProductContent] = useState<ProductContent>(DEFAULT_PRODUCT);
@@ -339,19 +405,18 @@ export default function AdminPagesPage() {
   const [partners, setPartners] = useState<Partner[]>(DEFAULT_PARTNERS);
   const [volunteerRoles, setVolunteerRoles] = useState<VolunteerRole[]>(DEFAULT_VOLUNTEER);
   const [impactContent, setImpactContent] = useState<ImpactPageContent>(DEFAULT_IMPACT);
+  const [guideContent, setGuideContent] = useState<GuideContent>(DEFAULT_GUIDE);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  
-  // NEW: Success Modal State
   const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const [homeRes, teamRes, productRes, storiesRes, pressRes, partRes, volRes, impactRes] = await Promise.all([
+        const [homeRes, teamRes, productRes, storiesRes, pressRes, partRes, volRes, impactRes, guideRes] = await Promise.all([
           fetch('/api/admin/site-content?page=home'), fetch('/api/admin/site-content?page=team'), fetch('/api/admin/site-content?page=product'),
           fetch('/api/admin/site-content?page=stories'), fetch('/api/admin/site-content?page=press'), fetch('/api/admin/site-content?page=partners'), 
-          fetch('/api/admin/site-content?page=volunteer'), fetch('/api/admin/site-content?page=impact')
+          fetch('/api/admin/site-content?page=volunteer'), fetch('/api/admin/site-content?page=impact'), fetch('/api/admin/site-content?page=guide')
         ]);
             
         if (homeRes.ok) { const { data } = await homeRes.json(); const m = data.find((d: SectionData<HomeContent>) => d.section === 'main'); if (m?.content) setHomeContent(m.content); }
@@ -362,6 +427,7 @@ export default function AdminPagesPage() {
         if (partRes.ok) { const { data } = await partRes.json(); const m = data.find((d: SectionData<{ partners: Partner[] }>) => d.section === 'main'); if (m?.content?.partners) setPartners(m.content.partners); }
         if (volRes.ok) { const { data } = await volRes.json(); const m = data.find((d: SectionData<{ roles: VolunteerRole[] }>) => d.section === 'main'); if (m?.content?.roles) setVolunteerRoles(m.content.roles); }
         if (impactRes.ok) { const { data } = await impactRes.json(); const m = data.find((d: SectionData<ImpactPageContent>) => d.section === 'main'); if (m?.content) setImpactContent(m.content); }
+        if (guideRes.ok) { const { data } = await guideRes.json(); const m = data.find((d: SectionData<GuideContent>) => d.section === 'main'); if (m?.content) setGuideContent(m.content); }
       } catch (err) {
         console.error('Failed to load content:', err);
       } finally {
@@ -385,6 +451,7 @@ export default function AdminPagesPage() {
       else if (activeTab === "partners") payload = { page: "partners", section: "main", content: { partners } };
       else if (activeTab === "volunteer") payload = { page: "volunteer", section: "main", content: { roles: volunteerRoles } };
       else if (activeTab === "impact") payload = { page: "impact", section: "main", content: impactContent };
+      else if (activeTab === "guide") payload = { page: "guide", section: "main", content: guideContent };
 
       const res = await fetch("/api/admin/site-content", {
         method: "PUT",
@@ -393,8 +460,8 @@ export default function AdminPagesPage() {
       });
 
       if (res.ok) {
-        toast.dismiss(loadingToast); // Dismiss the loading toast
-        setSuccessModal({ isOpen: true, message: "Page content saved successfully!" }); // Show Success Modal
+        toast.dismiss(loadingToast);
+        setSuccessModal({ isOpen: true, message: "Page content saved successfully!" });
       } else {
         throw new Error("Failed to save");
       }
@@ -414,16 +481,16 @@ export default function AdminPagesPage() {
     { id: "partners", label: "Partners", icon: "🤝" },
     { id: "volunteer", label: "Volunteer", icon: "❤️" },
     { id: "impact", label: "Impact", icon: "🌍" },
+    { id: "guide", label: "Cup Guide", icon: "📚" },
   ];
 
   const activeTabData = TABS.find(t => t.id === activeTab);
 
   return (
     <div className="pt-12 space-y-8 max-w-6xl mx-auto px-4 sm:px-6 py-8">
-      {/* GRID VIEW (Master) */}
       {activeTab === null ? (
         <>
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b pb-4 border-gray-200 dark:border-gray-800">
             <div>
               <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 mb-4 hover:underline">
                 &larr; Back to Dashboard
@@ -451,9 +518,8 @@ export default function AdminPagesPage() {
           )}
         </>
       ) : (
-        /* EDITOR VIEW (Detail) */
         <>
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b pb-4 border-gray-200 dark:border-gray-800">
             <div>
               <button onClick={() => setActiveTab(null)} className="inline-flex items-center text-sm font-medium text-purple-600 mb-4 hover:underline">
                 &larr; Back to Pages Grid
@@ -461,12 +527,12 @@ export default function AdminPagesPage() {
               <h1 className="text-3xl font-bold dark:text-white">Editing {activeTabData?.label}</h1>
               <p className="mt-1 text-sm text-gray-500">Make changes to the {activeTabData?.label} page.</p>
             </div>
-            <button onClick={handleSave} disabled={saving || loading} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium shadow-sm hover:bg-purple-700 disabled:opacity-50">
+            <button onClick={handleSave} disabled={saving || loading} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium shadow-sm hover:bg-purple-700 disabled:opacity-50 transition-colors">
               {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border p-5 md:p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 md:p-6">
             {activeTab === "home" ? (
               <HomeEditor data={homeContent} onChange={setHomeContent} />
             ) : activeTab === "team" ? (
@@ -475,6 +541,8 @@ export default function AdminPagesPage() {
               <ProductEditor data={productContent} onChange={setProductContent} />
             ) : activeTab === "impact" ? (
               <ImpactPageEditor data={impactContent} onChange={setImpactContent} />
+            ) : activeTab === "guide" ? (
+              <GuideEditor data={guideContent} onChange={setGuideContent} />
             ) : activeTab === "stories" ? (
               <GenericArrayEditor
                 data={stories} onChange={setStories} title="Story"
@@ -534,7 +602,6 @@ export default function AdminPagesPage() {
         </>
       )}
 
-      {/* Render the Success Modal */}
       <SuccessModal
         isOpen={successModal.isOpen}
         onClose={() => setSuccessModal({ isOpen: false, message: '' })}

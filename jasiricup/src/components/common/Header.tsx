@@ -16,11 +16,18 @@ export const Header = () => {
   // Standalone Links (Home & Product)
   const standaloneLinks = [
     { name: t('home'), href: '/' },
-    { name: t('product'), href: '/product' },
   ];
 
   // Grouped Navigation Links
   const navGroups = [
+    {
+      label: "Product",
+      links: [
+        { name: t('product'), href: '/product' },
+        { name: 'Cup Guide', href: '/guide' }, // <--- Added Guide here
+        { name: 'FAQS', href: '/faq' },
+      ]
+    },
     {
       label: "About Us",
       links: [

@@ -8,6 +8,7 @@ export const Footer = () => {
   const aboutLinks = [
     { name: 'Home',       href: '/' },
     { name: 'Product',    href: '/product' },
+    { name: 'Cup Guide',  href: '/guide' }, // <--- Added Guide here
     { name: 'Our Impact', href: '/impact' },
     { name: 'Stories',    href: '/stories' },
     { name: 'Team',       href: '/team' },
@@ -20,7 +21,7 @@ export const Footer = () => {
     { name: 'Volunteer',    href: '/volunteer' },
     { name: 'Partners',     href: '/partners' },
     { name: 'Press',        href: '/press' },
-    { name: 'Newsletter',   href: '/newsletter' }, // <--- Add this here!
+    { name: 'Newsletter',   href: '/newsletter' },
     { name: 'Get In Touch', href: '/get-in-touch' },
   ];
   
@@ -34,19 +35,17 @@ export const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-6 md:px-16 py-12">
-        {/* Changed from grid-cols-3 to grid-cols-4 for the extra link column */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
           
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <Image
-  src="https://res.cloudinary.com/dsvexizbx/image/upload/v1754083461/whitelogo_bpym4s.png"
-  alt="JasiriCup Logo"
-  width={130}
-  height={44}
-  // Change the className to this:
-  className="object-contain max-w-[130px] h-auto"
-/>
+              src="https://res.cloudinary.com/dsvexizbx/image/upload/v1754083461/whitelogo_bpym4s.png"
+              alt="JasiriCup Logo"
+              width={130}
+              height={44}
+              className="object-contain max-w-[130px] h-auto"
+            />
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
               Providing menstrual products, health resources, and opportunities for youth development across Kenya.
             </p>
