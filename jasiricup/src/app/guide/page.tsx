@@ -93,7 +93,7 @@ export default async function GuidePage() {
                   <div className="flex flex-col h-full">
                     {section.heading && (
                       <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-                        <span className="w-1.5 h-6 bg-purple-600 dark:bg-purple-500 rounded-full block"></span>
+                        <span className="w-1.5 h-6 bg-green-600 dark:bg-green-500 rounded-full block"></span>
                         {section.heading}
                       </h2>
                     )}
@@ -156,7 +156,7 @@ export default async function GuidePage() {
                     
                     {section.heading && (
                       <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                        <span className="w-1.5 h-6 bg-purple-600 dark:bg-purple-500 rounded-full block"></span>
+                        <span className="w-1.5 h-6 bg-green-600 dark:bg-green-500 rounded-full block"></span>
                         {section.heading}
                       </h2>
                     )}
