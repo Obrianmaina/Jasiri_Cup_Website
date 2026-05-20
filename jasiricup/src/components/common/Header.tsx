@@ -24,7 +24,7 @@ export const Header = () => {
       label: "Product",
       links: [
         { name: t('product'), href: '/product' },
-        { name: 'Cup Guide', href: '/guide' }, // <--- Added Guide here
+        { name: 'Guide', href: '/guide' }, // <--- Added Guide here
         { name: 'FAQS', href: '/faq' },
       ]
     },

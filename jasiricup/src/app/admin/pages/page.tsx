@@ -479,7 +479,7 @@ export default function AdminPagesPage() {
     { id: "partners", label: "Partners", icon: "🤝" },
     { id: "volunteer", label: "Volunteer", icon: "❤️" },
     { id: "impact", label: "Impact", icon: "🌍" },
-    { id: "guide", label: "Cup Guide", icon: "📚" },
+    { id: "guide", label: "Guide", icon: "📚" },
   ];
 
   const activeTabData = TABS.find(t => t.id === activeTab);

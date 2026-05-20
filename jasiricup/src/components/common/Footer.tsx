@@ -8,7 +8,7 @@ export const Footer = () => {
   const aboutLinks = [
     { name: 'Home',       href: '/' },
     { name: 'Product',    href: '/product' },
-    { name: 'Cup Guide',  href: '/guide' }, // <--- Added Guide here
+    { name: 'Guide',  href: '/guide' }, // <--- Added Guide here
     { name: 'Our Impact', href: '/impact' },
     { name: 'Stories',    href: '/stories' },
     { name: 'Team',       href: '/team' },
