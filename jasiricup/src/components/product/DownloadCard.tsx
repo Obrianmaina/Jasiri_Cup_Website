@@ -12,8 +12,8 @@ interface DownloadCardProps {
 export const DownloadCard = ({ title, description, icon, downloadLink }: DownloadCardProps) => {
   return (
     <div 
-      className="text-white rounded-xl p-6 sm:p-8 shadow-md flex flex-col items-center text-center h-full transition-transform hover:-translate-y-1 hover:shadow-lg duration-300" 
-      style={{ backgroundColor: '#7856BF' }}
+      className="text-white rounded-3xl p-6 sm:p-8 shadow-md flex flex-col items-center text-center h-full transition-transform hover:-translate-y-1 hover:shadow-lg duration-300" 
+      style={{ backgroundColor: '#8B65DC' }}
     >
       <div className="mb-4 bg-white/20 p-4 rounded-full">
         <FaDownload size={20} className="text-white" />
