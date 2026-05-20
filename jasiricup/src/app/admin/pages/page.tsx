@@ -20,9 +20,9 @@ interface Testimonial { quote: string; name: string; location: string; role: str
 interface MapCounty { name: string; region: string; girls: number; color: string; image?: string; imageAttribution?: string; }
 interface ImpactPageContent { hero: { subtitle: string; title: string; description: string; }; testimonials: Testimonial[]; map: { title: string; subtitle: string; expansionNote: string; counties: MapCounty[]; }; }
 
-// NEW: Block Builder Interfaces for Guide
-interface GuideBlock { blockType: 'heading' | 'paragraph' | 'bullets'; content: string; }
-interface GuideContent { title: string; intro: string; blocks: GuideBlock[]; }
+// NEW: Section Interfaces for Guide (Aligned with frontend)
+interface GuideSection { heading: string; content: string; bullets: string[]; postContent?: string; image?: string; }
+interface GuideContent { title: string; intro: string; sections: GuideSection[]; }
 
 // --- Defaults ---
 const DEFAULT_HOME: HomeContent = { about: { title: "", content: "", imageSrc: "" }, vision: { title: "", content: "" }, mission: { title: "", content: "" }, stats: { title: "", description: "", numbers: [] } };
@@ -33,7 +33,7 @@ const DEFAULT_PRESS = { coverage: [] as PressCoverage[], downloads: [] as PressD
 const DEFAULT_PARTNERS: Partner[] = [];
 const DEFAULT_VOLUNTEER: VolunteerRole[] = [];
 const DEFAULT_IMPACT: ImpactPageContent = { hero: { subtitle: "", title: "", description: "" }, testimonials: [], map: { title: "", subtitle: "", expansionNote: "", counties: [] } };
-const DEFAULT_GUIDE: GuideContent = { title: "", intro: "", blocks: [] };
+const DEFAULT_GUIDE: GuideContent = { title: "", intro: "", sections: [] };
 
 // --- Sub-components ---
 function HomeEditor({ data, onChange }: { data: HomeContent; onChange: (d: HomeContent) => void; }) {
@@ -256,7 +256,7 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
   );
 }
 
-// NEW: Guide Editor (Block Builder Pattern)
+// NEW: Guide Editor (Aligned with Bento Sections Structure)
 function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: GuideContent) => void; }) {
   return (
     <div className="space-y-6">
@@ -275,31 +275,26 @@ function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: Gui
       </div>
       
       <div>
-        <h4 className="font-semibold text-sm mb-1">Content Blocks</h4>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Build your guide section by section.</p>
-        <GenericArrayEditor<GuideBlock> // Explicitly pass the GuideBlock type here
-          data={data.blocks || []}
-          onChange={(blocks) => onChange({ ...data, blocks })}
-          title="Content Block"
-          defaultItem={{ blockType: "paragraph", content: "" }} // This now matches GuideBlock
+        <h4 className="font-semibold text-sm mb-1">Guide Sections (Bento Grid)</h4>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Build your guide section by section. The 5th item will automatically adapt to a split-grid layout if it has bullet points.</p>
+        <GenericArrayEditor<GuideSection>
+          data={data.sections || []}
+          onChange={(sections) => onChange({ ...data, sections })}
+          title="Section"
+          defaultItem={{ heading: "", image: "", content: "", bullets: [], postContent: "" }} 
           fields={[
-            { 
-              key: "blockType", 
-              label: "Block Type", 
-              type: "select", 
-              options: [
-                { label: "Heading", value: "heading" },
-                { label: "Paragraph", value: "paragraph" },
-                { label: "Bullet Points (Comma Separated)", value: "bullets" },
-              ] 
-            },
-            { key: "content", label: "Content", type: "textarea" },
+            { key: "heading", label: "Section Heading", type: "text" },
+            { key: "image", label: "Image URL", type: "text" },
+            { key: "content", label: "Content Paragraph", type: "textarea" },
+            { key: "bullets", label: "Bullet Points (Comma Separated)", type: "array" },
+            { key: "postContent", label: "Post Content (Bottom Paragraph)", type: "textarea" }
           ]}
         />
       </div>
     </div>
   );
 }
+
 
 // Generic Array Editor (Upgraded with UP/DOWN Reorder Arrows)
 function GenericArrayEditor<T extends object>({ 
@@ -364,7 +359,8 @@ function GenericArrayEditor<T extends object>({
                 
                 {f.type === 'select' ? (
                   <select 
-                    value={item[f.key] as unknown as string} 
+                    // ADDED || "" to prevent uncontrolled input errors
+                    value={(item[f.key] as unknown as string) || ""} 
                     onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} 
                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-purple-500 transition-colors"
                   >
@@ -374,11 +370,13 @@ function GenericArrayEditor<T extends object>({
                     ))}
                   </select>
                 ) : f.type === 'textarea' ? (
-                  <textarea value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} rows={3} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
+                  // ADDED || "" to prevent uncontrolled input errors
+                  <textarea value={(item[f.key] as unknown as string) || ""} onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} rows={3} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 ) : f.type === 'array' ? (
                   <input value={((item[f.key] as unknown as string[]) || []).join(', ')} onChange={e => updateItem(i, f.key, e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') as unknown as T[keyof T])} placeholder="Separate items with commas" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 ) : (
-                  <input type={f.type} value={item[f.key] as unknown as string} onChange={e => updateItem(i, f.key, (f.type === 'number' ? Number(e.target.value) : e.target.value) as unknown as T[keyof T])} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
+                  // ADDED || "" to prevent uncontrolled input errors
+                  <input type={f.type} value={(item[f.key] as unknown as string) || ""} onChange={e => updateItem(i, f.key, (f.type === 'number' ? Number(e.target.value) : e.target.value) as unknown as T[keyof T])} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 )}
               </div>
             ))}
