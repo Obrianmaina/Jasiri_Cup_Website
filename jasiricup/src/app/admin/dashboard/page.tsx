@@ -3,6 +3,7 @@ import Link from "next/link";
 import connectDB from "@/lib/dbConnect";
 import BlogPost from "@/lib/models/BlogPost";
 import ContactMessage from "@/lib/models/ContactMessage";
+import { FilePlus, Layout, ShoppingBag, Mail, HelpCircle, Wallet, BarChart, Palette } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -105,78 +106,110 @@ export default async function AdminDashboard() {
         {/* Quick Actions */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 md:p-6 transition-colors">
           <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            
             <Link 
               href="/admin/blog/create"
-              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-center"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-purple-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
             >
-              <div className="w-9 h-9 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-purple-600 dark:text-purple-400 text-lg font-bold">+</span>
+              <div className="p-3 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg group-hover:scale-105 transition-transform">
+                <FilePlus size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-700 dark:group-hover:text-purple-400">New Post</span>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">New Post</h3>
+                <p className="text-xs text-gray-500">Draft a new article</p>
+              </div>
             </Link>
             
             <Link 
               href="/admin/pages"
-              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-blue-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
             >
-              <div className="w-9 h-9 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-blue-600 dark:text-blue-400 text-lg">📄</span>
+              <div className="p-3 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg group-hover:scale-105 transition-transform">
+                <Layout size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-400">Edit Pages</span>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Pages</h3>
+                <p className="text-xs text-gray-500">Manage site content</p>
+              </div>
             </Link>
 
             <Link 
               href="/admin/products"
-              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all text-center"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-green-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
             >
-              <div className="w-9 h-9 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-green-600 dark:text-green-400 text-lg">🛍️</span>
+              <div className="p-3 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg group-hover:scale-105 transition-transform">
+                <ShoppingBag size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-700 dark:group-hover:text-green-400">Products</span>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Products</h3>
+                <p className="text-xs text-gray-500">Manage inventory</p>
+              </div>
             </Link>
 
             <Link 
               href="/admin/messages"
-              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-amber-500 dark:hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-center"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-amber-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
             >
-              <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-amber-600 dark:text-amber-400 text-lg">📩</span>
+              <div className="p-3 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg group-hover:scale-105 transition-transform">
+                <Mail size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-amber-700 dark:group-hover:text-amber-400">Messages</span>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Messages</h3>
+                <p className="text-xs text-gray-500">View submissions</p>
+              </div>
             </Link>
 
-            {/* Added: Manage FAQs */}
             <Link 
               href="/admin/faq"
-              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-center"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-indigo-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
             >
-              <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-indigo-600 dark:text-indigo-400 text-lg">🤔</span>
+              <div className="p-3 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg group-hover:scale-105 transition-transform">
+                <HelpCircle size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-400">FAQs</span>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">FAQs</h3>
+                <p className="text-xs text-gray-500">Update questions</p>
+              </div>
             </Link>
 
-            {/* Added: Finances */}
             <Link 
               href="/admin/finances"
-              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-center"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-emerald-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
             >
-              <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-emerald-600 dark:text-emerald-400 text-lg">💰</span>
+              <div className="p-3 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg group-hover:scale-105 transition-transform">
+                <Wallet size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-700 dark:group-hover:text-emerald-400">Finances</span>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Finances</h3>
+                <p className="text-xs text-gray-500">Track revenue</p>
+              </div>
             </Link>
 
-            {/* Added: Impact Stats */}
             <Link 
               href="/admin/impact"
-              className="group flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-cyan-500 dark:hover:border-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all text-center"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-cyan-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
             >
-              <div className="w-9 h-9 bg-cyan-100 dark:bg-cyan-900/50 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-cyan-600 dark:text-cyan-400 text-lg">📊</span>
+              <div className="p-3 bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400 rounded-lg group-hover:scale-105 transition-transform">
+                <BarChart size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-cyan-700 dark:group-hover:text-cyan-400">Impact</span>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">Impact</h3>
+                <p className="text-xs text-gray-500">Update metrics</p>
+              </div>
+            </Link>
+
+            <Link 
+              href="/admin/brand"
+              className="group p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-yellow-500 hover:bg-white dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all flex items-center gap-4"
+            >
+              <div className="p-3 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-lg group-hover:scale-105 transition-transform">
+                <Palette size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">Brand OS</h3>
+                <p className="text-xs text-gray-500">Review requests</p>
+              </div>
             </Link>
 
           </div>

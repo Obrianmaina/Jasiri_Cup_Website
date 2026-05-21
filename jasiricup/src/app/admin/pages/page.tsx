@@ -1,9 +1,20 @@
 // src/app/admin/pages/page.tsx
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { SuccessModal } from '@/components/ui/Modal'; 
+import { 
+  Home, 
+  Users, 
+  Package, 
+  BookOpen, 
+  Newspaper, 
+  Handshake, 
+  Heart, 
+  Globe, 
+  Book 
+} from "lucide-react";
 
 // --- Types ---
 interface TeamMember { id: string; name: string; role: string; description: string; imageSrc: string; cardColor: string; socials?: { platform: string; url: string }[]; }
@@ -470,16 +481,16 @@ export default function AdminPagesPage() {
     }
   };
 
-  const TABS: {id: TabType, label: string, icon: string}[] = [
-    { id: "home", label: "Home", icon: "🏠" },
-    { id: "team", label: "Team", icon: "👥" },
-    { id: "product", label: "Product", icon: "📦" },
-    { id: "stories", label: "Stories", icon: "📖" },
-    { id: "press", label: "Press", icon: "📰" },
-    { id: "partners", label: "Partners", icon: "🤝" },
-    { id: "volunteer", label: "Volunteer", icon: "❤️" },
-    { id: "impact", label: "Impact", icon: "🌍" },
-    { id: "guide", label: "Guide", icon: "📚" },
+  const TABS: {id: TabType, label: string, icon: React.ReactNode}[] = [
+    { id: "home", label: "Home", icon: <Home size={36} strokeWidth={1.5} /> },
+    { id: "team", label: "Team", icon: <Users size={36} strokeWidth={1.5} /> },
+    { id: "product", label: "Product", icon: <Package size={36} strokeWidth={1.5} /> },
+    { id: "stories", label: "Stories", icon: <BookOpen size={36} strokeWidth={1.5} /> },
+    { id: "press", label: "Press", icon: <Newspaper size={36} strokeWidth={1.5} /> },
+    { id: "partners", label: "Partners", icon: <Handshake size={36} strokeWidth={1.5} /> },
+    { id: "volunteer", label: "Volunteer", icon: <Heart size={36} strokeWidth={1.5} /> },
+    { id: "impact", label: "Impact", icon: <Globe size={36} strokeWidth={1.5} /> },
+    { id: "guide", label: "Guide", icon: <Book size={36} strokeWidth={1.5} /> },
   ];
 
   const activeTabData = TABS.find(t => t.id === activeTab);
@@ -498,7 +509,7 @@ export default function AdminPagesPage() {
             </div>
           </div>
 
-          {loading ? (
+         {loading ? (
             <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -506,10 +517,14 @@ export default function AdminPagesPage() {
                 <button 
                   key={tab.id} 
                   onClick={() => setActiveTab(tab.id)} 
-                  className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md hover:border-purple-300 dark:hover:border-purple-700 transition-all flex flex-col items-center justify-center gap-3 active:scale-95"
+                  className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md hover:border-purple-300 dark:hover:border-purple-700 transition-all flex flex-col items-center justify-center gap-3 active:scale-95 group"
                 >
-                  <span className="text-4xl mb-1">{tab.icon}</span>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">{tab.label}</span>
+                  <span className="mb-1 text-gray-400 group-hover:text-purple-600 dark:text-gray-500 dark:group-hover:text-purple-400 transition-colors">
+                    {tab.icon}
+                  </span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+                    {tab.label}
+                  </span>
                 </button>
               ))}
             </div>

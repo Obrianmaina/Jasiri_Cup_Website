@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import connectDB from '@/lib/dbConnect';
 import SiteContent from '@/lib/models/SiteContent';
+import { Palette } from 'lucide-react'; // 1. Added the icon import
 
 export const revalidate = 60;
 
@@ -23,7 +24,7 @@ interface PressDownload {
 
 interface PressContent {
   coverage: PressCoverage[];
-  downloads: PressDownload[];
+  downloads?: PressDownload[]; 
 }
 
 const breadcrumbs = [{ label: 'Home', href: '/' }, { label: 'Press', href: '/press' }];
@@ -44,9 +45,6 @@ async function getPressData(): Promise<PressContent | null> {
 export default async function PressPage() {
   const pressData = await getPressData();
   const coverage = pressData?.coverage || [];
-  const downloads = pressData?.downloads || [];
-  
-  const isEmpty = coverage.length === 0 && downloads.length === 0;
 
   return (
     <div className="container mx-auto px-4 sm:px-6 md:px-16 py-8">
@@ -57,65 +55,66 @@ export default async function PressPage() {
           Media Centre
         </span>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 transition-colors">Press & Media</h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto transition-colors">Resources for journalists covering menstrual health in Kenya.</p>
+        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto transition-colors">
+          Resources for journalists, partners, and media covering menstrual health in Kenya.
+        </p>
       </section>
 
-      {isEmpty ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-full mb-6">
-            <svg className="w-12 h-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-            </svg>
+      {/* Media Coverage Section */}
+      {coverage.length > 0 ? (
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 transition-colors">In the News</h2>
+          <div className="space-y-4">
+            {coverage.map((item: PressCoverage, i: number) => (
+              <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group">
+                <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-lg p-1">
+                  <img 
+                    src={item.logo || 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754083461/logo_jrc0mv.png'} 
+                    alt={item.outlet} 
+                    className="max-w-full max-h-full object-contain" 
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold text-purple-600 dark:text-purple-400">{item.outlet}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white truncate">{item.headline}</div>
+                </div>
+                <div className="text-sm text-gray-400 dark:text-gray-500">{item.date}</div>
+              </a>
+            ))}
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Media Kit Updating</h2>
-          <p className="text-gray-600 dark:text-gray-400 max-w-md">
-            We are currently updating our press releases and brand assets. Please check back shortly for the latest media resources.
-          </p>
-        </div>
+        </section>
       ) : (
-        <>
-          {coverage.length > 0 && (
-            <section className="mb-16">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 transition-colors">In the News</h2>
-              <div className="space-y-4">
-                {coverage.map((item: PressCoverage, i: number) => (
-                  <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group">
-                    <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-lg p-1">
-                      <img 
-                        src={item.logo || 'https://res.cloudinary.com/dsvexizbx/image/upload/v1754083461/logo_jrc0mv.png'} 
-                        alt={item.outlet} 
-                        className="max-w-full max-h-full object-contain" 
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-purple-600 dark:text-purple-400">{item.outlet}</div>
-                      <div className="font-semibold text-gray-900 dark:text-white truncate">{item.headline}</div>
-                    </div>
-                    <div className="text-sm text-gray-400 dark:text-gray-500">{item.date}</div>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {downloads.length > 0 && (
-            <section className="mb-16">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 transition-colors">Downloadable Assets</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {downloads.map((d: PressDownload, i: number) => (
-                  <a key={i} href={d.file} className="flex items-center gap-4 bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group">
-                    <div className="text-3xl flex-shrink-0">{d.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900 dark:text-white">{d.name}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{d.desc}</div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-        </>
+        <div className="flex flex-col items-center justify-center py-10 text-center mb-16 border-b border-gray-100 dark:border-gray-800">
+          <p className="text-gray-500 dark:text-gray-400">Media coverage will be updated here soon.</p>
+        </div>
       )}
+
+      {/* Brand Assets & Guidelines Entry Point */}
+      <section className="mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 transition-colors">Brand Assets</h2>
+        
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-slate-900 dark:to-slate-800 border border-purple-100 dark:border-slate-700 rounded-3xl p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
+          <div className="max-w-xl text-center md:text-left">
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">JaSiriCup Brand OS</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-8 text-lg">
+              Access our official brand guidelines, high-resolution logos, typography rules, and document templates. To maintain the integrity of our visual identity, we provide access upon request.
+            </p>
+            <Link 
+              href="/brand/request" 
+              className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-bold rounded-xl text-white bg-purple-600 hover:bg-purple-700 shadow-md hover:shadow-lg transition-all"
+            >
+              Request Brand Access
+            </Link>
+          </div>
+          <div className="flex-shrink-0 hidden md:flex items-center justify-center">
+            <div className="w-40 h-40 bg-white dark:bg-slate-950 rounded-full flex items-center justify-center shadow-xl border border-purple-100 dark:border-slate-700 transition-transform hover:scale-105 duration-300 group">
+              {/* 2. Replaced the emoji span with the Lucide icon */}
+              <Palette size={64} className="text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
