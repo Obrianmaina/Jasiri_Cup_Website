@@ -271,40 +271,30 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
 function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: GuideContent) => void; }) {
   return (
     <div className="space-y-6">
-      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-        <h4 className="font-semibold text-sm mb-3">Guide Introduction</h4>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs mb-1">Title</label>
-            <input type="text" value={data.title} onChange={(e) => onChange({ ...data, title: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-          </div>
-          <div>
-            <label className="block text-xs mb-1">Introductory Text</label>
-            <textarea rows={4} value={data.intro} onChange={(e) => onChange({ ...data, intro: e.target.value }) } className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" />
-          </div>
-        </div>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200">
+        <h4 className="font-bold text-lg mb-4">Brand OS Settings</h4>
+        <input type="text" placeholder="Page Title" value={data.title} onChange={(e) => onChange({...data, title: e.target.value})} className="w-full mb-4 p-2 border rounded" />
+        <textarea placeholder="Introduction Text" value={data.intro} onChange={(e) => onChange({...data, intro: e.target.value})} className="w-full p-2 border rounded" rows={3} />
       </div>
       
-      <div>
-        <h4 className="font-semibold text-sm mb-1">Guide Sections (Bento Grid)</h4>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Build your guide section by section. The 5th item will automatically adapt to a split-grid layout if it has bullet points.</p>
-        <GenericArrayEditor<GuideSection>
-          data={data.sections || []}
-          onChange={(sections) => onChange({ ...data, sections })}
-          title="Section"
-          defaultItem={{ heading: "", image: "", content: "", bullets: [], postContent: "" }} 
-          fields={[
-            { key: "heading", label: "Section Heading", type: "text" },
-            { key: "image", label: "Image URL", type: "text" },
-            { key: "content", label: "Content Paragraph", type: "textarea" },
-            { key: "bullets", label: "Bullet Points (Comma Separated)", type: "array" },
-            { key: "postContent", label: "Post Content (Bottom Paragraph)", type: "textarea" }
-          ]}
-        />
-      </div>
+      <h4 className="font-bold">Sections (Logo, Colors, Photography, etc.)</h4>
+      <GenericArrayEditor
+        data={data.sections}
+        onChange={(sections) => onChange({...data, sections})}
+        title="Section"
+        defaultItem={{ heading: "", content: "", bullets: [], image: "" }}
+        fields={[
+          { key: "heading", label: "Heading", type: "text" },
+          { key: "content", label: "Content", type: "textarea" },
+          { key: "bullets", label: "Bullet Points (comma separated)", type: "array" },
+          { key: "image", label: "Image URL", type: "text" }
+        ]}
+      />
     </div>
   );
 }
+
+
 
 
 // Generic Array Editor (Upgraded with UP/DOWN Reorder Arrows)

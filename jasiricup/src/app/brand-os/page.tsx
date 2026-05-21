@@ -2,9 +2,24 @@
 import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/dbConnect';
 import BrandAccess from '@/lib/models/BrandAccess';
+import SiteContent from '@/lib/models/SiteContent';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { Download, CheckCircle2 } from 'lucide-react'; // Ensure lucide-react is installed
+import { Download, CheckCircle, Palette } from 'lucide-react';
+
+// Define the structure for your Guide content
+interface GuideSection {
+  heading: string;
+  content: string;
+  bullets: string[];
+  image?: string;
+}
+
+interface GuideContent {
+  title: string;
+  intro: string;
+  sections: GuideSection[];
+}
 
 export const metadata = {
   title: 'Brand Operating System | JaSiriCup',
@@ -16,171 +31,96 @@ export default async function BrandOSPage({
 }: { 
   searchParams: Promise<{ token?: string }> 
 }) {
-  const resolvedParams = await searchParams;
-  const token = resolvedParams.token;
+  const { token } = await searchParams;
 
-  if (!token) {
-    return <AccessDenied />;
-  }
+  if (!token) return <AccessDenied />;
 
   await dbConnect();
   
-  // Verify the token exists and is approved
+  // 1. Verify Access
   const accessRecord = await BrandAccess.findOne({ 
     accessToken: token, 
     status: 'approved' 
-  });
+  }).lean();
 
-  if (!accessRecord) {
-    return <AccessDenied />;
-  }
+  if (!accessRecord) return <AccessDenied />;
 
-  // Update last accessed time asynchronously
-  BrandAccess.updateOne({ _id: accessRecord._id }, { lastAccessedAt: new Date() }).exec();
+  // 2. Fetch Dynamic Content from SiteContent model
+  const siteData = await SiteContent.findOne({ page: 'guide', section: 'main' }).lean<{ content: GuideContent }>();
+  const content = siteData?.content || { 
+    title: "JaSiriCup Brand OS", 
+    intro: "Joy, empowerment, and approachability. Welcome to the visual foundation of our bold initiative.", 
+    sections: [] 
+  };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 p-6 md:p-12">
+      
       {/* Hero Section */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-yellow-400 via-orange-500 to-pink-500 py-24 text-center">
-        <div className="relative z-10 max-w-4xl mx-auto px-6">
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight">
-            JaSiriCup Brand OS
-          </h1>
-          <p className="text-xl text-white/90 font-medium max-w-2xl mx-auto">
-            Joy, empowerment, and approachability. Welcome to the visual foundation of our bold initiative.
-          </p>
-        </div>
-      </header>
+      <div className="max-w-6xl mx-auto mb-16 bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 rounded-[2rem] p-12 md:p-20 text-white shadow-xl">
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">{content.title}</h1>
+        <p className="text-xl md:text-2xl font-medium opacity-90 max-w-2xl">{content.intro}</p>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-6 py-16 space-y-24">
-        
-        {/* Core Identity */}
-        <section>
-          <h2 className="text-3xl font-bold mb-8 border-b pb-4 dark:border-slate-800">Who We Are</h2>
-          <div className="grid md:grid-cols-2 gap-12 text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
-            <div>
-              <p className="mb-4">
-                The name JaSiriCup reflects our diverse roots. It is a fusion of &quot;Ja&quot; (German for yes) and &quot;Siri&quot; (Swahili for secret). Together, they form &quot;Jasiri&quot;, which translates to bold in Swahili.
-              </p>
-              <p>
-                Our voice is uplifting, inclusive, and deeply rooted in community connection. We use first-person plural language and avoid overly formal constraints.
-              </p>
-            </div>
-            <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <h3 className="font-bold text-slate-900 dark:text-white mb-4">Voice Principles</h3>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={20} /> Inclusive & Collective</li>
-                <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={20} /> Empowering & Optimistic</li>
-                <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={20} /> Authentic & Accessible</li>
+      {/* Bento Grid Layout */}
+      <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {content.sections.map((section: GuideSection, idx: number) => (
+          <div key={idx} className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all">
+            <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+              <Palette className="text-pink-500" /> {section.heading}
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">{section.content}</p>
+            
+            {section.bullets && section.bullets.length > 0 && (
+              <ul className="space-y-3 mb-6">
+                {section.bullets.map((b: string, i: number) => (
+                  <li key={i} className="flex items-start gap-2 text-sm font-medium">
+                    <CheckCircle size={18} className="text-green-500 shrink-0 mt-0.5" /> {b}
+                  </li>
+                ))}
               </ul>
-            </div>
+            )}
+            
+            {section.image && (
+              <img src={section.image} className="rounded-2xl w-full h-48 object-cover" alt={section.heading} />
+            )}
           </div>
-        </section>
-
-        {/* Typography & Colors */}
-        <section className="grid md:grid-cols-2 gap-16">
-          <div>
-            <h2 className="text-3xl font-bold mb-8 border-b pb-4 dark:border-slate-800">Typography</h2>
-            <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div className="text-6xl font-bold mb-4 font-sans">Aa</div>
-              <h3 className="text-2xl font-bold mb-2">Montserrat</h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
-                Our foundational typeface. Modern, highly legible, and friendly across all communications.
-              </p>
-              <div className="space-y-4">
-                <p className="font-light text-xl">Montserrat Light</p>
-                <p className="font-normal text-xl">Montserrat Regular</p>
-                <p className="font-bold text-xl">Montserrat Bold</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-3xl font-bold mb-8 border-b pb-4 dark:border-slate-800">Color System</h2>
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-32 bg-yellow-400 rounded-xl flex items-end p-4 shadow-sm">
-                  <span className="font-bold text-yellow-900">Primary Yellow</span>
-                </div>
-                <div className="h-32 bg-pink-500 rounded-xl flex items-end p-4 shadow-sm">
-                  <span className="font-bold text-white">Primary Pink</span>
-                </div>
-              </div>
-              <div className="h-32 bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 rounded-xl flex items-end p-4 shadow-sm">
-                <span className="font-bold text-white">Brand Gradient</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Downloads Hub */}
-        <section className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-8 md:p-12 border border-slate-100 dark:border-slate-800">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Asset Downloads</h2>
-            <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              Access the official templates and logo files. Please ensure you follow the placement and styling guidelines when utilizing these assets.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <DownloadCard 
-              title="Logo Pack" 
-              description="Primary, secondary, and monochrome logo variations in SVG and PNG formats."
-              token={token}
-              endpoint="logos"
-            />
-            <DownloadCard 
-              title="Word Template" 
-              description="Official letterheads and document structures."
-              token={token}
-              endpoint="word"
-            />
-            <DownloadCard 
-              title="PowerPoint Template" 
-              description="Slide decks configured with brand gradients and Montserrat typography."
-              token={token}
-              endpoint="powerpoint"
-            />
-          </div>
-        </section>
-
+        ))}
       </main>
+      
+      {/* Asset Hub */}
+      <footer className="max-w-6xl mx-auto mt-16 bg-slate-900 dark:bg-slate-800 rounded-3xl p-10 text-white flex flex-col md:flex-row justify-between items-center gap-8">
+        <div>
+          <h4 className="text-2xl font-bold mb-2">Downloadable Assets</h4>
+          <p className="opacity-70">Official logos, templates, and typography packs.</p>
+        </div>
+        <div className="flex gap-4">
+          <DownloadButton token={token} endpoint="logos" label="Logo Pack" />
+          <DownloadButton token={token} endpoint="word" label="Word Template" />
+          <DownloadButton token={token} endpoint="powerpoint" label="PPT Template" />
+        </div>
+      </footer>
     </div>
   );
 }
 
-// Sub-component for Access Denied State
+function DownloadButton({ token, endpoint, label }: { token: string, endpoint: string, label: string }) {
+  return (
+    <a href={`/api/brand/download?asset=${endpoint}&token=${token}`}>
+      <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white flex items-center gap-2">
+        <Download size={16} /> {label}
+      </Button>
+    </a>
+  );
+}
+
 function AccessDenied() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
-      <div className="max-w-md w-full bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 text-center">
-        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Access Denied</h2>
-        <p className="text-slate-600 dark:text-slate-300 mb-8">
-          You do not have permission to view the Brand OS. Your token may be invalid, expired, or you have not been approved yet.
-        </p>
-        {/* Update this link here */}
-        <Link href="/brand/request">
-          <Button className="w-full">Request Access</Button>
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-// Sub-component for Download Cards
-function DownloadCard({ title, description, token, endpoint }: { title: string, description: string, token: string, endpoint: string }) {
-  return (
-    <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col h-full">
-      <div className="mb-4">
-        <h3 className="font-bold text-lg mb-2">{title}</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
-      </div>
-      <div className="mt-auto pt-6">
-        <a href={`/api/brand/download?asset=${endpoint}&token=${token}`}>
-          <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-            <Download size={16} /> Download
-          </Button>
-        </a>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm text-center">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
+        <p className="text-slate-600 mb-8">You do not have permission to view this page. Please request access.</p>
+        <Link href="/brand/request"><Button className="w-full">Request Access</Button></Link>
       </div>
     </div>
   );
