@@ -31,9 +31,28 @@ interface Testimonial { quote: string; name: string; location: string; role: str
 interface MapCounty { name: string; region: string; girls: number; color: string; image?: string; imageAttribution?: string; }
 interface ImpactPageContent { hero: { subtitle: string; title: string; description: string; }; testimonials: Testimonial[]; map: { title: string; subtitle: string; expansionNote: string; counties: MapCounty[]; }; }
 
-// NEW: Section Interfaces for Guide (Aligned with frontend)
-interface GuideSection { heading: string; content: string; bullets: string[]; postContent?: string; image?: string; }
-interface GuideContent { title: string; intro: string; sections: GuideSection[]; }
+// NEW: Rich Brand OS / Guide Interfaces
+interface BrandTrait { name: string; description: string; }
+interface ToneDef { name: string; hex: string; }
+interface ColorDef { name: string; hex: string; tones?: ToneDef[]; }
+interface GradientDef { name: string; from: string; via: string; to: string; }
+interface LogoDef { name: string; url: string; type: string; }
+interface PhotoDef { url: string; caption: string; }
+interface EmojiDef { icon: string; usage: string; }
+
+interface GuideContent {
+  title: string;
+  intro: string;
+  originStory: { title: string; content: string; };
+  voice: { description: string; traits: BrandTrait[]; };
+  typography: { primaryFont: string; description: string; };
+  emojiSystem?: { description: string; howToUse: string; items: EmojiDef[]; };
+  logos: { placementRules: string; items: LogoDef[]; };
+  colors: { description: string; primary: ColorDef[]; gradients: GradientDef[]; };
+  photography: { direction: string; targetDemographic: string; images: PhotoDef[]; };
+  logoUsage?: { images: PhotoDef[] };
+  smiley?: { core: PhotoDef[]; inAction: PhotoDef[] };
+}
 
 // --- Defaults ---
 const DEFAULT_HOME: HomeContent = { about: { title: "", content: "", imageSrc: "" }, vision: { title: "", content: "" }, mission: { title: "", content: "" }, stats: { title: "", description: "", numbers: [] } };
@@ -44,9 +63,22 @@ const DEFAULT_PRESS = { coverage: [] as PressCoverage[], downloads: [] as PressD
 const DEFAULT_PARTNERS: Partner[] = [];
 const DEFAULT_VOLUNTEER: VolunteerRole[] = [];
 const DEFAULT_IMPACT: ImpactPageContent = { hero: { subtitle: "", title: "", description: "" }, testimonials: [], map: { title: "", subtitle: "", expansionNote: "", counties: [] } };
-const DEFAULT_GUIDE: GuideContent = { title: "", intro: "", sections: [] };
+const DEFAULT_GUIDE: GuideContent = {
+  title: "JaSiriCup Brand OS",
+  intro: "Joy, empowerment, and approachability. Welcome to the visual foundation of our bold initiative.",
+  originStory: { title: "The Origin of Our Name", content: "" },
+  voice: { description: "", traits: [] },
+  typography: { primaryFont: "Montserrat", description: "" },
+  emojiSystem: { description: "", howToUse: "", items: [] },
+  logos: { placementRules: "", items: [] },
+  colors: { description: "", primary: [], gradients: [] },
+  photography: { direction: "", targetDemographic: "", images: [] },
+  logoUsage: { images: [] },
+  smiley: { core: [], inAction: [] }
+};
 
-// --- Sub-components ---
+// --- Sub-components (Home, Team, Product, etc. intentionally omitted for brevity - KEEP your existing ones here!) ---
+// NOTE: I am including just the guide editors, keep your existing HomeEditor, TeamEditor etc.
 function HomeEditor({ data, onChange }: { data: HomeContent; onChange: (d: HomeContent) => void; }) {
   const addStat = () => {
     const currentStats = data.stats || { title: "", description: "", numbers: [], };
@@ -267,35 +299,316 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
   );
 }
 
-// NEW: Guide Editor (Aligned with Bento Sections Structure)
-function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: GuideContent) => void; }) {
+
+function PrimaryColorsEditor({ data, onChange }: { data: ColorDef[]; onChange: (d: ColorDef[]) => void; }) {
+  const updateColor = <K extends keyof ColorDef,>(index: number, key: K, val: ColorDef[K]) => {
+    const copy = [...data];
+    copy[index] = { ...copy[index], [key]: val };
+    onChange(copy);
+  };
+  const addColor = () => onChange([...data, { name: "", hex: "#000000", tones: [] }]);
+  const removeColor = (index: number) => onChange(data.filter((_, i) => i !== index));
+
+  const addTone = (colorIdx: number) => {
+    const copy = [...data];
+    const tones = copy[colorIdx].tones || [];
+    copy[colorIdx].tones = [...tones, { name: "", hex: "#000000" }];
+    onChange(copy);
+  };
+  const removeTone = (colorIdx: number, toneIdx: number) => {
+    const copy = [...data];
+    copy[colorIdx].tones = (copy[colorIdx].tones || []).filter((_, i) => i !== toneIdx);
+    onChange(copy);
+  };
+  const updateTone = (colorIdx: number, toneIdx: number, key: keyof ToneDef, val: string) => {
+    const copy = [...data];
+    if (!copy[colorIdx].tones) copy[colorIdx].tones = [];
+    copy[colorIdx].tones![toneIdx] = { ...copy[colorIdx].tones![toneIdx], [key]: val };
+    onChange(copy);
+  };
+
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    const copy = [...data];
+    [copy[index - 1], copy[index]] = [copy[index], copy[index - 1]];
+    onChange(copy);
+  };
+  const moveDown = (index: number) => {
+    if (index === data.length - 1) return;
+    const copy = [...data];
+    [copy[index + 1], copy[index]] = [copy[index], copy[index + 1]];
+    onChange(copy);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200">
-        <h4 className="font-bold text-lg mb-4">Brand OS Settings</h4>
-        <input type="text" placeholder="Page Title" value={data.title} onChange={(e) => onChange({...data, title: e.target.value})} className="w-full mb-4 p-2 border rounded" />
-        <textarea placeholder="Introduction Text" value={data.intro} onChange={(e) => onChange({...data, intro: e.target.value})} className="w-full p-2 border rounded" rows={3} />
-      </div>
-      
-      <h4 className="font-bold">Sections (Logo, Colors, Photography, etc.)</h4>
-      <GenericArrayEditor
-        data={data.sections}
-        onChange={(sections) => onChange({...data, sections})}
-        title="Section"
-        defaultItem={{ heading: "", content: "", bullets: [], image: "" }}
-        fields={[
-          { key: "heading", label: "Heading", type: "text" },
-          { key: "content", label: "Content", type: "textarea" },
-          { key: "bullets", label: "Bullet Points (comma separated)", type: "array" },
-          { key: "image", label: "Image URL", type: "text" }
-        ]}
-      />
+      {data.map((color, i) => (
+        <div key={i} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700 relative pt-12 sm:pt-5">
+          
+          <div className="absolute top-3 right-3 flex items-center gap-1 sm:gap-2">
+            <button type="button" onClick={() => moveUp(i)} disabled={i === 0} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-30 bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">↑</button>
+            <button type="button" onClick={() => moveDown(i)} disabled={i === data.length - 1} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-30 bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">↓</button>
+            <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1"></div>
+            <button type="button" onClick={() => removeColor(i)} className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/30 dark:hover:bg-red-900/50 px-2.5 py-1.5 rounded-md transition-colors">Remove</button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-300">Primary Color Name</label>
+              <input type="text" value={color.name || ""} onChange={e => updateColor(i, 'name', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-300">Hex Code</label>
+              <div className="flex gap-2">
+                <input type="color" value={color.hex || "#000000"} onChange={e => updateColor(i, 'hex', e.target.value)} className="w-10 h-10 rounded cursor-pointer border-0 p-0" />
+                <input type="text" value={color.hex || ""} onChange={e => updateColor(i, 'hex', e.target.value)} className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
+              </div>
+            </div>
+          </div>
+
+          {/* Tones Section */}
+          <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-4">
+              <h6 className="font-bold text-sm text-gray-700 dark:text-gray-300">Acceptable Tones & Accents</h6>
+              <button type="button" onClick={() => addTone(i)} className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30 px-3 py-1.5 rounded-md transition-colors">+ Add Tone</button>
+            </div>
+            
+            <div className="space-y-3">
+              {(color.tones || []).map((tone, j) => (
+                <div key={j} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded border border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 w-full">
+                    <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Tone Name</label>
+                    <input type="text" value={tone.name || ""} onChange={e => updateTone(i, j, 'name', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 focus:ring-purple-500" placeholder="e.g. Light Accent" />
+                  </div>
+                  <div className="flex-1 w-full">
+                    <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Hex Code</label>
+                    <div className="flex gap-2">
+                       <input type="color" value={tone.hex || "#000000"} onChange={e => updateTone(i, j, 'hex', e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                       <input type="text" value={tone.hex || ""} onChange={e => updateTone(i, j, 'hex', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 focus:ring-purple-500" placeholder="#FFFFFF" />
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => removeTone(i, j)} className="mt-4 sm:mt-5 text-red-500 hover:text-red-700 font-bold p-2 text-sm">✕</button>
+                </div>
+              ))}
+              {(!color.tones || color.tones.length === 0) && (
+                <p className="text-xs text-gray-500 italic text-center py-2">No tones added yet.</p>
+              )}
+            </div>
+          </div>
+
+        </div>
+      ))}
+      <button type="button" onClick={addColor} className="w-full py-3 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-400 rounded-xl text-sm font-bold transition-colors border border-purple-100 dark:border-purple-900/50">
+        + Add Primary Color
+      </button>
     </div>
   );
 }
 
+// NEW: Rich Brand OS Editor
+function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: GuideContent) => void; }) {
+  return (
+    <div className="space-y-8">
+      {/* 1. Hero & Introduction */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">1. Hero & Introduction</h4>
+        <div className="space-y-4">
+          <div><label className="block text-xs font-semibold mb-1">Page Title</label><input type="text" value={data.title || ""} onChange={(e) => onChange({...data, title: e.target.value})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" /></div>
+          <div><label className="block text-xs font-semibold mb-1">Introduction Text</label><textarea value={data.intro || ""} onChange={(e) => onChange({...data, intro: e.target.value})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={3} /></div>
+        </div>
+      </div>
 
+      {/* 2. Brand Origin */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">2. Origin Story</h4>
+        <div className="space-y-4">
+          <div><label className="block text-xs font-semibold mb-1">Section Title</label><input type="text" value={data.originStory?.title || ""} onChange={(e) => onChange({...data, originStory: {...data.originStory, title: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" /></div>
+          <div><label className="block text-xs font-semibold mb-1">Origin Story Content</label><textarea value={data.originStory?.content || ""} onChange={(e) => onChange({...data, originStory: {...data.originStory, content: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={4} /></div>
+        </div>
+      </div>
 
+      {/* 3. Color Strategy */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">3. Color Strategy</h4>
+        <div className="mb-6">
+          <label className="block text-xs font-semibold mb-1">Color Strategy Description</label>
+          <textarea value={data.colors?.description || ""} onChange={(e) => onChange({...data, colors: {...data.colors, description: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={3} />
+        </div>
+        
+        <h5 className="font-bold mb-3">Primary Colors</h5>
+        <PrimaryColorsEditor 
+          data={data.colors?.primary || []}
+          onChange={(primary) => onChange({...data, colors: {...data.colors, primary}})}
+        />
+
+        <h5 className="font-bold mt-8 mb-3">Gradients</h5>
+        <GenericArrayEditor
+          data={data.colors?.gradients || []}
+          onChange={(gradients) => onChange({...data, colors: {...data.colors, gradients}})}
+          title="Gradient"
+          defaultItem={{ name: "", from: "#000000", via: "", to: "#FFFFFF" }}
+          fields={[
+            { key: "name", label: "Gradient Name", type: "text" },
+            { key: "from", label: "From Color (Hex)", type: "text" },
+            { key: "via", label: "Via Color (Hex, Optional)", type: "text" },
+            { key: "to", label: "To Color (Hex)", type: "text" }
+          ]}
+        />
+      </div>
+
+      {/* 4. Typography & Voice */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">4. Typography & Voice</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label className="block text-xs font-semibold mb-1">Primary Font Name</label>
+            <input type="text" value={data.typography?.primaryFont || ""} onChange={(e) => onChange({...data, typography: {...data.typography, primaryFont: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900 mb-4" />
+            <label className="block text-xs font-semibold mb-1">Typography Description</label>
+            <textarea value={data.typography?.description || ""} onChange={(e) => onChange({...data, typography: {...data.typography, description: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={3} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Brand Voice Description</label>
+            <textarea value={data.voice?.description || ""} onChange={(e) => onChange({...data, voice: {...data.voice, description: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={7} />
+          </div>
+        </div>
+        
+        <h5 className="font-bold mb-3">Brand Expression Traits (e.g. Inclusive, Empowering)</h5>
+        <GenericArrayEditor
+          data={data.voice?.traits || []}
+          onChange={(traits) => onChange({...data, voice: {...data.voice, traits}})}
+          title="Trait"
+          defaultItem={{ name: "", description: "" }}
+          fields={[
+            { key: "name", label: "Trait Name", type: "text" },
+            { key: "description", label: "Description", type: "textarea" }
+          ]}
+        />
+      </div>
+
+      {/* 5. Emoji System */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">5. Emoji System</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label className="block text-xs font-semibold mb-1">Why We Love Emojis</label>
+            <textarea value={data.emojiSystem?.description || ""} onChange={(e) => onChange({...data, emojiSystem: {...(data.emojiSystem || {description: "", howToUse: "", items: []}), description: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={4} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">How We Use Them</label>
+            <textarea value={data.emojiSystem?.howToUse || ""} onChange={(e) => onChange({...data, emojiSystem: {...(data.emojiSystem || {description: "", howToUse: "", items: []}), howToUse: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={4} />
+          </div>
+        </div>
+        
+        <h5 className="font-bold mb-3">Example Emojis</h5>
+        <GenericArrayEditor
+          data={data.emojiSystem?.items || []}
+          onChange={(items) => onChange({...data, emojiSystem: {...(data.emojiSystem || {description: "", howToUse: "", items: []}), items}})}
+          title="Emoji"
+          defaultItem={{ icon: "😊", usage: "" }}
+          fields={[
+            { key: "icon", label: "Emoji Character", type: "text" },
+            { key: "usage", label: "Meaning / Usage", type: "text" }
+          ]}
+        />
+      </div>
+
+      {/* 6. Logo System */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">6. Logo System</h4>
+        <div className="mb-6">
+          <label className="block text-xs font-semibold mb-1">Placement Rules & Video Usage</label>
+          <textarea value={data.logos?.placementRules || ""} onChange={(e) => onChange({...data, logos: {...data.logos, placementRules: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={3} />
+        </div>
+        <GenericArrayEditor
+          data={data.logos?.items || []}
+          onChange={(items) => onChange({...data, logos: {...data.logos, items}})}
+          title="Logo Variation"
+          defaultItem={{ name: "", url: "", type: "Primary" }}
+          fields={[
+            { key: "name", label: "Logo Variant Name", type: "text" },
+            { key: "type", label: "Type", type: "select", options: [{ label: "Primary", value: "Primary" }, { label: "Secondary", value: "Secondary" }] },
+            { key: "url", label: "Logo Image URL", type: "text" }
+          ]}
+        />
+      </div>
+
+      {/* 7. Photography */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">7. Photography Direction</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label className="block text-xs font-semibold mb-1">Direction (Images in Action)</label>
+            <textarea value={data.photography?.direction || ""} onChange={(e) => onChange({...data, photography: {...data.photography, direction: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={4} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Target Demographic</label>
+            <textarea value={data.photography?.targetDemographic || ""} onChange={(e) => onChange({...data, photography: {...data.photography, targetDemographic: e.target.value}})} className="w-full p-2 border rounded-lg text-sm dark:bg-gray-900" rows={4} />
+          </div>
+        </div>
+        <h5 className="font-bold mb-3">Brand Imagery</h5>
+        <GenericArrayEditor
+          data={data.photography?.images || []}
+          onChange={(images) => onChange({...data, photography: {...data.photography, images}})}
+          title="Image"
+          defaultItem={{ url: "", caption: "" }}
+          fields={[
+            { key: "url", label: "Image URL", type: "text" },
+            { key: "caption", label: "Image Caption (Optional)", type: "text" }
+          ]}
+        />
+      </div>
+      
+      {/* 8. Logo In Action */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">8. Logo In Action (184px Bento Grid)</h4>
+        <p className="text-xs text-gray-500 mb-6">These images will display in a strict 184px height grid without zoom effects.</p>
+        
+        <GenericArrayEditor
+          data={data.logoUsage?.images || []}
+          onChange={(images) => onChange({...data, logoUsage: {...data.logoUsage, images}})}
+          title="Logo Action Image"
+          defaultItem={{ url: "", caption: "" }}
+          fields={[
+            { key: "url", label: "Image URL", type: "text" },
+            { key: "caption", label: "Image Caption (Optional)", type: "text" }
+          ]}
+        />
+      </div>
+
+      {/* 9. The Smiley System */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">9. The Smiley System</h4>
+        
+        <h5 className="font-bold mb-3">Our Smiley (Top Grid)</h5>
+        <p className="text-xs text-gray-500 mb-4">Upload exactly 2 images. The 3rd tile will automatically be a green title block.</p>
+        <GenericArrayEditor
+          data={data.smiley?.core || []}
+          onChange={(core) => onChange({...data, smiley: { core, inAction: data.smiley?.inAction || [] }})}
+          title="Core Smiley"
+          defaultItem={{ url: "", caption: "" }}
+          fields={[
+            { key: "url", label: "Image URL", type: "text" },
+            { key: "caption", label: "Image Caption (Optional)", type: "text" }
+          ]}
+        />
+
+        <h5 className="font-bold mt-8 mb-3">Smiley In Action</h5>
+        <p className="text-xs text-gray-500 mb-4">These automatically alternate between a 3-column and 2-column grid format.</p>
+        <GenericArrayEditor
+          data={data.smiley?.inAction || []}
+          onChange={(inAction) => onChange({...data, smiley: { core: data.smiley?.core || [], inAction }})}
+          title="Action Image"
+          defaultItem={{ url: "", caption: "" }}
+          fields={[
+            { key: "url", label: "Image URL", type: "text" },
+            { key: "caption", label: "Image Caption (Optional)", type: "text" }
+          ]}
+        />
+      </div>
+
+    </div>
+  );
+}
 
 // Generic Array Editor (Upgraded with UP/DOWN Reorder Arrows)
 function GenericArrayEditor<T extends object>({ 
@@ -360,7 +673,6 @@ function GenericArrayEditor<T extends object>({
                 
                 {f.type === 'select' ? (
                   <select 
-                    // ADDED || "" to prevent uncontrolled input errors
                     value={(item[f.key] as unknown as string) || ""} 
                     onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} 
                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-purple-500 transition-colors"
@@ -371,12 +683,10 @@ function GenericArrayEditor<T extends object>({
                     ))}
                   </select>
                 ) : f.type === 'textarea' ? (
-                  // ADDED || "" to prevent uncontrolled input errors
                   <textarea value={(item[f.key] as unknown as string) || ""} onChange={e => updateItem(i, f.key, e.target.value as unknown as T[keyof T])} rows={3} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 ) : f.type === 'array' ? (
                   <input value={((item[f.key] as unknown as string[]) || []).join(', ')} onChange={e => updateItem(i, f.key, e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') as unknown as T[keyof T])} placeholder="Separate items with commas" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 ) : (
-                  // ADDED || "" to prevent uncontrolled input errors
                   <input type={f.type} value={(item[f.key] as unknown as string) || ""} onChange={e => updateItem(i, f.key, (f.type === 'number' ? Number(e.target.value) : e.target.value) as unknown as T[keyof T])} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 focus:ring-purple-500 transition-colors" />
                 )}
               </div>

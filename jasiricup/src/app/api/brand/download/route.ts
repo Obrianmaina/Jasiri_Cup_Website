@@ -22,14 +22,15 @@ export async function GET(req: Request) {
 
     await dbConnect();
 
-    // Final security check before downloading
+    // Check if the token exists, is approved, and has NOT expired
     const isValid = await BrandAccess.findOne({ 
       accessToken: token, 
-      status: 'approved' 
+      status: 'approved',
+      expiresAt: { $gt: new Date() } // Ensures expiration date is strictly in the future
     });
 
     if (!isValid) {
-      return new NextResponse('Unauthorized', { status: 401 });
+      return new NextResponse('Unauthorized or Token Expired', { status: 401 });
     }
 
     // Redirect the user to the actual secure file URL

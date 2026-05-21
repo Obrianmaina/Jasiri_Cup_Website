@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
 import { TextArea } from '@/components/ui/TextArea';
 import { Button } from '@/components/ui/Button';
@@ -56,11 +57,21 @@ export default function BrandAccessForm() {
 
   if (isSuccess) {
     return (
-      <div className="text-center p-8 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-        <h3 className="text-2xl font-bold text-green-800 dark:text-green-300 mb-2">Request Received</h3>
-        <p className="text-gray-600 dark:text-gray-300">
-          Thank you! Our team will review your request to access the Brand OS. You will receive an email once your access is approved.
+      <div className="text-center p-8 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-green-200 dark:border-green-900/50 max-w-lg mx-auto">
+        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Request Received!</h3>
+        <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+          Thank you for your interest in our brand guidelines. We have received your request, and a confirmation email has been sent to <strong>{formData.email}</strong>. Once our team approves your request, you will receive a follow-up email with your secure access link.
         </p>
+        <Link href="/press" className="block w-full">
+          <Button type="button" className="w-full py-3">
+            Return to Press Page
+          </Button>
+        </Link>
       </div>
     );
   }

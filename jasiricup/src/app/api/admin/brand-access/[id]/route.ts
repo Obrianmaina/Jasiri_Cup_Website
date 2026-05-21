@@ -10,6 +10,7 @@ interface UpdateData {
   status: string;
   accessToken?: string;
   approvedAt?: Date;
+  expiresAt?: Date;
 }
 
 export async function PATCH(
@@ -35,6 +36,11 @@ export async function PATCH(
       newAccessToken = uuidv4();
       updateData.accessToken = newAccessToken;
       updateData.approvedAt = new Date();
+      
+      // Set expiration to 30 days from now
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 30);
+      updateData.expiresAt = expirationDate;
     }
 
     const updatedRequest = await BrandAccess.findByIdAndUpdate(

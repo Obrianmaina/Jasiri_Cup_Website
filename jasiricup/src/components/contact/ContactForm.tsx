@@ -105,7 +105,7 @@ export const ContactForm = () => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto">
       <form
         onSubmit={handleSubmit}
         className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 transition-colors duration-300"

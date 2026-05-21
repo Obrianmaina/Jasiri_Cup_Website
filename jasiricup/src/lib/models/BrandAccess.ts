@@ -1,3 +1,4 @@
+// src/lib/models/BrandAccess.ts
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IBrandAccess extends Document {
@@ -9,6 +10,7 @@ export interface IBrandAccess extends Document {
   accessToken?: string;
   requestedAt: Date;
   approvedAt?: Date;
+  expiresAt?: Date;
   lastAccessedAt?: Date;
 }
 
@@ -51,6 +53,9 @@ const BrandAccessSchema = new Schema<IBrandAccess>(
       default: Date.now,
     },
     approvedAt: {
+      type: Date,
+    },
+    expiresAt: {
       type: Date,
     },
     lastAccessedAt: {
