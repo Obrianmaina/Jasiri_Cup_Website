@@ -66,7 +66,7 @@ export const NewsletterSignup = ({ variant = 'inline' }: NewsletterSignupProps) 
                 onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 required
-                className="flex-1 px-4 py-3 rounded-full text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white"
+                className="flex-1 px-4 py-3 rounded-full border border-white/40 bg-gray-100 dark:bg-gray-100 text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
               />
               <button
                 type="submit"
