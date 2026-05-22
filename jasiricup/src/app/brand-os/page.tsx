@@ -68,9 +68,9 @@ export default async function BrandOSPage({
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 pb-20">
       
       {/* Hero Section */}
-      <div className="bg-slate-900 dark:bg-black text-white pt-32 pb-24 px-6 md:px-12 mb-16 rounded-b-[3rem] shadow-sm">
+      <div className="bg-slate-900 dark:bg-black text-white pt-32 pb-24 px-6 md:px-12 mb-16 shadow-sm">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500">
+          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-900 via-green-500 to-green-300">
             {content.title}
           </h1>
           <p className="text-xl md:text-2xl font-medium opacity-90 max-w-2xl leading-relaxed">
