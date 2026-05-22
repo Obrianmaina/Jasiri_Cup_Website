@@ -1,3 +1,4 @@
+// src/app/guide/page.tsx
 import { Metadata } from 'next';
 import connectDB from '@/lib/dbConnect';
 import SiteContent from '@/lib/models/SiteContent';
@@ -7,31 +8,33 @@ export const metadata: Metadata = {
   description: 'A comprehensive guide to menstrual cups, materials, usage, and environmental impact.',
 };
 
-interface GuideSection {
-  heading: string;
+// FIX: Updated interface to perfectly match what the Admin panel saves
+interface UsageGuideSection {
+  title: string;
   content: string;
   bullets: string[];
-  postContent?: string;
+  additionalContent?: string;
   image?: string;
 }
 
-interface GuideContent {
+interface UsageGuideContent {
   title: string;
-  intro: string;
-  sections: GuideSection[];
+  description: string;
+  sections: UsageGuideSection[];
 }
 
-async function getGuideContent(): Promise<GuideContent | null> {
+async function getGuideContent(): Promise<UsageGuideContent | null> {
   try {
     await connectDB();
-    const data = await SiteContent.findOne({ page: 'guide', section: 'main' }).lean() as { content: GuideContent } | null;
+    // FIX: Changed from 'guide' to 'usage-guide' to match the new database key
+    const data = await SiteContent.findOne({ page: 'usage-guide', section: 'main' }).lean() as { content: UsageGuideContent } | null;
     
     if (data && data.content) {
       return data.content;
     }
     return null;
   } catch (error) {
-    console.error("Error fetching guide content:", error);
+    console.error("Error fetching usage guide content:", error);
     return null;
   }
 }
@@ -60,9 +63,9 @@ export default async function GuidePage() {
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6">
             {guide.title}
           </h1>
-          {guide.intro && (
-            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl mx-auto">
-              {guide.intro}
+          {guide.description && (
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl mx-auto whitespace-pre-wrap">
+              {guide.description}
             </p>
           )}
         </div>
@@ -70,12 +73,10 @@ export default async function GuidePage() {
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           {guide.sections?.map((section, idx) => {
-            // Layout Logic based on requested structure
             const isMiddleFullWidth = idx === 4;
             const isLastItem = idx === guide.sections.length - 1;
             const isFullWidth = isMiddleFullWidth || (isLastItem && idx > 6);
             
-            // Check if this is the 5th item split layout requirement
             const useSplitLayout = isMiddleFullWidth && section.bullets && section.bullets.length > 0;
 
             return (
@@ -91,10 +92,10 @@ export default async function GuidePage() {
                 {useSplitLayout ? (
                   // Split Layout (Top: Heading, Left: Para + Bullets, Right: Image, Bottom: Post Content)
                   <div className="flex flex-col h-full">
-                    {section.heading && (
+                    {section.title && (
                       <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
                         <span className="w-1.5 h-6 bg-green-600 dark:bg-green-500 rounded-full block"></span>
-                        {section.heading}
+                        {section.title}
                       </h2>
                     )}
                     
@@ -125,18 +126,18 @@ export default async function GuidePage() {
                         <div className="w-full h-full min-h-[250px] rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                           <img 
                             src={section.image} 
-                            alt={section.heading || 'Guide illustration'} 
+                            alt={section.title || 'Guide illustration'} 
                             className="w-full h-full object-cover"
                           />
                         </div>
                       )}
                     </div>
                     
-                    {/* Bottom: Post Content */}
-                    {section.postContent && (
+                    {/* Bottom: Post Content (Now maps to additionalContent) */}
+                    {section.additionalContent && (
                       <div className="mt-auto pt-5 border-t border-gray-100 dark:border-gray-800">
                         <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
-                          {section.postContent}
+                          {section.additionalContent}
                         </p>
                       </div>
                     )}
@@ -148,16 +149,16 @@ export default async function GuidePage() {
                       <div className="w-full h-48 md:h-56 mb-6 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-700 group">
                         <img 
                           src={section.image} 
-                          alt={section.heading || 'Guide illustration'} 
+                          alt={section.title || 'Guide illustration'} 
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                       </div>
                     )}
                     
-                    {section.heading && (
+                    {section.title && (
                       <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
                         <span className="w-1.5 h-6 bg-green-600 dark:bg-green-500 rounded-full block"></span>
-                        {section.heading}
+                        {section.title}
                       </h2>
                     )}
 
@@ -177,10 +178,11 @@ export default async function GuidePage() {
                       </ul>
                     )}
 
-                    {section.postContent && (
+                    {/* Maps to additionalContent */}
+                    {section.additionalContent && (
                       <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
                         <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
-                          {section.postContent}
+                          {section.additionalContent}
                         </p>
                       </div>
                     )}

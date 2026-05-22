@@ -13,7 +13,8 @@ import {
   Handshake, 
   Heart, 
   Globe, 
-  Book 
+  Book,
+  FileText
 } from "lucide-react";
 
 // --- Types ---
@@ -24,14 +25,13 @@ interface SectionData<T> { section: string; content?: T; }
 interface HomeContent { about: { title: string; content: string; imageSrc: string }; vision: { title: string; content: string }; mission: { title: string; content: string }; stats: { title: string; description: string; numbers: { label: string; value: string }[]; }; }
 interface Story { id: number; name: string; age: number; county: string; school: string; image: string; headline: string; story: string; quote: string; impact: string[]; }
 interface PressCoverage { outlet: string; headline: string; date: string; url: string; logo: string; }
-interface PressDownload { name: string; desc: string; icon: string; file: string; }
 interface Partner { name: string; county: string; girls: number; type: string; since: string; image?: string; }
 interface VolunteerRole { icon: string; title: string; desc: string; commitment: string; location: string; image?: string; }
 interface Testimonial { quote: string; name: string; location: string; role: string; avatar: string; }
 interface MapCounty { name: string; region: string; girls: number; color: string; image?: string; imageAttribution?: string; }
 interface ImpactPageContent { hero: { subtitle: string; title: string; description: string; }; testimonials: Testimonial[]; map: { title: string; subtitle: string; expansionNote: string; counties: MapCounty[]; }; }
 
-// NEW: Rich Brand OS / Guide Interfaces
+// Brand OS Interfaces
 interface BrandTrait { name: string; description: string; }
 interface ToneDef { name: string; hex: string; }
 interface ColorDef { name: string; hex: string; tones?: ToneDef[]; }
@@ -39,8 +39,9 @@ interface GradientDef { name: string; from: string; via: string; to: string; }
 interface LogoDef { name: string; url: string; type: string; }
 interface PhotoDef { url: string; caption: string; }
 interface EmojiDef { icon: string; usage: string; }
+interface AssetDownload { name: string; desc: string; icon: string; file: string; }
 
-interface GuideContent {
+interface BrandOSContent {
   title: string;
   intro: string;
   originStory: { title: string; content: string; };
@@ -52,6 +53,22 @@ interface GuideContent {
   photography: { direction: string; targetDemographic: string; images: PhotoDef[]; };
   logoUsage?: { images: PhotoDef[] };
   smiley?: { core: PhotoDef[]; inAction: PhotoDef[] };
+  downloads?: AssetDownload[];
+}
+
+// Usage Guide Interfaces
+// Usage Guide Interfaces
+interface UsageGuideSection {
+  title: string;
+  content: string;
+  bullets: string[]; 
+  additionalContent?: string; // NEW: Optional extra paragraph
+  image?: string;
+} 
+interface UsageGuideContent {
+  title: string;
+  description: string;
+  sections: UsageGuideSection[];
 }
 
 // --- Defaults ---
@@ -59,11 +76,11 @@ const DEFAULT_HOME: HomeContent = { about: { title: "", content: "", imageSrc: "
 const DEFAULT_TEAM_MEMBERS: TeamMember[] = [];
 const DEFAULT_PRODUCT: ProductContent = { title: "", description: "", heroImage: "", steps: [], downloadCards: [] };
 const DEFAULT_STORIES: Story[] = [];
-const DEFAULT_PRESS = { coverage: [] as PressCoverage[], downloads: [] as PressDownload[] };
+const DEFAULT_PRESS = { coverage: [] as PressCoverage[] };
 const DEFAULT_PARTNERS: Partner[] = [];
 const DEFAULT_VOLUNTEER: VolunteerRole[] = [];
 const DEFAULT_IMPACT: ImpactPageContent = { hero: { subtitle: "", title: "", description: "" }, testimonials: [], map: { title: "", subtitle: "", expansionNote: "", counties: [] } };
-const DEFAULT_GUIDE: GuideContent = {
+const DEFAULT_BRAND_OS: BrandOSContent = {
   title: "JaSiriCup Brand OS",
   intro: "Joy, empowerment, and approachability. Welcome to the visual foundation of our bold initiative.",
   originStory: { title: "The Origin of Our Name", content: "" },
@@ -74,11 +91,16 @@ const DEFAULT_GUIDE: GuideContent = {
   colors: { description: "", primary: [], gradients: [] },
   photography: { direction: "", targetDemographic: "", images: [] },
   logoUsage: { images: [] },
-  smiley: { core: [], inAction: [] }
+  smiley: { core: [], inAction: [] },
+  downloads: []
+};
+const DEFAULT_USAGE_GUIDE: UsageGuideContent = { 
+  title: "", 
+  description: "", 
+  sections: [] 
 };
 
-// --- Sub-components (Home, Team, Product, etc. intentionally omitted for brevity - KEEP your existing ones here!) ---
-// NOTE: I am including just the guide editors, keep your existing HomeEditor, TeamEditor etc.
+// --- Sub-components ---
 function HomeEditor({ data, onChange }: { data: HomeContent; onChange: (d: HomeContent) => void; }) {
   const addStat = () => {
     const currentStats = data.stats || { title: "", description: "", numbers: [], };
@@ -299,7 +321,6 @@ function ImpactPageEditor({ data, onChange }: { data: ImpactPageContent; onChang
   );
 }
 
-
 function PrimaryColorsEditor({ data, onChange }: { data: ColorDef[]; onChange: (d: ColorDef[]) => void; }) {
   const updateColor = <K extends keyof ColorDef,>(index: number, key: K, val: ColorDef[K]) => {
     const copy = [...data];
@@ -405,8 +426,8 @@ function PrimaryColorsEditor({ data, onChange }: { data: ColorDef[]; onChange: (
   );
 }
 
-// NEW: Rich Brand OS Editor
-function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: GuideContent) => void; }) {
+// Brand OS Editor (Formerly GuideEditor)
+function BrandOSEditor({ data, onChange }: { data: BrandOSContent; onChange: (d: BrandOSContent) => void; }) {
   return (
     <div className="space-y-8">
       {/* 1. Hero & Introduction */}
@@ -472,7 +493,7 @@ function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: Gui
           </div>
         </div>
         
-        <h5 className="font-bold mb-3">Brand Expression Traits (e.g. Inclusive, Empowering)</h5>
+        <h5 className="font-bold mb-3">Brand Expression Traits</h5>
         <GenericArrayEditor
           data={data.voice?.traits || []}
           onChange={(traits) => onChange({...data, voice: {...data.voice, traits}})}
@@ -560,9 +581,7 @@ function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: Gui
       
       {/* 8. Logo In Action */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">8. Logo In Action (184px Bento Grid)</h4>
-        <p className="text-xs text-gray-500 mb-6">These images will display in a strict 184px height grid without zoom effects.</p>
-        
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">8. Logo In Action</h4>
         <GenericArrayEditor
           data={data.logoUsage?.images || []}
           onChange={(images) => onChange({...data, logoUsage: {...data.logoUsage, images}})}
@@ -580,7 +599,6 @@ function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: Gui
         <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">9. The Smiley System</h4>
         
         <h5 className="font-bold mb-3">Our Smiley (Top Grid)</h5>
-        <p className="text-xs text-gray-500 mb-4">Upload exactly 2 images. The 3rd tile will automatically be a green title block.</p>
         <GenericArrayEditor
           data={data.smiley?.core || []}
           onChange={(core) => onChange({...data, smiley: { core, inAction: data.smiley?.inAction || [] }})}
@@ -593,7 +611,6 @@ function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: Gui
         />
 
         <h5 className="font-bold mt-8 mb-3">Smiley In Action</h5>
-        <p className="text-xs text-gray-500 mb-4">These automatically alternate between a 3-column and 2-column grid format.</p>
         <GenericArrayEditor
           data={data.smiley?.inAction || []}
           onChange={(inAction) => onChange({...data, smiley: { core: data.smiley?.core || [], inAction }})}
@@ -606,11 +623,63 @@ function GuideEditor({ data, onChange }: { data: GuideContent; onChange: (d: Gui
         />
       </div>
 
+      {/* 10. Downloadable Assets (Moved from Press) */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <h4 className="font-bold text-lg mb-4 text-purple-700 dark:text-purple-400">10. Downloadable Assets</h4>
+        <p className="text-sm text-gray-500 mb-4">Add downloadable files like logos or templates for the bottom of the Brand OS page.</p>
+        <GenericArrayEditor
+          data={data.downloads || []}
+          onChange={(downloads) => onChange({...data, downloads})}
+          title="Asset"
+          defaultItem={{ name: "", desc: "", icon: " ", file: "" }}
+          fields={[
+            { key: "name", label: "Asset Name (e.g., Logo Pack)", type: "text" },
+            { key: "desc", label: "Description", type: "text" },
+            { key: "icon", label: "Emoji Icon", type: "text" },
+            { key: "file", label: "Download Endpoint/URL (e.g., logos)", type: "text" }
+          ]}
+        />
+      </div>
+
     </div>
   );
 }
 
-// Generic Array Editor (Upgraded with UP/DOWN Reorder Arrows)
+// NEW: Usage Guide Editor (For the live /guide product page)
+function UsageGuideEditor({ data, onChange }: { data: UsageGuideContent; onChange: (d: UsageGuideContent) => void; }) {
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+        <h4 className="font-semibold text-sm mb-3">Hero Section</h4>
+        <div className="space-y-3">
+          <div><label className="block text-xs mb-1">Page Title</label><input type="text" value={data.title || ""} onChange={(e) => onChange({ ...data, title: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
+          <div><label className="block text-xs mb-1">Description</label><textarea rows={3} value={data.description || ""} onChange={(e) => onChange({ ...data, description: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-semibold text-sm mb-3">Guide Sections</h4>
+        <p className="text-xs text-gray-500 mb-4">Add the content blocks for your guide. Bullet points, additional paragraphs, and images are all completely optional.</p>
+        <GenericArrayEditor
+          data={data.sections || []}
+          onChange={(sections) => onChange({ ...data, sections })}
+          title="Section"
+          // Added additionalContent to the default blank item
+          defaultItem={{ title: "", content: "", bullets: [], additionalContent: "", image: "" }}
+          fields={[
+            { key: "title", label: "Section Title", type: "text" },
+            { key: "content", label: "Main Paragraph Content", type: "textarea" },
+            { key: "bullets", label: "Bullet Points (Separate with commas, Optional)", type: "array" },
+            // Added the new text area for the additional paragraph
+            { key: "additionalContent", label: "Additional Paragraph (Optional)", type: "textarea" },
+            { key: "image", label: "Image URL (Optional)", type: "text" },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+// Generic Array Editor
 function GenericArrayEditor<T extends object>({ 
   data, 
   onChange, 
@@ -652,7 +721,6 @@ function GenericArrayEditor<T extends object>({
       {data.map((item, i) => (
         <div key={i} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 relative pt-10 sm:pt-4">
           
-          {/* Action Buttons (Up, Down, Remove) */}
           <div className="absolute top-3 right-3 flex items-center gap-1 sm:gap-2">
             <button type="button" onClick={() => moveUp(i)} disabled={i === 0} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-30 bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
               ↑
@@ -702,7 +770,7 @@ function GenericArrayEditor<T extends object>({
 }
 
 // --- Main Page ---
-type TabType = "home" | "team" | "product" | "stories" | "press" | "partners" | "volunteer" | "impact" | "guide";
+type TabType = "home" | "team" | "product" | "stories" | "press" | "partners" | "volunteer" | "impact" | "brand-os" | "usage-guide";
 
 export default function AdminPagesPage() {
   const [activeTab, setActiveTab] = useState<TabType | null>(null); 
@@ -714,29 +782,53 @@ export default function AdminPagesPage() {
   const [partners, setPartners] = useState<Partner[]>(DEFAULT_PARTNERS);
   const [volunteerRoles, setVolunteerRoles] = useState<VolunteerRole[]>(DEFAULT_VOLUNTEER);
   const [impactContent, setImpactContent] = useState<ImpactPageContent>(DEFAULT_IMPACT);
-  const [guideContent, setGuideContent] = useState<GuideContent>(DEFAULT_GUIDE);
+  const [brandOSContent, setBrandOSContent] = useState<BrandOSContent>(DEFAULT_BRAND_OS);
+  const [usageGuideContent, setUsageGuideContent] = useState<UsageGuideContent>(DEFAULT_USAGE_GUIDE);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
 
-  useEffect(() => {
+useEffect(() => {
     const fetchContent = async () => {
       try {
-        const [homeRes, teamRes, productRes, storiesRes, pressRes, partRes, volRes, impactRes, guideRes] = await Promise.all([
+        const [homeRes, teamRes, productRes, storiesRes, pressRes, partRes, volRes, impactRes, brandOsRes, usageGuideRes] = await Promise.all([
           fetch('/api/admin/site-content?page=home'), fetch('/api/admin/site-content?page=team'), fetch('/api/admin/site-content?page=product'),
           fetch('/api/admin/site-content?page=stories'), fetch('/api/admin/site-content?page=press'), fetch('/api/admin/site-content?page=partners'), 
-          fetch('/api/admin/site-content?page=volunteer'), fetch('/api/admin/site-content?page=impact'), fetch('/api/admin/site-content?page=guide')
+          fetch('/api/admin/site-content?page=volunteer'), fetch('/api/admin/site-content?page=impact'), 
+          fetch('/api/admin/site-content?page=brand-os'), // Fetching from the proper brand-os key
+          fetch('/api/admin/site-content?page=usage-guide')
         ]);
             
         if (homeRes.ok) { const { data } = await homeRes.json(); const m = data.find((d: SectionData<HomeContent>) => d.section === 'main'); if (m?.content) setHomeContent(m.content); }
         if (teamRes.ok) { const { data } = await teamRes.json(); const m = data.find((d: SectionData<{ members: TeamMember[] }>) => d.section === 'members'); if (m?.content?.members) setTeamMembers(m.content.members); }
         if (productRes.ok) { const { data } = await productRes.json(); const m = data.find((d: SectionData<ProductContent>) => d.section === 'main'); if (m?.content) setProductContent(m.content); }
         if (storiesRes.ok) { const { data } = await storiesRes.json(); const m = data.find((d: SectionData<{ stories: Story[] }>) => d.section === 'main'); if (m?.content?.stories) setStories(m.content.stories); }
-        if (pressRes.ok) { const { data } = await pressRes.json(); const m = data.find((d: SectionData<{ coverage: PressCoverage[], downloads: PressDownload[] }>) => d.section === 'main'); if (m?.content) setPressContent(m.content); }
+        if (pressRes.ok) { const { data } = await pressRes.json(); const m = data.find((d: SectionData<{ coverage: PressCoverage[] }>) => d.section === 'main'); if (m?.content) setPressContent(m.content); }
         if (partRes.ok) { const { data } = await partRes.json(); const m = data.find((d: SectionData<{ partners: Partner[] }>) => d.section === 'main'); if (m?.content?.partners) setPartners(m.content.partners); }
         if (volRes.ok) { const { data } = await volRes.json(); const m = data.find((d: SectionData<{ roles: VolunteerRole[] }>) => d.section === 'main'); if (m?.content?.roles) setVolunteerRoles(m.content.roles); }
         if (impactRes.ok) { const { data } = await impactRes.json(); const m = data.find((d: SectionData<ImpactPageContent>) => d.section === 'main'); if (m?.content) setImpactContent(m.content); }
-        if (guideRes.ok) { const { data } = await guideRes.json(); const m = data.find((d: SectionData<GuideContent>) => d.section === 'main'); if (m?.content) setGuideContent(m.content); }
+        
+        // SMART MIGRATION: Try loading brand-os first. If empty, fall back to the old 'guide' data so you don't lose your work!
+        let loadedBrandOS = false;
+        if (brandOsRes.ok) { 
+          const { data } = await brandOsRes.json(); 
+          const m = data.find((d: SectionData<BrandOSContent>) => d.section === 'main'); 
+          // Ensure it's not just an empty object before accepting it
+          if (m?.content && Object.keys(m.content).length > 0 && m.content.title) {
+            setBrandOSContent(m.content); 
+            loadedBrandOS = true;
+          }
+        }
+        if (!loadedBrandOS) {
+          const oldGuideRes = await fetch('/api/admin/site-content?page=guide');
+          if (oldGuideRes.ok) {
+            const { data } = await oldGuideRes.json();
+            const m = data.find((d: SectionData<BrandOSContent>) => d.section === 'main');
+            if (m?.content) setBrandOSContent(m.content);
+          }
+        }
+        
+        if (usageGuideRes.ok) { const { data } = await usageGuideRes.json(); const m = data.find((d: SectionData<UsageGuideContent>) => d.section === 'main'); if (m?.content) setUsageGuideContent(m.content); }
       } catch (err) {
         console.error('Failed to load content:', err);
       } finally {
@@ -760,7 +852,10 @@ export default function AdminPagesPage() {
       else if (activeTab === "partners") payload = { page: "partners", section: "main", content: { partners } };
       else if (activeTab === "volunteer") payload = { page: "volunteer", section: "main", content: { roles: volunteerRoles } };
       else if (activeTab === "impact") payload = { page: "impact", section: "main", content: impactContent };
-      else if (activeTab === "guide") payload = { page: "guide", section: "main", content: guideContent };
+      
+      // FIX: Ensure Brand OS specifically saves back to 'brand-os' to sync with the public page
+      else if (activeTab === "brand-os") payload = { page: "brand-os", section: "main", content: brandOSContent };
+      else if (activeTab === "usage-guide") payload = { page: "usage-guide", section: "main", content: usageGuideContent };
 
       const res = await fetch("/api/admin/site-content", {
         method: "PUT",
@@ -790,7 +885,8 @@ export default function AdminPagesPage() {
     { id: "partners", label: "Partners", icon: <Handshake size={36} strokeWidth={1.5} /> },
     { id: "volunteer", label: "Volunteer", icon: <Heart size={36} strokeWidth={1.5} /> },
     { id: "impact", label: "Impact", icon: <Globe size={36} strokeWidth={1.5} /> },
-    { id: "guide", label: "Guide", icon: <Book size={36} strokeWidth={1.5} /> },
+    { id: "usage-guide", label: "Usage Guide", icon: <FileText size={36} strokeWidth={1.5} /> },
+    { id: "brand-os", label: "Brand OS", icon: <Book size={36} strokeWidth={1.5} /> },
   ];
 
   const activeTabData = TABS.find(t => t.id === activeTab);
@@ -854,8 +950,10 @@ export default function AdminPagesPage() {
               <ProductEditor data={productContent} onChange={setProductContent} />
             ) : activeTab === "impact" ? (
               <ImpactPageEditor data={impactContent} onChange={setImpactContent} />
-            ) : activeTab === "guide" ? (
-              <GuideEditor data={guideContent} onChange={setGuideContent} />
+            ) : activeTab === "brand-os" ? (
+              <BrandOSEditor data={brandOSContent} onChange={setBrandOSContent} />
+            ) : activeTab === "usage-guide" ? (
+              <UsageGuideEditor data={usageGuideContent} onChange={setUsageGuideContent} />
             ) : activeTab === "stories" ? (
               <GenericArrayEditor
                 data={stories} onChange={setStories} title="Story"
@@ -895,17 +993,6 @@ export default function AdminPagesPage() {
                     fields={[
                       { key: "outlet", label: "Outlet Name", type: "text" }, { key: "headline", label: "Headline", type: "text" },
                       { key: "date", label: "Date", type: "text" }, { key: "url", label: "Link", type: "text" }, { key: "logo", label: "Logo URL", type: "text" },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <h3 className="font-bold mb-4">Downloadable Assets</h3>
-                  <GenericArrayEditor
-                    data={pressContent.downloads} onChange={(d) => setPressContent({ ...pressContent, downloads: d }) } title="Asset"
-                    defaultItem={{ name: "", desc: "", icon: " ", file: "" }}
-                    fields={[
-                      { key: "name", label: "Asset Name", type: "text" }, { key: "desc", label: "Description", type: "text" },
-                      { key: "icon", label: "Emoji Icon", type: "text" }, { key: "file", label: "Download URL", type: "text" },
                     ]}
                   />
                 </div>
