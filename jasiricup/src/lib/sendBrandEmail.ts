@@ -1,5 +1,6 @@
 // src/lib/sendBrandEmail.ts
 import nodemailer from 'nodemailer';
+import { generateBrandedEmail } from './email-template';
 
 interface SendEmailParams {
   to: string;
@@ -22,7 +23,8 @@ export async function sendBrandAccessEmail({ to, name, token }: SendEmailParams)
   const magicLink = `${baseUrl}/brand-os?token=${token}`;
   const greeting = name ? `Hello ${name},` : 'Hello,';
 
-  const htmlContent = `
+  // 1. Create the inner HTML specific to this email
+  const innerHtmlContent = `
     <p>${greeting}</p>
     <p>Great news! Your request to access the JaSiriCup Brand Operating System has been approved.</p>
     <p>Use your secure link below to access our official brand guidelines, logos, and document templates:</p>
@@ -43,10 +45,14 @@ export async function sendBrandAccessEmail({ to, name, token }: SendEmailParams)
     </p>
   `;
 
+  // 2. Wrap it using your standardized email template
+  const finalHtml = generateBrandedEmail('Brand OS Access Approved', innerHtmlContent);
+
+  // 3. Send the formatted email
   await transporter.sendMail({
     from: `"JasiriCup Brand Team" <${process.env.EMAIL_SERVER_USER}>`,
     to,
     subject: 'Your JasiriCup Brand OS Access is Approved',
-    html: htmlContent,
+    html: finalHtml,
   });
 }

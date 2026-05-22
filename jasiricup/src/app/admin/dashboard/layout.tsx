@@ -12,7 +12,8 @@ import {
   ShoppingBag, 
   Mail, 
   HelpCircle, 
-  Palette 
+  Palette,
+  Newspaper // 1. Imported the Newspaper icon
 } from "lucide-react";
 
 const navLinks = [
@@ -25,6 +26,8 @@ const navLinks = [
   { href: "/admin/messages", icon: <Mail size={20} />, label: "Messages" },
   { href: "/admin/faq", icon: <HelpCircle size={20} />, label: "FAQ" },
   { href: "/admin/brand", icon: <Palette size={20} />, label: "Brand OS" },
+  // 2. Added the Newsletter route to your navigation array
+  { href: "/admin/newsletter", icon: <Newspaper size={20} />, label: "Newsletter" }, 
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

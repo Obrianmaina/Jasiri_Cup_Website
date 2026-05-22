@@ -72,7 +72,6 @@ export default function BrandAccessClient() {
 
   return (
     <div className="space-y-6 max-w-7xl px-4 py-16 w-full mx-auto">
-
       <div>
         <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 mb-4 transition-colors">
           &larr; Back to Dashboard
@@ -80,6 +79,7 @@ export default function BrandAccessClient() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight transition-colors duration-300">Brand Guidelines and Access</h1>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">Manage your brand guidelines and access requests.</p>
       </div>
+
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold dark:text-white">Brand Access Requests</h1>
       </div>
@@ -87,7 +87,9 @@ export default function BrandAccessClient() {
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
+            
+            {/* Hide the traditional table header on mobile, show on md and up */}
+            <thead className="hidden md:table-header-group">
               <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 text-sm text-gray-500 dark:text-gray-400">
                 <th className="p-4 font-medium">Date</th>
                 <th className="p-4 font-medium">User Info</th>
@@ -96,29 +98,50 @@ export default function BrandAccessClient() {
                 <th className="p-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+
+            {/* Transform tbody to block on mobile, table-row-group on desktop */}
+            <tbody className="block md:table-row-group divide-y divide-gray-100 dark:divide-slate-800">
               {requests.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-500">
+                <tr className="block md:table-row">
+                  <td colSpan={5} className="block md:table-cell p-8 text-center text-gray-500">
                     No requests found.
                   </td>
                 </tr>
               ) : (
                 requests.map((req) => (
-                  <tr key={req._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/20 transition-colors">
-                    <td className="p-4 text-sm whitespace-nowrap">
+                  <tr 
+                    key={req._id} 
+                    className="block md:table-row hover:bg-gray-50 dark:hover:bg-slate-800/20 transition-colors p-4 md:p-0"
+                  >
+                    
+                    {/* Date */}
+                    <td className="flex md:table-cell items-center md:p-4 text-sm whitespace-nowrap mb-2 md:mb-0">
+                      <span className="md:hidden font-semibold text-gray-500 dark:text-gray-400 w-24 shrink-0">Date:</span>
                       {new Date(req.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="p-4">
-                      <div className="font-medium text-gray-900 dark:text-white">{req.email}</div>
-                      <div className="text-sm text-gray-500">
-                        {[req.name, req.organization].filter(Boolean).join(', ')}
+                    
+                    {/* User Info */}
+                    <td className="flex md:table-cell items-start md:p-4 mb-2 md:mb-0">
+                      <span className="md:hidden font-semibold text-gray-500 dark:text-gray-400 w-24 shrink-0 mt-0.5">User:</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white break-all">{req.email}</div>
+                        <div className="text-sm text-gray-500">
+                          {[req.name, req.organization].filter(Boolean).join(', ')}
+                        </div>
                       </div>
                     </td>
-                    <td className="p-4 text-sm max-w-xs truncate" title={req.purpose}>
-                      {req.purpose}
+                    
+                    {/* Purpose */}
+                    <td className="flex md:table-cell items-start md:p-4 text-sm mb-3 md:mb-0">
+                      <span className="md:hidden font-semibold text-gray-500 dark:text-gray-400 w-24 shrink-0 mt-0.5">Purpose:</span>
+                      <span className="min-w-0 flex-1 md:max-w-xs md:truncate break-words" title={req.purpose}>
+                        {req.purpose}
+                      </span>
                     </td>
-                    <td className="p-4">
+                    
+                    {/* Status */}
+                    <td className="flex md:table-cell items-center md:p-4 mb-4 md:mb-0">
+                      <span className="md:hidden font-semibold text-gray-500 dark:text-gray-400 w-24 shrink-0">Status:</span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
                         ${req.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : ''}
                         ${req.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : ''}
@@ -127,10 +150,13 @@ export default function BrandAccessClient() {
                         {req.status}
                       </span>
                     </td>
-                    <td className="p-4 text-right space-x-2">
+                    
+                    {/* Actions - Now beautifully spaced on mobile using flex-1 */}
+                    <td className="block md:table-cell md:p-4 md:text-right border-t md:border-0 border-gray-100 dark:border-slate-800 pt-3 md:pt-0">
                       {req.status === 'pending' && (
-                        <>
+                        <div className="flex flex-row gap-2 w-full justify-end">
                           <Button
+                            className="flex-1 md:flex-none justify-center"
                             variant="primary"
                             size="small"
                             onClick={() => handleUpdateStatus(req._id, 'approved')}
@@ -138,15 +164,17 @@ export default function BrandAccessClient() {
                             Approve
                           </Button>
                           <Button
+                            className="flex-1 md:flex-none justify-center"
                             variant="outline"
                             size="small"
                             onClick={() => handleUpdateStatus(req._id, 'rejected')}
                           >
                             Reject
                           </Button>
-                        </>
+                        </div>
                       )}
                     </td>
+
                   </tr>
                 ))
               )}
