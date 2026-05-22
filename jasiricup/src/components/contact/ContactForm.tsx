@@ -108,7 +108,7 @@ export const ContactForm = () => {
     <div className="w-full max-w-6xl mx-auto">
       <form
         onSubmit={handleSubmit}
-        className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 transition-colors duration-300"
+        className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg space-y-6 transition-colors duration-300"
       >
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white text-center transition-colors">
           Get In Touch
