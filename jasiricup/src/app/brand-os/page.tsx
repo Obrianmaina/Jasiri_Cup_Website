@@ -71,9 +71,9 @@ export default async function BrandOSPage({
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 pb-10 sm:pb-20">
       
       {/* Hero Section */}
-      <div className="bg-slate-900 dark:bg-black text-white pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 md:px-12 mb-10 sm:mb-16 rounded-b-[2rem] sm:rounded-b-[3rem] shadow-sm">
+      <div className="bg-slate-900 dark:bg-black text-white pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 md:px-12 mb-10 sm:mb-16 shadow-sm">
         <div className="max-w-6xl mx-auto mt-8">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-4 sm:mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-green-500 to-purple-500">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-4 sm:mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-700 via-green-400 to-purple-900">
             {content.title}
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl font-medium opacity-90 max-w-2xl leading-relaxed">
@@ -212,7 +212,7 @@ export default async function BrandOSPage({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {content.logos?.items?.map((logo, idx) => (
               <div key={idx} className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-4 sm:gap-6 shadow-sm">
-                <div className="h-20 sm:h-24 w-full flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-xl overflow-hidden p-3 sm:p-4">
+                <div className="h-20 sm:h-24 w-full flex items-center justify-center bg-gray-200 dark:bg-slate-600 rounded-xl overflow-hidden p-3 sm:p-4">
                   <img src={logo.url} alt={logo.name} className="max-h-full max-w-full object-contain" />
                 </div>
                 <div className="text-center">
