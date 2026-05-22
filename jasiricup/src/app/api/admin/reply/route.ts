@@ -6,7 +6,6 @@ import { generateBrandedEmail } from "@/lib/email-template";
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
 
-// Create a window/DOM instance for Purify to work on the server
 const window = new JSDOM('').window;
 const purify = DOMPurify(window);
 
@@ -31,7 +30,15 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // 1. Sanitize using the manual server-side instance
+    // ADDED: Verify the connection before trying to send
+    try {
+      await transporter.verify();
+      console.log("SMTP Connection successful.");
+    } catch (verifyError) {
+      console.error("SMTP Verification Failed:", verifyError);
+      return NextResponse.json({ success: false, error: "SMTP Connection failed. Check server logs." }, { status: 500 });
+    }
+
     const sanitizedReply = purify.sanitize(message, {
       ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'],
       ALLOWED_ATTR: ['href']
