@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           email,
-          amount: Math.round(baseAmountKes * 100), // Paystack requires the lowest denomination
-          currency: 'KES', // Force Paystack to process in KES
+          amount: Math.round(baseAmountKes * 100), // Paystack expects cents
+          currency: 'KES',
           reference: reference,
           callback_url: `${baseUrl}/api/donate/callback?secret=${process.env.ADMIN_SECRET_TOKEN}&ref=${reference}`,
           metadata: {
@@ -76,7 +76,6 @@ export async function POST(req: NextRequest) {
         donation.reference = reference;
         await donation.save();
         
-        // Return the checkout URL so the frontend can redirect the user
         return NextResponse.json({ success: true, checkoutUrl: paystackData.data.authorization_url });
       } else {
         throw new Error(paystackData.message || 'Paystack initialization failed');
@@ -85,11 +84,70 @@ export async function POST(req: NextRequest) {
 
     // 3. Handle Daraja (M-Pesa)
     if (payMethod === 'mpesa') {
-      // Your Daraja STK Push logic will go here
-      // donation.mpesaCheckoutId = mpesaData.CheckoutRequestID;
-      // await donation.save();
+      // Format phone number to 2547XXXXXXXX
+      let formattedPhone = phone.replace(/\s+/g, '');
+      if (formattedPhone.startsWith('+')) formattedPhone = formattedPhone.slice(1);
+      if (formattedPhone.startsWith('0')) formattedPhone = '254' + formattedPhone.slice(1);
 
-      return NextResponse.json({ success: true, message: 'M-Pesa prompt initiated' });
+      // Get Daraja OAuth Token
+      const consumerKey = process.env.MPESA_CONSUMER_KEY;
+      const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+      const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
+
+      const authRes = await fetch('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
+        headers: {
+          Authorization: `Basic ${credentials}`
+        }
+      });
+      
+      if (!authRes.ok) {
+        console.error("Daraja Auth Error:", await authRes.text());
+        throw new Error('Failed to authenticate with M-Pesa');
+      }
+
+      const authData = await authRes.json();
+      const token = authData.access_token;
+
+      // Generate Password for STK Push
+      const shortCode = '174379'; // Safaricom Sandbox Paybill
+      const passkey = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'; // Safaricom Sandbox Passkey
+      
+      // Timestamp format: YYYYMMDDHHmmss
+      const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+      const password = Buffer.from(`${shortCode}${passkey}${timestamp}`).toString('base64');
+
+      // Initiate STK Push
+      const stkRes = await fetch('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          BusinessShortCode: shortCode,
+          Password: password,
+          Timestamp: timestamp,
+          TransactionType: "CustomerPayBillOnline",
+          Amount: Math.round(baseAmountKes),
+          PartyA: formattedPhone,
+          PartyB: shortCode,
+          PhoneNumber: formattedPhone,
+          CallBackURL: `${baseUrl}/api/donate/callback?secret=${process.env.ADMIN_SECRET_TOKEN}`,
+          AccountReference: "JasiriCup",
+          TransactionDesc: `Donation: ${cups ? cups + ' cups' : 'Custom'}`
+        })
+      });
+
+      const stkData = await stkRes.json();
+
+      if (stkData.ResponseCode === "0") {
+        donation.mpesaCheckoutId = stkData.CheckoutRequestID;
+        await donation.save();
+        return NextResponse.json({ success: true, message: 'M-Pesa prompt initiated' });
+      } else {
+        console.error("Daraja STK Error:", stkData);
+        throw new Error(stkData.errorMessage || 'Failed to initiate STK push');
+      }
     }
 
     return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
