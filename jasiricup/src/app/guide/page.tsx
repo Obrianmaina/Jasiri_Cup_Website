@@ -2,6 +2,8 @@
 import { Metadata } from 'next';
 import connectDB from '@/lib/dbConnect';
 import SiteContent from '@/lib/models/SiteContent';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
+  
 
 export const metadata: Metadata = {
   title: 'Menstrual Cup Guide | Jasiri Cup',
@@ -40,6 +42,10 @@ async function getGuideContent(): Promise<UsageGuideContent | null> {
 }
 
 export default async function GuidePage() {
+  const breadcrumbs = [
+    { label: 'Home', href: '/' },
+    { label: 'Guide', href: '/guide' }
+  ];
   const guide = await getGuideContent();
 
   if (!guide || !guide.title) {
@@ -54,6 +60,7 @@ export default async function GuidePage() {
   return (
     <main className="w-full min-h-screen bg-gray-50 dark:bg-gray-950 py-16 md:py-24 transition-colors duration-300">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Breadcrumbs items={breadcrumbs} />
         
         {/* Header Section */}
         <div className="text-center mb-16">

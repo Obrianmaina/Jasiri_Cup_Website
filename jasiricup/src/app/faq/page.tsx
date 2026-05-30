@@ -2,6 +2,7 @@ import dbConnect from '@/lib/dbConnect';
 import FAQ from '@/lib/models/FAQ';
 import Accordion from '@/components/ui/Accordion';
 import { Metadata } from 'next';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions | Jasiri Cup',
@@ -29,6 +30,10 @@ async function getFaqs(): Promise<IFAQ[]> {
 }
 
 export default async function FAQPage() {
+  const breadcrumbs = [
+    { label: 'Home', href: '/' },
+    { label: 'FAQ', href: '/faq' }
+  ];
   const faqs = await getFaqs();
 
   // The SEO Schema stays flat. Search engines prefer all questions in one array.
@@ -48,7 +53,7 @@ export default async function FAQPage() {
   return (
     <main className="w-full min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-24">
-        
+         <Breadcrumbs items={breadcrumbs} />
         {/* JSON-LD Script for Google Search Snippets */}
         <script
           type="application/ld+json"
@@ -80,6 +85,7 @@ export default async function FAQPage() {
                   key={category} 
                   className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 sm:p-8 md:p-10 transition-colors"
                 >
+                 
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
                     {category} Questions
                   </h2>

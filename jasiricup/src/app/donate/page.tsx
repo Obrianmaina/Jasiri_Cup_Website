@@ -4,7 +4,7 @@ import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { DonateClient } from '@/components/donate/DonateClient';
 
 export const metadata: Metadata = {
-  title: 'Donate | JasiriCup — Keep a Girl in School',
+  title: 'Donate | JasiriCup - Keep a Girl in School',
   description:
     'Donate a menstrual cup and keep a girl in school. Every cup lasts up to 10 years. M-Pesa and card payments accepted.',
   openGraph: {

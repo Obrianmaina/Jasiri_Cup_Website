@@ -1,4 +1,4 @@
-export type TabType = "home" | "team" | "product" | "stories" | "press" | "partners" | "volunteer" | "impact" | "brand-os" | "usage-guide";
+export type TabType = "home" | "team" | "product" | "stories" | "press" | "partners" | "volunteer" | "impact" | "brand-os" | "usage-guide" | "donate";
 
 export interface TeamMember { id: string; name: string; role: string; description: string; imageSrc: string; cardColor: string; socials?: { platform: string; url: string }[]; }
 export interface ProductStep { id: number; title: string; description: string; videoUrl: string; }
@@ -48,6 +48,29 @@ export interface UsageGuideContent {
   title: string;
   description: string;
   sections: UsageGuideSection[];
+}
+
+// NEW: Donate Page Interfaces
+export interface Tier {
+  cups: number;
+  amount: number;
+  label: string;
+  impact: string;
+  emoji: string;
+  highlight: boolean;
+}
+
+export interface BottomStat {
+  stat: string;
+  label: string;
+  sub: string;
+}
+
+export interface DonateData {
+  heroTitle: string;
+  heroSubtitle: string;
+  tiers: Tier[];
+  bottomStats: BottomStat[];
 }
 
 export const DEFAULT_HOME: HomeContent = { about: { title: "", content: "", imageSrc: "" }, vision: { title: "", content: "" }, mission: { title: "", content: "" }, stats: { title: "", description: "", numbers: [] } };

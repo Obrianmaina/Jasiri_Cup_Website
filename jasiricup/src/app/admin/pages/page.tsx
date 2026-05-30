@@ -3,13 +3,15 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { SuccessModal } from '@/components/ui/Modal'; 
+import { DonateEditor } from '@/components/admin/pages/DonateEditor';
 import { 
-  Home, Users, Package, BookOpen, Newspaper, Handshake, Heart, Globe, Book, FileText
+  Home, Users, Package, BookOpen, Newspaper, Handshake, Heart, Globe, Book, FileText, HandHeart 
 } from "lucide-react";
 
 import { 
   TabType, HomeContent, TeamMember, ProductContent, Story, PressCoverage, Partner, 
   VolunteerRole, ImpactPageContent, BrandOSContent, UsageGuideContent, SectionData,
+  DonateData, 
   DEFAULT_HOME, DEFAULT_TEAM_MEMBERS, DEFAULT_PRODUCT, DEFAULT_STORIES, DEFAULT_PRESS, 
   DEFAULT_PARTNERS, DEFAULT_VOLUNTEER, DEFAULT_IMPACT, DEFAULT_BRAND_OS, DEFAULT_USAGE_GUIDE
 } from "@/types/admin-pages";
@@ -34,6 +36,10 @@ export default function AdminPagesPage() {
   const [impactContent, setImpactContent] = useState<ImpactPageContent>(DEFAULT_IMPACT);
   const [brandOSContent, setBrandOSContent] = useState<BrandOSContent>(DEFAULT_BRAND_OS);
   const [usageGuideContent, setUsageGuideContent] = useState<UsageGuideContent>(DEFAULT_USAGE_GUIDE);
+  
+  // Strictly typed state
+  const [donateContent, setDonateContent] = useState<DonateData | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
@@ -41,12 +47,20 @@ export default function AdminPagesPage() {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const [homeRes, teamRes, productRes, storiesRes, pressRes, partRes, volRes, impactRes, brandOsRes, usageGuideRes] = await Promise.all([
-          fetch('/api/admin/site-content?page=home'), fetch('/api/admin/site-content?page=team'), fetch('/api/admin/site-content?page=product'),
-          fetch('/api/admin/site-content?page=stories'), fetch('/api/admin/site-content?page=press'), fetch('/api/admin/site-content?page=partners'), 
-          fetch('/api/admin/site-content?page=volunteer'), fetch('/api/admin/site-content?page=impact'), 
+        const [
+          homeRes, teamRes, productRes, storiesRes, pressRes, partRes, volRes, impactRes, brandOsRes, usageGuideRes, donateRes
+        ] = await Promise.all([
+          fetch('/api/admin/site-content?page=home'), 
+          fetch('/api/admin/site-content?page=team'), 
+          fetch('/api/admin/site-content?page=product'),
+          fetch('/api/admin/site-content?page=stories'), 
+          fetch('/api/admin/site-content?page=press'), 
+          fetch('/api/admin/site-content?page=partners'), 
+          fetch('/api/admin/site-content?page=volunteer'), 
+          fetch('/api/admin/site-content?page=impact'), 
           fetch('/api/admin/site-content?page=brand-os'),
-          fetch('/api/admin/site-content?page=usage-guide')
+          fetch('/api/admin/site-content?page=usage-guide'),
+          fetch('/api/admin/site-content?page=donate') 
         ]);
             
         if (homeRes.ok) { const { data } = await homeRes.json(); const m = data.find((d: SectionData<HomeContent>) => d.section === 'main'); if (m?.content) setHomeContent(m.content); }
@@ -77,6 +91,14 @@ export default function AdminPagesPage() {
         }
         
         if (usageGuideRes.ok) { const { data } = await usageGuideRes.json(); const m = data.find((d: SectionData<UsageGuideContent>) => d.section === 'main'); if (m?.content) setUsageGuideContent(m.content); }
+        
+        // Strictly typed find method
+        if (donateRes.ok) { 
+          const { data } = await donateRes.json(); 
+          const m = data.find((d: SectionData<DonateData>) => d.section === 'main'); 
+          if (m?.content) setDonateContent(m.content); 
+        }
+
       } catch (err) {
         console.error('Failed to load content:', err);
       } finally {
@@ -87,7 +109,7 @@ export default function AdminPagesPage() {
   }, []);
 
   const handleSave = async () => {
-    if (!activeTab) return; 
+    if (!activeTab || activeTab === "donate") return; 
     setSaving(true);
     const loadingToast = toast.loading("Saving changes...");
     try {
@@ -122,6 +144,36 @@ export default function AdminPagesPage() {
     }
   };
 
+  // Strictly typed payload parameter
+  const handleDonateSave = async (payload: { page: string; data: DonateData }) => {
+    setSaving(true);
+    const loadingToast = toast.loading("Saving donate page...");
+    try {
+      const res = await fetch("/api/admin/site-content", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          page: payload.page,
+          section: 'main',
+          content: payload.data
+        }),
+      });
+      
+      if (res.ok) {
+        toast.dismiss(loadingToast);
+        setSuccessModal({ isOpen: true, message: "Donate page saved successfully!" });
+        setDonateContent(payload.data); 
+      } else {
+        throw new Error("Failed to save");
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error("Failed to save donate page", { id: loadingToast });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const TABS: {id: TabType, label: string, icon: React.ReactNode}[] = [
     { id: "home", label: "Home", icon: <Home size={36} strokeWidth={1.5} /> },
     { id: "team", label: "Team", icon: <Users size={36} strokeWidth={1.5} /> },
@@ -129,12 +181,14 @@ export default function AdminPagesPage() {
     { id: "stories", label: "Stories", icon: <BookOpen size={36} strokeWidth={1.5} /> },
     { id: "press", label: "Press", icon: <Newspaper size={36} strokeWidth={1.5} /> },
     { id: "partners", label: "Partners", icon: <Handshake size={36} strokeWidth={1.5} /> },
-    { id: "volunteer", label: "Volunteer", icon: <Heart size={36} strokeWidth={1.5} /> },
+    // Use HandHeart for Volunteer
+    { id: "volunteer", label: "Volunteer", icon: <HandHeart size={36} strokeWidth={1.5} /> },
     { id: "impact", label: "Impact", icon: <Globe size={36} strokeWidth={1.5} /> },
     { id: "usage-guide", label: "Usage Guide", icon: <FileText size={36} strokeWidth={1.5} /> },
     { id: "brand-os", label: "Brand OS", icon: <Book size={36} strokeWidth={1.5} /> },
+    // Keep Heart for Donate
+    { id: "donate", label: "Donate Page", icon: <Heart size={36} strokeWidth={1.5} /> },
   ];
-
   const activeTabData = TABS.find(t => t.id === activeTab);
 
   return (
@@ -182,9 +236,12 @@ export default function AdminPagesPage() {
               <h1 className="text-3xl font-bold dark:text-white">Editing {activeTabData?.label}</h1>
               <p className="mt-1 text-sm text-gray-500">Make changes to the {activeTabData?.label} page.</p>
             </div>
-            <button onClick={handleSave} disabled={saving || loading} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium shadow-sm hover:bg-purple-700 disabled:opacity-50 transition-colors">
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+            
+            {activeTab !== "donate" && (
+              <button onClick={handleSave} disabled={saving || loading} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium shadow-sm hover:bg-purple-700 disabled:opacity-50 transition-colors">
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 md:p-6">
@@ -200,6 +257,11 @@ export default function AdminPagesPage() {
               <BrandOSEditor data={brandOSContent} onChange={setBrandOSContent} />
             ) : activeTab === "usage-guide" ? (
               <UsageGuideEditor data={usageGuideContent} onChange={setUsageGuideContent} />
+            ) : activeTab === "donate" ? (
+              <DonateEditor 
+                initialData={donateContent || undefined} 
+                onSave={handleDonateSave} 
+              />
             ) : activeTab === "stories" ? (
               <GenericArrayEditor
                 data={stories} onChange={setStories} title="Story"

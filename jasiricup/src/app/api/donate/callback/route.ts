@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/dbConnect';
 import mongoose from 'mongoose';
-import Transaction from '@/lib/models/Transaction'; // Imported the Transaction model
+import Transaction from '@/lib/models/Transaction';
+import { sendDonationEmail } from '@/lib/sendDonationEmail';
 
-// Donation record model (Ensures it works even on Vercel cold starts)
 const DonationSchema = new mongoose.Schema(
   {
-    name:      { type: String, required: true },
-    email:     { type: String, required: true },
-    phone:     { type: String },
-    amount:    { type: Number, required: true },
-    cups:      { type: Number, default: 0 },
-    payMethod: { type: String, enum: ['mpesa', 'card'], required: true },
-    status:    { type: String, enum: ['pending', 'complete', 'failed'], default: 'pending' },
-    reference: { type: String },
+    name:          { type: String, required: true },
+    email:         { type: String, required: true },
+    phone:         { type: String },
+    amount:        { type: Number, required: true },
+    currency:      { type: String, required: true, default: 'KES' }, 
+    baseAmountKes: { type: Number, required: true },
+    cups:          { type: Number, default: 0 },
+    payMethod:     { type: String, enum: ['mpesa', 'card'], required: true },
+    status:        { type: String, enum: ['pending', 'complete', 'failed'], default: 'pending' },
+    reference:     { type: String },
     mpesaCheckoutId: { type: String }, 
     mpesaReceipt:    { type: String }, 
   },
@@ -27,6 +29,82 @@ interface MpesaItem {
   Value: string | number;
 }
 
+
+// Handles Paystack Redirect Callback
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const secret = searchParams.get('secret');
+  const reference = searchParams.get('ref');
+
+  if (!secret || secret !== process.env.ADMIN_SECRET_TOKEN) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!reference) {
+    return NextResponse.redirect(new URL('/donate?error=missing_reference', req.url));
+  }
+
+  try {
+    await connectDB();
+    const donation = await Donation.findOne({ reference });
+    
+    if (!donation) {
+      return NextResponse.redirect(new URL('/donate?error=not_found', req.url));
+    }
+
+    // Skip verify if a webhook already marked it complete
+    if (donation.status === 'complete') {
+      return NextResponse.redirect(new URL('/donate/thank-you', req.url));
+    }
+
+    const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+      },
+    });
+
+    const verifyData = await verifyRes.json();
+
+    if (verifyData.status && verifyData.data.status === 'success') {
+      donation.status = 'complete';
+      await donation.save();
+
+      // FIXED: Log the exact KES amount to the ledger
+      await Transaction.create({
+        type: 'income',
+        category: 'Donation',
+        amount: donation.baseAmountKes, // Changed from donation.amount
+        currency: 'KES', // Standardized to KES
+        date: new Date(),
+        description: `Website Donation via Card (Originated as ${donation.currency} ${donation.amount}) - ${donation.cups ? donation.cups + ' cups' : 'Custom'}`, // Logs the foreign value here
+        donorName: donation.name,
+        donorEmail: donation.email,
+        status: 'completed',
+        paymentMethod: 'Card (Paystack)',
+        referenceNumber: verifyData.data.receipt_number || reference
+      });
+
+      await sendDonationEmail({
+        to: donation.email,
+        name: donation.name,
+        amount: donation.amount, // Keep original amount for the donor's email receipt
+        currency: donation.currency,
+        cups: donation.cups
+      });
+
+      return NextResponse.redirect(new URL('/donate/thank-you', req.url));
+    } else {
+      donation.status = 'failed';
+      await donation.save();
+      return NextResponse.redirect(new URL('/donate?error=payment_failed', req.url));
+    }
+  } catch (error) {
+    console.error("Paystack Verification Error:", error);
+    return NextResponse.redirect(new URL('/donate?error=server_error', req.url));
+  }
+}
+
+// Handles M-Pesa STK Push Webhook
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const secret = searchParams.get('secret');
@@ -45,7 +123,6 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB();
-
     const donation = await Donation.findOne({ mpesaCheckoutId: callbackData.CheckoutRequestID });
     
     if (!donation) {
@@ -53,27 +130,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (callbackData.ResultCode === 0) {
-      // Payment Successful
       donation.status = 'complete';
       
       const receiptItem = callbackData.CallbackMetadata?.Item?.find(
         (item: MpesaItem) => item.Name === 'MpesaReceiptNumber'
       );
-      
       const receiptCode = receiptItem ? String(receiptItem.Value) : callbackData.CheckoutRequestID;
-      
-      if (receiptItem) {
-        donation.mpesaReceipt = receiptCode;
-      }
+      if (receiptItem) donation.mpesaReceipt = receiptCode;
       
       await donation.save();
 
-      // NEW: Automatically log this directly to the Finances Ledger!
       await Transaction.create({
         type: 'income',
         category: 'Donation',
-        amount: donation.amount,
-        currency: 'KES',
+        amount: donation.baseAmountKes, // Ensure M-pesa logs reflect the exact KES amount
+        currency: 'KES', 
         date: new Date(),
         description: `Website Donation (${donation.cups} cups sponsored)`,
         donorName: donation.name,
@@ -83,8 +154,15 @@ export async function POST(req: NextRequest) {
         referenceNumber: receiptCode
       });
 
+      await sendDonationEmail({
+        to: donation.email,
+        name: donation.name,
+        amount: donation.amount,
+        currency: donation.currency,
+        cups: donation.cups
+      });
+
     } else {
-      // Payment Failed
       donation.status = 'failed';
       await donation.save();
     }
