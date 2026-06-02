@@ -59,7 +59,7 @@ export default async function GuidePage() {
 
   return (
     <main className="w-full min-h-screen bg-gray-50 dark:bg-gray-950 py-16 md:py-24 transition-colors duration-300">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Breadcrumbs items={breadcrumbs} />
         
         {/* Header Section */}

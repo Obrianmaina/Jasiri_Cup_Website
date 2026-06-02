@@ -52,7 +52,7 @@ export default async function FAQPage() {
 
   return (
     <main className="w-full min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-24">
          <Breadcrumbs items={breadcrumbs} />
         {/* JSON-LD Script for Google Search Snippets */}
         <script
