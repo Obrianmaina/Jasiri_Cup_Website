@@ -8,7 +8,7 @@ import VolunteersTab from '@/components/admin/messages/VolunteersTab';
 import ReplyModal from '@/components/admin/messages/ReplyModal';
 import { SuccessModal } from '@/components/ui/Modal'; // Imported your existing SuccessModal
 import { IContactMessage, IOrder, IVolunteer, TabType } from '@/types/admin-messages'; //
-
+import Link from 'next/link';
 interface MessagesClientProps {
   initialMessages: IContactMessage[];
   initialOrders: IOrder[];
@@ -165,6 +165,15 @@ export default function MessagesClient({
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
+        <Link 
+              href="/admin/dashboard" 
+              className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+              Back to Dashboard
+            </Link>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Communications Hub</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Review customer messages, product sales, and open volunteer applications.</p>
       </div>
