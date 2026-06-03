@@ -127,10 +127,10 @@ export default async function ProductPage() {
           {/* OPTIMIZED: Added flex-wrap and adjusted gap sizing */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 lg:gap-4 justify-center md:justify-start">
             <Link
-              href="/order"
+              href="/products"
               className="inline-flex items-center justify-center bg-purple-600 text-white px-6 sm:px-8 py-3.5 rounded-full hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors font-semibold shadow-md hover:shadow-lg whitespace-nowrap"
             >
-              Order Now
+              Shop Now
             </Link>
             <a
               href="#how-to-use"

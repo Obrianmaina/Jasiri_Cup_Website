@@ -1,11 +1,10 @@
-// src/lib/models/Product.ts
 import mongoose from 'mongoose';
 
-// 1. Define the Variation Schema
 const ProductVariationSchema = new mongoose.Schema({
   color: { type: String, required: true },
   size: { type: String, required: true },
-  stockQuantity: { type: Number, default: 0, min: [0, 'Stock cannot be negative'] }
+  stockQuantity: { type: Number, default: 0, min: [0, 'Stock cannot be negative'] },
+  image: { type: String, required: false } 
 });
 
 const ProductSchema = new mongoose.Schema({
@@ -27,7 +26,6 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  // 2. Replace flat stockQuantity with an array of variations
   variations: [ProductVariationSchema],
   isActive: {
     type: Boolean,

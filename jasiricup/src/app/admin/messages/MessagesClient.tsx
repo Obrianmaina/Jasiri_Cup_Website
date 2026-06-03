@@ -1,15 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import Link from 'next/link';
-import { ConfirmModal } from '@/components/ui/Modal'; 
-import { TabType, IContactMessage, IOrder, IVolunteer } from '@/types/admin-messages';
-
 import MessagesTab from '@/components/admin/messages/MessagesTab';
 import OrdersTab from '@/components/admin/messages/OrdersTab';
 import VolunteersTab from '@/components/admin/messages/VolunteersTab';
 import ReplyModal from '@/components/admin/messages/ReplyModal';
+import { SuccessModal } from '@/components/ui/Modal'; // Imported your existing SuccessModal
+import { IContactMessage, IOrder, IVolunteer, TabType } from '@/types/admin-messages'; //
 
 interface MessagesClientProps {
   initialMessages: IContactMessage[];
@@ -17,44 +15,46 @@ interface MessagesClientProps {
   initialVolunteers: IVolunteer[];
 }
 
-export default function MessagesClient({ initialMessages, initialOrders, initialVolunteers }: MessagesClientProps) {
+export default function MessagesClient({
+  initialMessages,
+  initialOrders,
+  initialVolunteers
+}: MessagesClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('messages');
   const [messages, setMessages] = useState<IContactMessage[]>(initialMessages);
   const [orders, setOrders] = useState<IOrder[]>(initialOrders);
   const [volunteers, setVolunteers] = useState<IVolunteer[]>(initialVolunteers);
+
   const [processingId, setProcessingId] = useState<string | null>(null);
-
-  const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, type: TabType, id: string}>({
-    isOpen: false,
-    type: 'messages',
-    id: ''
-  });
-
-  const [replyModal, setReplyModal] = useState({ isOpen: false, email: '', name: '', subject: '' });
-  const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
-  const TABS = [
-    { id: 'messages', label: 'Contact Messages', count: messages.length },
-    { id: 'orders', label: 'Product Orders', count: orders.length },
-    { id: 'volunteers', label: 'Volunteers', count: volunteers.length },
-  ] as const;
+  // Reply Modal Form State
+  const [replyModal, setReplyModal] = useState({
+    isOpen: false,
+    name: '',
+    email: '',
+    subject: '',
+    replyText: ''
+  });
 
-  const handleUpdateStatus = async (type: TabType, id: string, newStatus: string) => {
+  // NEW: State to handle your centered alert popup modal[cite: 3]
+  const [successModal, setSuccessModal] = useState({
+    isOpen: false,
+    title: '',
+    message: ''
+  });
+
+  const handleUpdateMessageStatus = async (id: string, newStatus: string) => {
     setProcessingId(id);
     try {
-      const res = await fetch(`/api/admin/${type}/${id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/admin/messages/${id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus })
       });
       if (!res.ok) throw new Error();
-      
-      if (type === 'messages') setMessages(messages.map(m => m._id === id ? { ...m, status: newStatus } : m));
-      if (type === 'orders') setOrders(orders.map(o => o._id === id ? { ...o, status: newStatus } : o));
-      if (type === 'volunteers') setVolunteers(volunteers.map(v => v._id === id ? { ...v, status: newStatus } : v));
-      
-      toast.success('Status updated');
+      setMessages(messages.map(m => m._id === id ? { ...m, status: newStatus } : m));
+      toast.success('Message status updated');
     } catch {
       toast.error('Failed to update status');
     } finally {
@@ -62,142 +62,185 @@ export default function MessagesClient({ initialMessages, initialOrders, initial
     }
   };
 
-  const closeDeleteModal = () => setDeleteModal(prev => ({ ...prev, isOpen: false }));
-
-  const executeDelete = async () => {
-    if (!deleteModal.id) return;
-    const { type, id } = deleteModal;
-    
-    closeDeleteModal();
-
+  const handleUpdateOrderStatus = async (id: string, newStatus: string) => {
     setProcessingId(id);
-    const loadingToast = toast.loading('Deleting...');
     try {
-      const res = await fetch(`/api/admin/${type}/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!res.ok) throw new Error();
+      setOrders(orders.map(o => o._id === id ? { ...o, status: newStatus } : o));
+      toast.success('Order status updated');
+    } catch {
+      toast.error('Failed to update order status');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleUpdateVolunteerStatus = async (id: string, newStatus: string) => {
+    setProcessingId(id);
+    try {
+      const res = await fetch(`/api/admin/volunteers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!res.ok) throw new Error();
+      setVolunteers(volunteers.map(v => v._id === id ? { ...v, status: newStatus } : v));
+      toast.success('Volunteer status updated');
+    } catch {
+      toast.error('Failed to update status');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteItem = async (id: string, endpoint: 'messages' | 'orders' | 'volunteers') => {
+    if (!confirm('Are you sure you want to permanently delete this record?')) return;
+    setProcessingId(id);
+    try {
+      const res = await fetch(`/api/admin/${endpoint}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       
-      if (type === 'messages') setMessages(messages.filter(m => m._id !== id));
-      if (type === 'orders') setOrders(orders.filter(o => o._id !== id));
-      if (type === 'volunteers') setVolunteers(volunteers.filter(v => v._id !== id));
+      if (endpoint === 'messages') setMessages(messages.filter(m => m._id !== id));
+      if (endpoint === 'orders') setOrders(orders.filter(o => o._id !== id));
+      if (endpoint === 'volunteers') setVolunteers(volunteers.filter(v => v._id !== id));
       
-      toast.success('Deleted successfully', { id: loadingToast });
+      toast.success('Record deleted permanently');
     } catch {
-      toast.error('Failed to delete', { id: loadingToast });
+      toast.error('Failed to delete record');
     } finally {
       setProcessingId(null);
     }
   };
 
   const openReplyModal = (email: string, name: string, defaultSubject: string) => {
-    setReplyModal({ isOpen: true, email, name, subject: defaultSubject });
-    setReplyText('');
+    setReplyModal({
+      isOpen: true,
+      name,
+      email,
+      subject: defaultSubject,
+      replyText: ''
+    });
   };
 
-  const executeReply = async () => {
-    if (!replyText.trim()) return;
-    
+  // FIXED: Dispatch the correct payload properties matching your backend API expectations
+  const handleSendReply = async () => {
     setSendingReply(true);
-    const toastId = toast.loading('Sending email...');
-
     try {
       const res = await fetch('/api/admin/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          toEmail: replyModal.email,
-          toName: replyModal.name,
+          toEmail: replyModal.email, // 
+          toName: replyModal.name,   // 
           subject: replyModal.subject,
-          message: replyText
-        }),
+          message: replyModal.replyText
+        })
       });
 
-      if (!res.ok) throw new Error();
-      
-      toast.success('Reply sent successfully!', { id: toastId });
-      setReplyModal({ ...replyModal, isOpen: false });
-    } catch {
-      toast.error('Failed to send reply', { id: toastId });
+      if (!res.ok) throw new Error('Failed to forward email dispatch');
+
+      // Close the current raw reply modal input mask safely
+      setReplyModal(prev => ({ ...prev, isOpen: false }));
+
+      // Open your beautiful centered visual success dialog window
+      setSuccessModal({
+        isOpen: true,
+        title: 'Reply Dispatched!',
+        message: `Your branded response message has been sent successfully to ${replyModal.name} (${replyModal.email}).`
+      });
+
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not deliver email response. Please check SMTP logs.');
     } finally {
       setSendingReply(false);
     }
   };
 
   return (
-    <div className="pt-12 pb-24 space-y-6 md:space-y-8 max-w-6xl mx-auto transition-colors duration-300 px-4 sm:px-6">
-      <div>
-        <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 mb-4 transition-colors">
-          &larr; Back to Dashboard
-        </Link>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Inbox</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Manage messages, orders, and volunteer applications.</p>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Communications Hub</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Review customer messages, product sales, and open volunteer applications.</p>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800 overflow-x-auto no-scrollbar transition-colors">
-        {TABS.map(tab => (
+      {/* Tabs Row Layout */}
+      <div className="flex border-b border-gray-200 dark:border-gray-800 mb-6 gap-2">
+        {(['messages', 'orders', 'volunteers'] as TabType[]).map((tab) => ( //[cite: 3]
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as TabType)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors -mb-px border-b-2 whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-purple-600 dark:border-purple-500 text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30'
-                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 font-bold text-sm uppercase tracking-wide border-b-2 transition-all capitalize ${
+              activeTab === tab
+                ? 'border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            {tab.label}
-            <span className={`px-2 py-0.5 rounded-full text-xs transition-colors ${activeTab === tab.id ? 'bg-purple-200 dark:bg-purple-800/50 text-purple-800 dark:text-purple-200' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
-              {tab.count}
-            </span>
+            {tab}
           </button>
         ))}
       </div>
 
-      <div>
+      {/* Content Rendering Blocks */}
+      <div className="space-y-6">
         {activeTab === 'messages' && (
-          <MessagesTab 
-            messages={messages} processingId={processingId} 
-            onUpdateStatus={(id, status) => handleUpdateStatus('messages', id, status)} 
-            onReply={openReplyModal} onDelete={(id) => setDeleteModal({ isOpen: true, type: 'messages', id })} 
-          />
+          <MessagesTab
+            messages={messages}
+            processingId={processingId}
+            onUpdateStatus={handleUpdateMessageStatus}
+            onReply={openReplyModal}
+            onDelete={(id) => handleDeleteItem(id, 'messages')}
+          /> //[cite: 3]
         )}
 
         {activeTab === 'orders' && (
-          <OrdersTab 
-            orders={orders} processingId={processingId} 
-            onUpdateStatus={(id, status) => handleUpdateStatus('orders', id, status)} 
-            onReply={openReplyModal} onDelete={(id) => setDeleteModal({ isOpen: true, type: 'orders', id })} 
-          />
+          <OrdersTab
+            orders={orders}
+            processingId={processingId}
+            onUpdateStatus={handleUpdateOrderStatus}
+            onReply={openReplyModal}
+            onDelete={(id) => handleDeleteItem(id, 'orders')}
+          /> //[cite: 3]
         )}
 
         {activeTab === 'volunteers' && (
-          <VolunteersTab 
-            volunteers={volunteers} processingId={processingId} 
-            onUpdateStatus={(id, status) => handleUpdateStatus('volunteers', id, status)} 
-            onReply={openReplyModal} onDelete={(id) => setDeleteModal({ isOpen: true, type: 'volunteers', id })} 
-          />
+          <VolunteersTab
+            volunteers={volunteers}
+            processingId={processingId}
+            onUpdateStatus={handleUpdateVolunteerStatus}
+            onReply={openReplyModal}
+            onDelete={(id) => handleDeleteItem(id, 'volunteers')}
+          /> //[cite: 3]
         )}
       </div>
 
-      <ConfirmModal
-        isOpen={deleteModal.isOpen}
-        onClose={closeDeleteModal}
-        onConfirm={executeDelete}
-        title={`Delete ${deleteModal.type === 'orders' ? 'Order' : deleteModal.type === 'volunteers' ? 'Application' : 'Message'}`}
-        message={`Are you sure you want to delete this ${deleteModal.type === 'orders' ? 'order' : deleteModal.type === 'volunteers' ? 'application' : 'message'}? This action cannot be undone.`}
-        confirmText="Delete"
-      />
-
-      <ReplyModal 
+      {/* Interactive Reply Formulation Overlay Mask[cite: 3] */}
+      <ReplyModal
         isOpen={replyModal.isOpen}
         name={replyModal.name}
         email={replyModal.email}
         subject={replyModal.subject}
-        replyText={replyText}
+        replyText={replyModal.replyText}
         sendingReply={sendingReply}
-        onClose={() => setReplyModal({ ...replyModal, isOpen: false })}
-        onSubjectChange={(val) => setReplyModal({...replyModal, subject: val})}
-        onReplyTextChange={(val) => setReplyText(val)}
-        onSend={executeReply}
-      />
+        onClose={() => setReplyModal(prev => ({ ...prev, isOpen: false }))}
+        onSubjectChange={(val) => setReplyModal(prev => ({ ...prev, subject: val }))}
+        onReplyTextChange={(val) => setReplyModal(prev => ({ ...prev, replyText: val }))}
+        onSend={handleSendReply}
+      /> {/*[cite: 3] */}
+
+      {/* Global Success Notification Dialog Alert[cite: 3] */}
+      <SuccessModal
+        isOpen={successModal.isOpen}
+        onClose={() => setSuccessModal(prev => ({ ...prev, isOpen: false }))}
+        title={successModal.title}
+        message={successModal.message}
+        buttonText="Back to Inbox"
+      /> {/*[cite: 3] */}
     </div>
   );
 }

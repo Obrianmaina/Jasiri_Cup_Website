@@ -1,47 +1,47 @@
-import { Suspense } from 'react';
 import connectDB from "@/lib/dbConnect";
 import Product from "@/lib/models/Product";
-import OrderClient from "./OrderClient";
+import ProductsClient from "./ProductsClient";
 import { Types } from "mongoose";
 
 export const dynamic = 'force-dynamic';
 
+// Define the shape of a single variation from the database
 interface IRawVariation {
   color: string;
   size: string;
   stockQuantity: number;
-  image?: string; // Tell TypeScript this exists in the DB
+  image?: string; // Added to interface
 }
 
+// Define the shape of the raw product document from MongoDB
 interface IRawProduct {
   _id: Types.ObjectId;
   name: string;
   price: number;
-  image?: string; // Tell TypeScript this exists in the DB
+  description: string;
+  image?: string;
   variations?: IRawVariation[];
 }
 
-export default async function OrderPage() {
+export default async function ProductsPage() {
   await connectDB();
   
+  // Cast the lean() output safely by using unknown first, then our custom interface
   const rawProducts = (await Product.find({ isActive: true }).lean()) as unknown as IRawProduct[];
 
   const activeProducts = rawProducts.map(p => ({
     _id: p._id.toString(),
     name: p.name,
     price: p.price,
-    image: p.image || null, // Extract the main image
-    variations: p.variations ? p.variations.map(v => ({
+    description: p.description,
+    image: p.image || null,
+    variations: p.variations ? p.variations.map((v: IRawVariation) => ({
       color: v.color,
       size: v.size,
       stockQuantity: v.stockQuantity || 0,
-      image: v.image || null // Extract the variant image
+      image: v.image || null // FIXED: Crucial line to forward variant images to the frontend!
     })) : []
   }));
 
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading checkout...</div>}>
-      <OrderClient activeProducts={activeProducts} />
-    </Suspense>
-  );
+  return <ProductsClient products={activeProducts} />;
 }

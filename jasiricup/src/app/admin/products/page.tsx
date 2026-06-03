@@ -1,4 +1,3 @@
-// src/app/admin/products/page.tsx
 import connectDB from "@/lib/dbConnect";
 import Product from "@/lib/models/Product";
 import ProductsClient from "./ProductsClient";
@@ -10,37 +9,38 @@ interface IRawVariation {
   color: string;
   size: string;
   stockQuantity: number;
+  image?: string; 
 }
 
 interface IRawProduct {
   _id: Types.ObjectId;
   name: string;
-  description: string;
   price: number;
-  image: string;
-  variations: IRawVariation[];
+  description: string;
+  image?: string;
   isActive: boolean;
+  variations?: IRawVariation[];
 }
 
 export default async function AdminProductsPage() {
   await connectDB();
   
-  const rawProducts = (await Product.find({}).sort({ createdAt: -1 }).lean()) as unknown as IRawProduct[];
+  const rawProducts = (await Product.find().sort({ createdAt: -1 }).lean()) as unknown as IRawProduct[];
 
-  const products = rawProducts.map((product) => ({
-    _id: product._id.toString(),
-    name: product.name,
-    description: product.description,
-    price: product.price,
-    image: product.image || "",
-    // Serialize variations safely
-    variations: product.variations ? product.variations.map((v) => ({
+  const activeProducts = rawProducts.map(p => ({
+    _id: p._id.toString(),
+    name: p.name,
+    price: p.price,
+    description: p.description,
+    image: p.image || '',
+    isActive: p.isActive,
+    variations: p.variations ? p.variations.map(v => ({
       color: v.color,
       size: v.size,
-      stockQuantity: v.stockQuantity || 0
-    })) : [],
-    isActive: product.isActive ?? true
+      stockQuantity: v.stockQuantity || 0,
+      image: v.image || '' // FIXED: This tells the admin panel to remember the variant image!
+    })) : []
   }));
 
-  return <ProductsClient initialProducts={products} />;
+  return <ProductsClient initialProducts={activeProducts} />;
 }
