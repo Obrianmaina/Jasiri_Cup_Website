@@ -100,7 +100,7 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
     setClientInfo({ ...clientInfo, [e.target.name]: e.target.value });
   };
 
-  // Sync form edits (quantities, color, size changes) directly back to localStorage
+  // Sync form edits directly back to localStorage
   const handleItemChange = (index: number, field: string, value: string | number) => {
     const newItems = [...items];
     
@@ -124,7 +124,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
     
     setItems(newItems);
 
-    // Filter and reconstruct clean cart items to persist back to browser storage[cite: 3]
     const cartToSync = newItems.map(item => ({
       productId: item.productId,
       color: item.color,
@@ -140,16 +139,21 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
   // Sync remaining items back to localStorage upon removal
   const removeItem = (index: number) => {
     const updatedItems = items.filter((_, i) => i !== index);
-    setItems(updatedItems);
-
-    const cartToSync = updatedItems.map(item => ({
-      productId: item.productId,
-      color: item.color,
-      size: item.size,
-      quantity: item.quantity
-    })).filter(item => item.productId !== '');
-
-    localStorage.setItem('jasiricup_cart', JSON.stringify(cartToSync));
+    
+    // If we deleted the very last item, keep an empty item row placeholder so the form doesn't break
+    if (updatedItems.length === 0) {
+      setItems([{ productId: '', productName: '', quantity: 1, color: '', size: '', customNotes: '' }]);
+      localStorage.setItem('jasiricup_cart', JSON.stringify([]));
+    } else {
+      setItems(updatedItems);
+      const cartToSync = updatedItems.map(item => ({
+        productId: item.productId,
+        color: item.color,
+        size: item.size,
+        quantity: item.quantity
+      })).filter(item => item.productId !== '');
+      localStorage.setItem('jasiricup_cart', JSON.stringify(cartToSync));
+    }
   };
 
   const subtotal = items.reduce((acc, item) => {
@@ -169,8 +173,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
       setAlertModal({ isOpen: true, title: 'Order Successful', message: 'Thank you! Your order has been submitted successfully.', isSuccess: true });
       setClientInfo({ name: '', email: '', phone: '' });
       setItems([{ productId: '', productName: '', quantity: 1, color: '', size: '', customNotes: '' }]);
-      
-      // Clear storage references on successful order
       localStorage.removeItem('jasiricup_cart');
     } else {
       setAlertModal({ isOpen: true, title: 'Submission Failed', message: 'Failed to submit your order. Please try again.', isSuccess: false });
@@ -250,16 +252,9 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
                 const displayImage = selectedVariant?.image || selectedProduct?.image || '';
 
                 return (
-                  <div key={index} className="relative p-5 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-200 dark:border-gray-700 transition-colors">
+                  <div key={index} className="p-5 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-200 dark:border-gray-700 transition-colors flex flex-col gap-4">
                     
-                    {items.length > 1 && (
-                      <button type="button" onClick={() => removeItem(index)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1" title="Remove Item">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
-                    )}
-
                     <div className="flex flex-col sm:flex-row gap-5">
-                      
                       {/* Product Thumbnail */}
                       <div className="w-full sm:w-24 h-48 sm:h-24 shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden relative flex items-center justify-center">
                         {displayImage ? (
@@ -271,7 +266,6 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
 
                       {/* Options Grid */}
                       <div className="flex-1 grid grid-cols-1 sm:grid-cols-12 gap-4">
-                        
                         <div className="sm:col-span-12">
                           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Product</label>
                           <select required value={item.productId} onChange={e => handleItemChange(index, 'productId', e.target.value)} className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-gray-900 dark:text-white font-medium">
@@ -308,6 +302,22 @@ export default function OrderClient({ activeProducts }: { activeProducts: IProdu
                         </div>
                       </div>
                     </div>
+
+                    {/* Dedicated Remove Item Button Row */}
+                    <div className="flex justify-end border-t border-gray-200/60 dark:border-gray-700/60 pt-3">
+                      <button 
+                        type="button" 
+                        onClick={() => removeItem(index)} 
+                        className="flex items-center gap-2 text-xs font-bold text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-lg"
+                        title="Remove Item"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Remove Item
+                      </button>
+                    </div>
+
                   </div>
                 );
               })}
