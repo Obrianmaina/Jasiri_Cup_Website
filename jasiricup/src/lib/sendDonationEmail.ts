@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer';
+// src/lib/sendDonationEmail.ts
+import { Resend } from 'resend';
 import { generateBrandedEmail } from './email-template';
 
 interface SendDonationEmailParams {
@@ -9,17 +10,10 @@ interface SendDonationEmailParams {
   cups: number;
 }
 
-export async function sendDonationEmail({ to, name, amount, currency, cups }: SendDonationEmailParams) {
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_SERVER_HOST,
-    port: parseInt(process.env.EMAIL_SERVER_PORT || '465', 10),
-    secure: process.env.EMAIL_SERVER_SECURE === 'true',
-    auth: {
-      user: process.env.EMAIL_SERVER_USER,
-      pass: process.env.EMAIL_SERVER_PASSWORD,
-    },
-  });
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
+export async function sendDonationEmail({ to, name, amount, currency, cups }: SendDonationEmailParams) {
   const greeting = name ? `Hello ${name},` : 'Hello,';
   
   // Format the amount neatly (e.g., $11.25 or KES 1,500)
@@ -53,10 +47,22 @@ export async function sendDonationEmail({ to, name, amount, currency, cups }: Se
 
   const finalHtml = generateBrandedEmail('Thank You for Your Donation!', innerHtmlContent);
 
-  await transporter.sendMail({
-    from: `"JasiriCup" <${process.env.EMAIL_SERVER_USER}>`,
-    to,
-    subject: 'Thank you for your generous donation! 💜',
-    html: finalHtml,
-  });
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'JasiriCup <notifications@hello.jasiricup.com>',
+      to,
+      replyTo: 'correspondence@jasiricup.com',
+      subject: 'Thank you for your generous donation!',
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Resend API Error:", error);
+      return { success: false, error };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("Failed to send donation email:", error);
+    return { success: false, error };
+  }
 }

@@ -1,8 +1,9 @@
+// src/app/api/send-order/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Order from '@/lib/models/Order';
 import Product from '@/lib/models/Product';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { generateBrandedEmail } from '@/lib/email-template';
 
 interface OrderItem {
@@ -14,6 +15,8 @@ interface OrderItem {
   customNotes?: string;
 }
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
@@ -22,14 +25,11 @@ export async function POST(req: NextRequest) {
     await Order.create({ clientInfo, items });
 
     for (const item of items) {
-      // Find this block in src/app/api/send-order/route.ts
-
       const updateResult = await Product.updateOne(
         {
           _id: item.productId,
           "variations.color": item.color,
           "variations.size": item.size,
-          // THE FIX: Ensure we have enough stock BEFORE deducting
           "variations.stockQuantity": { $gte: item.quantity }
         },
         {
@@ -37,29 +37,13 @@ export async function POST(req: NextRequest) {
         }
       );
 
-      // Add this check right below it to catch if someone tried to buy an out-of-stock item
       if (updateResult.modifiedCount === 0) {
         return NextResponse.json(
           { success: false, error: `Insufficient stock for product ${item.productId}` },
           { status: 400 }
         );
       }
-
-      if (updateResult.modifiedCount === 0) {
-        // Rollback logic or throw error:
-        throw new Error(`Insufficient stock for product ${item.productId}`);
-      }
     }
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: Number(process.env.EMAIL_SERVER_PORT),
-      secure: process.env.EMAIL_SERVER_SECURE === 'true',
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-    });
 
     const itemsHtml = items.map((item: OrderItem, index: number) => `
       <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
@@ -91,17 +75,19 @@ export async function POST(req: NextRequest) {
     `;
 
     // 1. Send notification to Admin
-    await transporter.sendMail({
-      from: `"JasiriCup Orders" <${process.env.EMAIL_SERVER_USER}>`,
-      to: process.env.EMAIL_TO,
+    await resend.emails.send({
+      from: 'JasiriCup Orders <notifications@hello.jasiricup.com>',
+      to: process.env.EMAIL_TO as string,
+      replyTo: clientInfo.email, // Lets you reply directly to the customer!
       subject: 'New Order Received',
       html: generateBrandedEmail('New Order Received', adminHtml),
     });
 
     // 2. Send branded confirmation to Client
-    await transporter.sendMail({
-      from: `"JasiriCup" <${process.env.EMAIL_SERVER_USER}>`,
+    await resend.emails.send({
+      from: 'JasiriCup <notifications@hello.jasiricup.com>',
       to: clientInfo.email,
+      replyTo: 'support@jasiricup.com', // Directs customer questions to your support alias
       subject: 'Your JasiriCup Order Confirmation',
       html: generateBrandedEmail('Order Confirmation', clientHtml),
     });

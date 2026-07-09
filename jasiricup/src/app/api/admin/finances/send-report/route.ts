@@ -1,31 +1,41 @@
-// src/app/api/admin/finances/send-report/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdminAuth } from "@/lib/auth-middleware";
-import nodemailer, { SendMailOptions } from 'nodemailer';
+import { Resend } from 'resend';
 import { generateBrandedEmail } from "@/lib/email-template";
+import connectDB from "@/lib/dbConnect";
+import User from "@/lib/models/User";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_SERVER_HOST,
-  port: parseInt(process.env.EMAIL_SERVER_PORT || '587', 10),
-  secure: process.env.EMAIL_SERVER_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_SERVER_USER,
-    pass: process.env.EMAIL_SERVER_PASSWORD,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
-  requireTLS: true,
-  tls: { rejectUnauthorized: process.env.NODE_ENV === 'production' }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
-  // 1. Server-Side RBAC Verification (Security layer)
+  // 1. General Admin Security layer
   const authCheck = await checkAdminAuth(req);
   if (!authCheck.isAuthorized) return authCheck.response!;
 
+  const userEmail = authCheck.session?.user?.email?.toLowerCase();
+  
+  if (!userEmail) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 2. Database & Role Check
+  await connectDB();
+  const dbUser = await User.findOne({ email: userEmail }).lean() as { role?: string } | null;
+
+  // 3. The Master Admin Override
+  const officialMasterEmail = (process.env.MASTER_ADMIN_EMAIL || '').trim().toLowerCase();
+  
+  const isMaster = dbUser?.role === 'Master' || userEmail === officialMasterEmail;
+  const isFinance = dbUser?.role === 'Finance';
+
+  if (!isMaster && !isFinance) {
+    return NextResponse.json(
+      { success: false, error: "Access Denied: You do not have Finance privileges to generate reports." }, 
+      { status: 403 }
+    );
+  }
+
   try {
-    // 2. Parse the multipart/form-data
     const formData = await req.formData();
     const recipient = formData.get("recipient") as string;
     const message = formData.get("message") as string;
@@ -36,7 +46,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing required fields or PDF attachment" }, { status: 400 });
     }
 
-    // 3. Convert the Blob/File into a Node Buffer for Nodemailer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
@@ -53,21 +62,22 @@ export async function POST(req: NextRequest) {
       </div>
     `;
 
-    const mailOptions: SendMailOptions = {
-      from: `"JasiriCup Accounting" <${process.env.EMAIL_SERVER_USER}>`,
+    const { error } = await resend.emails.send({
+      from: 'JasiriCup Accounting <notifications@hello.jasiricup.com>',
       to: recipient,
+      replyTo: 'admin@jasiricup.com', 
       subject: `JasiriCup Financial Report: ${reportId}`,
       html: generateBrandedEmail(`Financial Report`, emailInnerHtml),
       attachments: [
         {
           filename: `${reportId}.pdf`,
           content: buffer,
-          contentType: 'application/pdf'
         }
       ]
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (error) throw new Error(error.message);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to process FormData and send email:", error);

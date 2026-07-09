@@ -1,5 +1,5 @@
 // src/lib/sendBrandEmail.ts
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { generateBrandedEmail } from './email-template';
 
 interface SendEmailParams {
@@ -8,17 +8,10 @@ interface SendEmailParams {
   token: string;
 }
 
-export async function sendBrandAccessEmail({ to, name, token }: SendEmailParams) {
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_SERVER_HOST,
-    port: parseInt(process.env.EMAIL_SERVER_PORT || '587', 10),
-    secure: process.env.EMAIL_SERVER_SECURE === 'true',
-    auth: {
-      user: process.env.EMAIL_SERVER_USER,
-      pass: process.env.EMAIL_SERVER_PASSWORD,
-    },
-  });
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
+export async function sendBrandAccessEmail({ to, name, token }: SendEmailParams) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const magicLink = `${baseUrl}/brand-os?token=${token}`;
   const greeting = name ? `Hello ${name},` : 'Hello,';
@@ -36,7 +29,7 @@ export async function sendBrandAccessEmail({ to, name, token }: SendEmailParams)
     </div>
     
     <p style="font-size: 14px; color: #666;">
-      <em>Please do not share this link — it is a secure token tied to your approved email address.</em>
+      <em>Please do not share this link - it is a secure token tied to your approved email address.</em>
     </p>
     
     <p style="margin-top: 40px;">
@@ -48,11 +41,23 @@ export async function sendBrandAccessEmail({ to, name, token }: SendEmailParams)
   // 2. Wrap it using your standardized email template
   const finalHtml = generateBrandedEmail('Brand OS Access Approved', innerHtmlContent);
 
-  // 3. Send the formatted email
-  await transporter.sendMail({
-    from: `"JasiriCup Brand Team" <${process.env.EMAIL_SERVER_USER}>`,
-    to,
-    subject: 'Your JasiriCup Brand OS Access is Approved',
-    html: finalHtml,
-  });
+  // 3. Send the formatted email via Resend
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'JasiriCup Brand Team <notifications@hello.jasiricup.com>',
+      to,
+      replyTo: 'correspondence@jasiricup.com', 
+      subject: 'Your JasiriCup Brand OS Access is Approved',
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Resend API Error:", error);
+      return { success: false, error };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("Failed to send brand email:", error);
+    return { success: false, error };
+  }
 }

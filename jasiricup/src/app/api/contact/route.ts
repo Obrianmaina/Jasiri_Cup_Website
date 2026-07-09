@@ -2,13 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import ContactMessage from '@/lib/models/ContactMessage';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { generateBrandedEmail } from '@/lib/email-template';
 
 // Simple in-memory rate limiting (consider Redis for production)
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_IP = 3; // Max 3 requests per minute per IP
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // HTML sanitization function (enhanced)
 function sanitizeHtml(text: string): string {
@@ -57,12 +59,10 @@ function checkRateLimit(ip: string): boolean {
 function validateInput(data: unknown): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  // 1. Ensure the data is actually an object before we try to read properties
   if (!data || typeof data !== 'object') {
     return { isValid: false, errors: ['Invalid request format'] };
   }
-
-  // 2. Cast it to a safe, generic object so TypeScript lets us check properties
+  
   const payload = data as Record<string, unknown>;
   
   if (!payload.name || typeof payload.name !== 'string') {
@@ -91,16 +91,14 @@ function validateInput(data: unknown): { isValid: boolean; errors: string[] } {
   
   return { isValid: errors.length === 0, errors };
 }
-// Define the shape of a Mongoose ValidationError
+
 interface MongooseValidationError extends Error {
   name: 'ValidationError';
   errors: Record<string, { message: string }>;
 }
 
-// Type guard to safely check if an unknown error is a MongooseValidationError
 function isMongooseValidationError(error: unknown): error is MongooseValidationError {
   if (!error || typeof error !== 'object') return false;
-  
   const err = error as Record<string, unknown>;
   return (
     err.name === 'ValidationError' &&
@@ -108,24 +106,6 @@ function isMongooseValidationError(error: unknown): error is MongooseValidationE
     err.errors !== null
   );
 }
-
-// Configure Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_SERVER_HOST,
-  port: parseInt(process.env.EMAIL_SERVER_PORT || '587', 10),
-  secure: process.env.EMAIL_SERVER_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_SERVER_USER,
-    pass: process.env.EMAIL_SERVER_PASSWORD,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
-  requireTLS: true,
-  tls: {
-    rejectUnauthorized: process.env.NODE_ENV === 'production'
-  }
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -140,10 +120,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Connect to database
     await dbConnect();
 
-    // Parse and validate request body
     let body;
     try {
       body = await request.json();
@@ -154,7 +132,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate input
     const validation = validateInput(body);
     if (!validation.isValid) {
       return NextResponse.json(
@@ -163,7 +140,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize inputs
     const sanitizedData = {
       name: sanitizeHtml(body.name.trim()),
       email: body.email.trim().toLowerCase(),
@@ -171,10 +147,10 @@ export async function POST(request: NextRequest) {
       message: sanitizeHtml(body.message.trim())
     };
 
-    // Check for suspicious content (basic spam detection)
+    // Check for suspicious content
     const suspiciousPatterns = [
-      /https?:\/\/[^\s]+/gi, // URLs in message
-      /\b(viagra|casino|lottery|winner|congratulations)\b/gi, // Spam keywords
+      /https?:\/\/[^\s]+/gi,
+      /\b(viagra|casino|lottery|winner|congratulations)\b/gi,
     ];
     
     const fullText = `${sanitizedData.name} ${sanitizedData.topic} ${sanitizedData.message}`;
@@ -188,11 +164,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new contact message in database
     const newContactMessage = await ContactMessage.create(sanitizedData);
-
-    // Send email notifications
     let emailSent = false;
+
     try {
       // 1. Notify the Admin
       const adminHtml = `
@@ -205,10 +179,10 @@ export async function POST(request: NextRequest) {
         </div>
       `;
 
-      await transporter.sendMail({
-        from: `"JasiriCup Contact" <${process.env.EMAIL_SERVER_USER}>`,
+      await resend.emails.send({
+        from: 'JasiriCup Contact <notifications@hello.jasiricup.com>',
         replyTo: sanitizedData.email,
-        to: process.env.EMAIL_TO,
+        to: process.env.EMAIL_TO as string,
         subject: `New Message: ${sanitizedData.topic}`,
         html: generateBrandedEmail(`New Message: ${sanitizedData.topic}`, adminHtml),
       });
@@ -221,9 +195,11 @@ export async function POST(request: NextRequest) {
         <p style="margin-top: 20px;">Best regards,<br><strong>The JasiriCup Team</strong></p>
       `;
 
-      await transporter.sendMail({
-        from: `"JasiriCup" <${process.env.EMAIL_SERVER_USER}>`,
+      // 2. Send auto-reply to the Client
+      await resend.emails.send({
+        from: 'JasiriCup <notifications@hello.jasiricup.com>',
         to: sanitizedData.email,
+        replyTo: 'correspondence@jasiricup.com',
         subject: `We received your message: ${sanitizedData.topic}`,
         html: generateBrandedEmail("Message Received", clientHtml),
       });
@@ -232,7 +208,6 @@ export async function POST(request: NextRequest) {
     } catch (emailError: unknown) {
       const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown email error';
       console.error('Failed to send email:', errorMessage);
-      // Continue without failing the request so the DB entry still succeeds
     }
 
     return NextResponse.json(
@@ -246,16 +221,14 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Contact API error:', errorMessage);
     
-    // Use the type guard to safely handle validation errors
     if (isMongooseValidationError(error)) {
       return NextResponse.json(
         { 
-          message: 'Invalid data provided', 
+          message: 'Invalid data provided',
           errors: Object.keys(error.errors).map(key => ({
             field: key,
             message: error.errors[key].message
@@ -270,26 +243,16 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} // <--- THIS WAS THE MISSING BRACE!
+}
 
-// Handle other HTTP methods securely
 export async function GET() {
-  return NextResponse.json(
-    { message: 'Method not allowed' },
-    { status: 405, headers: { 'Allow': 'POST' } }
-  );
+  return NextResponse.json({ message: 'Method not allowed' }, { status: 405, headers: { 'Allow': 'POST' } });
 }
 
 export async function PUT() {
-  return NextResponse.json(
-    { message: 'Method not allowed' },
-    { status: 405, headers: { 'Allow': 'POST' } }
-  );
+  return NextResponse.json({ message: 'Method not allowed' }, { status: 405, headers: { 'Allow': 'POST' } });
 }
 
 export async function DELETE() {
-  return NextResponse.json(
-    { message: 'Method not allowed' },
-    { status: 405, headers: { 'Allow': 'POST' } }
-  );
+  return NextResponse.json({ message: 'Method not allowed' }, { status: 405, headers: { 'Allow': 'POST' } });
 }

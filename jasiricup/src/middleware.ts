@@ -36,7 +36,18 @@ export default async function middleware(request: NextRequest, event: NextFetchE
 
   // Determine if this route needs Admin Authentication
   const pathname = request.nextUrl.pathname;
-  const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin/login') || pathname.startsWith('/api/admin');
+  
+  // 1. Check if it's a protected frontend admin route (exclude login and setup pages)
+  const isFrontendAdmin = pathname.startsWith('/admin') && 
+                          !pathname.startsWith('/admin/login') && 
+                          !pathname.startsWith('/admin/setup');
+
+  // 2. Check if it's a protected API admin route (exclude setup and recovery endpoints)
+  const isApiAdmin = pathname.startsWith('/api/admin') && 
+                     !pathname.startsWith('/api/admin/setup') && 
+                     !pathname.startsWith('/api/admin/recovery');
+
+  const isAdminRoute = isFrontendAdmin || isApiAdmin;
 
   let response: NextResponse | undefined;
 

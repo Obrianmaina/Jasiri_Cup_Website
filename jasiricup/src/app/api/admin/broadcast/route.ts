@@ -1,14 +1,16 @@
+// src/app/api/admin/broadcast/route.ts
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Subscriber from '@/lib/models/Subscriber';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { generateBrandedEmail } from '@/lib/email-template';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
     
-    // Parse the multipart form data (which includes the text and files)
     const formData = await req.formData();
     const subject = formData.get('subject') as string;
     const message = formData.get('message') as string;
@@ -25,7 +27,6 @@ export async function POST(req: Request) {
         attachments.push({
           filename: value.name,
           content: buffer,
-          contentType: value.type,
         });
       }
     }
@@ -42,38 +43,29 @@ export async function POST(req: Request) {
     // Extract emails for BCC
     const bccList = activeSubscribers.map((s) => s.email);
 
-    // 3. Format the Email using your existing Branded Template
-    // Convert newlines in the textarea to HTML break tags for the email
+    // 3. Format the Email
     const formattedMessage = message.replace(/\n/g, '<br/>');
     const finalHtml = generateBrandedEmail(subject, formattedMessage);
 
-    // 4. Configure Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: parseInt(process.env.EMAIL_SERVER_PORT || '587', 10),
-      secure: process.env.EMAIL_SERVER_SECURE === 'true',
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-    });
-
-    // 5. Dispatch Broadcast
-    // We send to the admin email, and BCC the subscribers to protect their privacy
-    await transporter.sendMail({
-      from: `"JasiriCup" <${process.env.EMAIL_SERVER_USER}>`,
-      to: process.env.EMAIL_SERVER_USER, 
+    // 4. Dispatch Broadcast
+    const { error } = await resend.emails.send({
+      from: 'JasiriCup <notifications@hello.jasiricup.com>',
+      to: 'notifications@hello.jasiricup.com',
       bcc: bccList,
+      replyTo: 'correspondence@jasiricup.com',
       subject: subject,
       html: finalHtml,
       attachments: attachments,
     });
 
+    if (error) {
+      throw new Error(error.message);
+    }
+
     return NextResponse.json({ 
       success: true, 
       sentCount: activeSubscribers.length 
     }, { status: 200 });
-
   } catch (error) {
     console.error('Broadcast error:', error);
     return NextResponse.json({ error: 'Failed to send broadcast' }, { status: 500 });
