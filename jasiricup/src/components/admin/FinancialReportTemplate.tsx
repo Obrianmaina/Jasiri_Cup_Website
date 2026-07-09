@@ -1,15 +1,14 @@
 // src/components/admin/FinancialReportTemplate.tsx
 import React from 'react';
-import { Montserrat } from 'next/font/google';
-
-const montserrat = Montserrat({ subsets: ['latin'], display: 'swap' });
 
 interface ITransaction {
     _id: string; type: 'income' | 'expense'; category: string; amount: number;
     date: string; description: string; donorName?: string; paymentMethod: string; referenceNumber?: string;
 }
 
-interface MonthlyMetric { _id: { year: number; month: number }; totalIncome: number; totalExpense: number; }
+interface MonthlyMetric {
+    _id: { year: number; month: number }; totalIncome: number; totalExpense: number;
+}
 
 interface ReportConfig {
     title: string; message: string; periodLabel: string; preparedBy: string;
@@ -26,6 +25,16 @@ interface FinancialReportTemplateProps {
     formatCurrency: (amount: number) => string;
     getFullMonthName: (monthNumber: number) => string;
 }
+
+// HELPER: Safely maps the dropdown selection to your hidden Cloudinary URLs
+const getSignatureUrl = (role?: string) => {
+    switch (role) {
+        case 'finance': return process.env.NEXT_PUBLIC_SIG_FINANCE;
+        case 'director': return process.env.NEXT_PUBLIC_SIG_DIRECTOR;
+        case 'treasurer': return process.env.NEXT_PUBLIC_SIG_TREASURER;
+        default: return undefined;
+    }
+};
 
 export const FinancialReportTemplate = ({
     config, metrics, transactions, totals, formatCurrency,
@@ -49,15 +58,13 @@ export const FinancialReportTemplate = ({
           .signature-block { break-inside: avoid; page-break-inside: avoid; }
         }
       `}} />
-
             <div className="w-full h-auto print-report-container" style={{ backgroundColor: '#ffffff', color: '#0f172a' }}>
                 <div className="max-w-[210mm] mx-auto font-sans" style={{ backgroundColor: '#ffffff', color: '#0f172a' }}>
-
+                    
                     {/* Header Section */}
                     <div className="flex justify-between items-end pb-4 mb-8 mt-2 border-b-2" style={{ borderColor: '#0f172a' }}>
                         <div className="flex flex-col gap-2">
                             <div className="relative h-14 flex items-center justify-start mb-2">
-
                                 {/* INLINE SVG LOGO */}
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 75" className="w-auto h-14 object-contain" fill="none">
                                     <g>
@@ -66,11 +73,9 @@ export const FinancialReportTemplate = ({
                                         <path d="M192.584 35.7641C195.14 35.0312 197.858 36.5159 198.069 39.1665C198.241 41.3321 198.12 43.5184 197.702 45.6654C196.977 49.3945 195.38 52.8991 193.041 55.8926C190.703 58.8861 187.689 61.2836 184.246 62.8891C180.803 64.4946 177.029 65.2624 173.232 65.1298C169.436 64.9972 165.724 63.968 162.402 62.1263C159.079 60.2846 156.24 57.6827 154.115 54.5333C151.991 51.3839 150.642 47.7765 150.179 44.006C149.913 41.8351 149.944 39.6456 150.267 37.4973C150.662 34.8678 153.477 33.5763 155.976 34.4857C158.474 35.3951 159.673 38.1865 159.631 40.8451C159.62 41.5073 159.655 42.1713 159.737 42.8325C160.014 45.0948 160.824 47.2593 162.098 49.1489C163.373 51.0385 165.076 52.5997 167.07 53.7047C169.064 54.8097 171.29 55.4272 173.568 55.5068C175.846 55.5863 178.111 55.1256 180.176 54.1624C182.242 53.1991 184.05 51.7606 185.454 49.9645C186.857 48.1683 187.815 46.0656 188.25 43.8282C188.377 43.1743 188.459 42.5143 188.494 41.853C188.638 39.1979 190.028 36.497 192.584 35.7641Z" fill="#8C66DC" />
                                     </g>
                                 </svg>
-
                             </div>
                             <h1 className="text-2xl font-black tracking-tight uppercase" style={{ color: '#0f172a' }}>{config.title}</h1>
                         </div>
-
                         <div className="text-right flex flex-col justify-end">
                             <p className="font-bold text-[9px] uppercase tracking-widest mb-1" style={{ color: '#64748b' }}>Confidential Internal Document</p>
                             <div className="px-3 py-1.5 inline-block text-right" style={{ backgroundColor: '#f8fafc', color: '#0f172a' }}>
@@ -136,37 +141,37 @@ export const FinancialReportTemplate = ({
                         </table>
                     </div>
 
-                    {/* SIGNATURES - Montserrat Applied */}
+                    {/* SIGNATURES - Refactored to PNGs */}
                     <div className="signature-block mt-16 grid grid-cols-2 gap-16 break-inside-avoid">
                         <div>
                             <div className="h-16 w-full flex items-end justify-center mb-1 relative overflow-hidden">
-                                {config.preparedBySignature && (
-                                    <span
-                                        className={`text-2xl italic font-bold mb-1 ${montserrat.className}`}
-                                        style={{ color: '#1e293b' }}
-                                    >
-                                        {config.preparedBySignature}
-                                    </span>
+                                {config.preparedBySignature && getSignatureUrl(config.preparedBySignature) && (
+                                    <img
+                                        src={getSignatureUrl(config.preparedBySignature)}
+                                        alt="Preparer Signature"
+                                        className="h-16 object-contain mx-auto mb-1"
+                                        crossOrigin="anonymous"
+                                    />
                                 )}
                             </div>
                             <div className="border-b mb-1.5 w-full" style={{ borderColor: '#94a3b8' }}></div>
                             <p className="font-bold text-[10px] uppercase tracking-widest text-center" style={{ color: '#0f172a' }}>Prepared By</p>
                             <p className="text-[9px] mt-0.5 text-center" style={{ color: '#64748b' }}>{config.preparedBy}</p>
                         </div>
-
                         <div>
                             <div className="h-16 w-full flex items-end justify-center mb-1 relative overflow-hidden">
-                                {config.authorizedSignatorySignature && (
-                                    <span
-                                        className={`text-2xl italic font-bold mb-1 ${montserrat.className}`}
-                                        style={{ color: '#1e293b' }}
-                                    >
-                                        {config.authorizedSignatorySignature}
-                                    </span>
+                                {config.authorizedSignatorySignature && getSignatureUrl(config.authorizedSignatorySignature) && (
+                                    <img
+                                        src={getSignatureUrl(config.authorizedSignatorySignature)}
+                                        alt="Authorized Signatory Signature"
+                                        className="h-16 object-contain mx-auto mb-1"
+                                        crossOrigin="anonymous"
+                                    />
                                 )}
                             </div>
                             <div className="border-b mb-1.5 w-full" style={{ borderColor: '#94a3b8' }}></div>
                             <p className="font-bold text-[10px] uppercase tracking-widest text-center" style={{ color: '#0f172a' }}>Authorized Signatory</p>
+                            <p className="text-[9px] mt-0.5 text-center" style={{ color: '#64748b' }}>Board of Directors</p>
                         </div>
                     </div>
 

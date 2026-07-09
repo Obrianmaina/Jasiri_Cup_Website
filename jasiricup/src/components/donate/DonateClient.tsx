@@ -1,9 +1,8 @@
 'use client';
-// src/components/donate/DonateClient.tsx
-import { useState, useEffect } from 'react';
-import { FaMobileAlt, FaCreditCard, FaHeart } from 'react-icons/fa';
 
-// 1. CMS Interfaces matching your DonateEditor
+import { useState, useEffect } from 'react';
+import { FaHeart } from 'react-icons/fa';
+
 export interface Tier {
   cups: number;
   amount: number;
@@ -11,12 +10,6 @@ export interface Tier {
   impact: string;
   emoji: string;
   highlight: boolean;
-}
-
-export interface SiteContentResponse {
-  page: string;
-  section: string;
-  content: DonateData;
 }
 
 export interface BottomStat {
@@ -32,7 +25,12 @@ export interface DonateData {
   bottomStats: BottomStat[];
 }
 
-// 2. Default Fallback Data (prevents blank screen while fetching)
+export interface SiteContentResponse {
+  page: string;
+  section: string;
+  content: DonateData;
+}
+
 const DEFAULT_HERO_TITLE = 'Keep a Girl in School';
 const DEFAULT_HERO_SUBTITLE = 'One menstrual cup lasts up to 10 years. Your donation today gives a girl in rural Kenya her entire secondary education, period-free.';
 
@@ -49,7 +47,6 @@ const DEFAULT_STATS: BottomStat[] = [
   { stat: '100%', label: 'Goes to girls', sub: 'Zero admin overhead on donations' },
 ];
 
-type PayMethod = 'mpesa' | 'card';
 type Currency = 'KES' | 'USD' | 'EUR' | 'GBP';
 
 const CURRENCIES: { id: Currency; symbol: string; label: string }[] = [
@@ -60,29 +57,24 @@ const CURRENCIES: { id: Currency; symbol: string; label: string }[] = [
 ];
 
 export const DonateClient = () => {
-  // CMS State
   const [cmsData, setCmsData] = useState<DonateData | null>(null);
 
-  // Form & Payment State
   const [selectedTier, setSelectedTier] = useState(1);
   const [customAmount, setCustomAmount] = useState('');
-  const [payMethod, setPayMethod] = useState<PayMethod>('mpesa');
   const [currency, setCurrency] = useState<Currency>('KES');
   const [rates, setRates] = useState<Record<string, number>>({ KES: 1, USD: 0.0075, EUR: 0.0069, GBP: 0.0059 });
   
-  const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
-  // 3. Data Fetching Hook
   useEffect(() => {
     const fetchRates = async () => {
       try {
         const res = await fetch('/api/rates');
-        const data = await res.json();
+        const data = (await res.json()) as { rates?: Record<string, number> };
         if (data.rates) setRates(data.rates);
       } catch (error) {
         console.error('Failed to load rates', error);
@@ -92,10 +84,9 @@ export const DonateClient = () => {
     const fetchCmsContent = async () => {
       try {
         const res = await fetch('/api/site-content?page=donate');
-        const json = await res.json();
+        const json = (await res.json()) as { success: boolean; data?: SiteContentResponse[] };
         if (json.success && json.data && json.data.length > 0) {
-          // Find the donate document using the strictly typed interface
-          const donateDoc = json.data.find((d: SiteContentResponse) => d.page === 'donate');
+          const donateDoc = json.data.find(d => d.page === 'donate');
           if (donateDoc && donateDoc.content) {
             setCmsData(donateDoc.content);
           }
@@ -109,7 +100,6 @@ export const DonateClient = () => {
     fetchCmsContent();
   }, []);
 
-  // 4. Derive active content (uses CMS if loaded, otherwise uses defaults)
   const activeTiers = cmsData?.tiers || DEFAULT_TIERS;
   const activeStats = cmsData?.bottomStats || DEFAULT_STATS;
   const heroTitle = cmsData?.heroTitle || DEFAULT_HERO_TITLE;
@@ -118,7 +108,6 @@ export const DonateClient = () => {
   const targetRate = rates[currency] || 1;
   const activeCurrency = CURRENCIES.find(c => c.id === currency)!;
   
-  // Safely grab the tier, defaulting to 0 if the admin deleted tiers and the selected index is out of bounds
   const tier = activeTiers[selectedTier] || activeTiers[0];
 
   let displayAmount = 0;
@@ -146,11 +135,6 @@ export const DonateClient = () => {
       setMessage('Minimum donation is KES 100.');
       return;
     }
-    if (payMethod === 'mpesa' && !phone.match(/^(?:254|\+254|0)?[17][0-9]{8}$/)) {
-      setStatus('error');
-      setMessage('Please enter a valid Safaricom number.');
-      return;
-    }
 
     setLoading(true);
     setStatus('idle');
@@ -163,23 +147,17 @@ export const DonateClient = () => {
           amount: displayAmount, 
           baseAmountKes,
           currency,
-          phone, 
           name, 
           email, 
-          payMethod, 
           cups: tier.cups 
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { success?: boolean; checkoutUrl?: string; error?: string };
 
       if (res.ok && data.success) {
         setStatus('success');
-        setMessage(
-          payMethod === 'mpesa'
-            ? 'M-Pesa prompt sent to your phone. Please enter your PIN to complete.'
-            : 'Redirecting to secure payment...',
-        );
-        if (payMethod === 'card' && data.checkoutUrl) {
+        setMessage('Redirecting to secure payment...');
+        if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
         }
       } else {
@@ -195,11 +173,8 @@ export const DonateClient = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Dynamic Hero */}
       <div className="text-center mb-12 mt-4">
-        <span className="inline-block bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">
-          Change a Life Today
-        </span>
+        
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 leading-tight">
           {heroTitle}
         </h1>
@@ -209,7 +184,7 @@ export const DonateClient = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* Left: Dynamic Tiers */}
+        {/* Tiers */}
         <div className="lg:col-span-3 space-y-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-bold text-gray-800 dark:text-white text-lg">
@@ -270,7 +245,6 @@ export const DonateClient = () => {
                 )}
               </div>
               
-              {/* Dynamic check for Custom amount (cups === 0) */}
               {t.cups === 0 && selectedTier === i && (
                 <div className="mt-4">
                   <input
@@ -288,7 +262,7 @@ export const DonateClient = () => {
           ))}
         </div>
 
-        {/* Right: Payment form */}
+        {/* Payment Form */}
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-800 p-6 sticky top-24">
             <div className="text-center mb-6">
@@ -298,30 +272,6 @@ export const DonateClient = () => {
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {tier.cups > 0 ? `${tier.cups} cup${tier.cups > 1 ? 's' : ''} donated` : 'Custom amount'}
               </div>
-            </div>
-
-            {/* Payment method toggle */}
-            <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 mb-6">
-              {(
-                [
-                  { id: 'mpesa', icon: FaMobileAlt, label: 'M-Pesa' },
-                  { id: 'card', icon: FaCreditCard, label: 'Card' },
-                ] as const
-              ).map(m => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setPayMethod(m.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors ${
-                    payMethod === m.id
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  <m.icon size={14} />
-                  {m.label}
-                </button>
-              ))}
             </div>
 
             <form onSubmit={handleDonate} className="space-y-4">
@@ -341,26 +291,11 @@ export const DonateClient = () => {
                 required
                 className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
               />
-              {payMethod === 'mpesa' && (
-                <div>
-                  <input
-                    type="tel"
-                    placeholder="M-Pesa number (07XX or 254...)"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    required
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                  />
-                </div>
-              )}
 
-              {/* Universal transparency notice */}
               {currency !== 'KES' && baseAmountKes > 0 && (
                 <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-3 text-center">
                   <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">
-                    {payMethod === 'mpesa' 
-                      ? `M-Pesa payments are processed in KES. Your phone prompt will be for KES ${baseAmountKes.toLocaleString()}.` 
-                      : `International card payments are processed in KES. You will be billed KES ${baseAmountKes.toLocaleString()}. Your bank handles the conversion automatically.`}
+                    International card payments are processed in KES. You will be billed KES {baseAmountKes.toLocaleString()}. Your bank handles the conversion automatically.
                   </p>
                 </div>
               )}
@@ -398,7 +333,6 @@ export const DonateClient = () => {
         </div>
       </div>
 
-      {/* Dynamic Impact breakdown */}
       <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
         {activeStats.map((item, idx) => (
           <div key={idx} className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-6 border border-purple-100 dark:border-purple-800/50">

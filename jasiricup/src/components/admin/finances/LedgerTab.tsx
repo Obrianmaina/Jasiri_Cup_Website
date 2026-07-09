@@ -1,8 +1,20 @@
+// src/components/admin/finances/LedgerTab.tsx
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ITransaction {
-  _id: string; type: 'income' | 'expense'; category: string; amount: number; 
-  date: string; description: string; paymentMethod: string; status: 'completed' | 'voided';
+  _id: string; 
+  type: 'income' | 'expense'; 
+  category: string; 
+  amount: number; 
+  date: string; 
+  description: string; 
+  paymentMethod: string; 
+  status: 'completed' | 'voided';
+  originalAmount?: number; 
+  originalCurrency?: string; 
+  exchangeRate?: number;
+  voidReason?: string;
+  receiptUrl?: string; // <--- Add this line right here
 }
 
 interface MonthlyMetric { _id: { year: number; month: number }; totalIncome: number; totalExpense: number; }
@@ -16,11 +28,12 @@ interface LedgerTabProps {
   transactions: ITransaction[];
   formatCurrency: (amt: number) => string;
   getMonthName: (monthNumber: number) => string;
+  onVoidTransaction: (id: string) => void; // New prop for handling voids
 }
 
 export function LedgerTab({
   totalLifetimeIncome, totalLifetimeExpense, netBalance, chartData,
-  metrics, transactions, formatCurrency, getMonthName
+  metrics, transactions, formatCurrency, getMonthName, onVoidTransaction
 }: LedgerTabProps) {
   return (
     <>
@@ -85,26 +98,51 @@ export function LedgerTab({
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
             <h3 className="font-bold text-gray-900 dark:text-white">Recent Ledger Entries</h3>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-[600px] overflow-y-auto">
             {transactions.map(tx => (
               <div key={tx._id} className={`p-4 sm:p-5 flex flex-col sm:flex-row justify-between gap-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${tx.status === 'voided' ? 'opacity-50 grayscale' : ''}`}>
                 <div className="flex gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                    {tx.type === 'income' ? '↓' : '↑'}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.status === 'voided' ? 'bg-gray-100 text-gray-500' : tx.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    {tx.status === 'voided' ? '∅' : tx.type === 'income' ? '↓' : '↑'}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{tx.category}</p>
+                    <p className={`font-bold text-sm sm:text-base ${tx.status === 'voided' ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>{tx.category}</p>
                     <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5">{tx.description}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    
+                    {tx.status === 'voided' && tx.voidReason && (
+                      <p className="text-[11px] text-red-500 mt-1 font-semibold italic">Void Reason: {tx.voidReason}</p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <span className="text-[10px] bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{new Date(tx.date).toLocaleDateString()}</span>
                       <span className="text-[10px] bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">{tx.paymentMethod}</span>
+                      
+                      {tx.receiptUrl && (
+                        <a href={tx.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded hover:underline transition-colors">
+                          View Receipt
+                        </a>
+                      )}
+
+                      {tx.status !== 'voided' && (
+                        <button 
+                          onClick={() => onVoidTransaction(tx._id)} 
+                          className="text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                        >
+                          Void Transaction
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="text-left sm:text-right">
-                  <p className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                <div className="text-left sm:text-right flex flex-col sm:items-end">
+                  <p className={`font-bold ${tx.status === 'voided' ? 'line-through text-gray-400' : tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
                     {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
+                  {tx.originalCurrency && (
+                    <p className={`text-[11px] mt-1 font-medium px-2 py-0.5 rounded-md border ${tx.status === 'voided' ? 'text-gray-400 border-gray-100' : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800'}`}>
+                      {tx.originalCurrency} {tx.originalAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} @ {tx.exchangeRate?.toFixed(2)} KES
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

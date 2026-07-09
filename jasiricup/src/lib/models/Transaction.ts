@@ -4,71 +4,58 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ITransaction extends Document {
   type: 'income' | 'expense';
   category: string;
-  amount: number;
-  currency: string;
+  amount: number; // Always stored in KES for totals
+  currency: string; // Always KES
+  
+  // Multi-currency tracking
+  originalAmount?: number;
+  originalCurrency?: 'USD' | 'EUR' | 'GBP';
+  exchangeRate?: number; // KES per 1 unit of foreign currency
+  
+  // Auditing
+  createdBy: string;
+  
   date: Date;
   description: string;
   donorName?: string;
   donorEmail?: string;
-  receiptUrl?: string; // Cloudinary link for transparency/proof
-  status: 'completed' | 'voided'; // Soft-delete for accounting audit trails
+  receiptUrl?: string;
+  status: 'completed' | 'voided';
+  
+  // Void Tracking
+  voidReason?: string;
+  voidedBy?: string;
+
   paymentMethod: string;
-  referenceNumber?: string; // e.g., M-Pesa code, Bank Transfer ID
+  referenceNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const TransactionSchema: Schema = new Schema(
   {
-    type: { 
-      type: String, 
-      enum: ['income', 'expense'], 
-      required: true 
-    },
-    category: { 
-      type: String, 
-      required: true 
-      // e.g., 'Grant', 'Individual Donation', 'Merchandise', 'Logistics', 'Tax', 'Operations'
-    },
-    amount: { 
-      type: Number, 
-      required: true 
-    },
-    currency: { 
-      type: String, 
-      default: 'KES' 
-    },
-    date: { 
-      type: Date, 
-      required: true, 
-      default: Date.now 
-    },
-    description: { 
-      type: String, 
-      required: true 
-    },
-    donorName: { 
-      type: String 
-    },
-    donorEmail: { 
-      type: String 
-    },
-    receiptUrl: { 
-      type: String 
-    },
-    status: { 
-      type: String, 
-      enum: ['completed', 'voided'], 
-      default: 'completed' 
-    },
-    paymentMethod: { 
-      type: String, 
-      required: true 
-      // e.g., 'M-Pesa', 'Bank Transfer', 'Cash', 'Stripe'
-    },
-    referenceNumber: { 
-      type: String 
-    },
+    type: { type: String, enum: ['income', 'expense'], required: true },
+    category: { type: String, required: true },
+    amount: { type: Number, required: true },
+    currency: { type: String, default: 'KES' },
+    
+    originalAmount: { type: Number },
+    originalCurrency: { type: String, enum: ['USD', 'EUR', 'GBP'] },
+    exchangeRate: { type: Number },
+    createdBy: { type: String, required: true },
+
+    date: { type: Date, required: true, default: Date.now },
+    description: { type: String, required: true },
+    donorName: { type: String },
+    donorEmail: { type: String },
+    receiptUrl: { type: String },
+    
+    status: { type: String, enum: ['completed', 'voided'], default: 'completed' },
+    voidReason: { type: String },
+    voidedBy: { type: String },
+    
+    paymentMethod: { type: String, required: true },
+    referenceNumber: { type: String },
   },
   { timestamps: true }
 );
