@@ -64,9 +64,6 @@ export default async function GuidePage() {
         
         {/* Header Section */}
         <div className="text-center mb-16">
-          <span className="inline-block py-1 px-3 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-semibold tracking-wider uppercase text-sm mb-4">
-            Educational Resources
-          </span>
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6">
             {guide.title}
           </h1>

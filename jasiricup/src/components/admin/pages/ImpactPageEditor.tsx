@@ -8,7 +8,7 @@ export default function ImpactPageEditor({ data, onChange }: { data: ImpactPageC
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
         <h4 className="font-semibold text-sm mb-3">Hero Section</h4>
         <div className="space-y-3">
-          <div><label className="block text-xs mb-1">Subtitle</label><input type="text" value={data.hero?.subtitle || ""} onChange={(e) => onChange({ ...data, hero: { ...data.hero, subtitle: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
+          
           <div><label className="block text-xs mb-1">Title</label><input type="text" value={data.hero?.title || ""} onChange={(e) => onChange({ ...data, hero: { ...data.hero, title: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
           <div><label className="block text-xs mb-1">Description</label><textarea rows={3} value={data.hero?.description || ""} onChange={(e) => onChange({ ...data, hero: { ...data.hero, description: e.target.value } })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800" /></div>
         </div>

@@ -103,9 +103,7 @@ export default async function ImpactPage() {
       <Breadcrumbs items={breadcrumbs} />
 
       <section className="text-center mb-16 mt-4">
-        <span className="inline-block bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6">
-          {content.hero.subtitle}
-        </span>
+        
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">
           {content.hero.title}
         </h1>

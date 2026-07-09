@@ -51,9 +51,7 @@ export default async function PressPage() {
       <Breadcrumbs items={breadcrumbs} />
       
       <section className="text-center mb-16 mt-4">
-        <span className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4 transition-colors">
-          Media Centre
-        </span>
+        
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 transition-colors">Press & Media</h1>
         <p className="text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto transition-colors">
           Resources for journalists, partners, and media covering menstrual health in Kenya.

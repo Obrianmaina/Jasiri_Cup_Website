@@ -114,9 +114,7 @@ export default async function ProductPage() {
         {/* Text */}
         {/* OPTIMIZED: Changed from md:w-1/2 to md:w-3/5 to give text & buttons more room on iPad */}
         <div className="w-full md:w-3/5 lg:w-1/2 text-center md:text-left">
-          <span className="inline-block bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4 transition-colors">
-            Our Product
-          </span>
+          
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white leading-tight transition-colors">
             {content.title}
           </h1>

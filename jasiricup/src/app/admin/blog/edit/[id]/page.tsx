@@ -110,28 +110,30 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
     }
   };
 
-  // Modern Loading State
+  // 1. UPDATED LOADING STATE
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[400px] bg-white rounded-2xl border border-gray-100 shadow-sm mt-12 mx-4">
+      // ADDED: dark:bg-gray-950 and transition-colors to prevent the white flash
+      <div className="min-h-[60vh] flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mb-4"></div>
-        <p className="text-gray-500 font-medium">Loading post data...</p>
+        <p className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">Loading editor...</p>
       </div>
     );
   }
 
-  // Modern Error State
+  // 2. UPDATED ERROR STATE
   if (error || !blogData) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[400px] bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center mt-12 mx-4">
-        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+      // ADDED: Dark mode classes to the wrapper, text, and button
+      <div className="min-h-[60vh] flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors">
+        <div className="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
           <span className="text-2xl">⚠️</span>
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2">Oops! Something went wrong</h3>
-        <p className="text-gray-500 mb-6">{error || 'Blog post not found.'}</p>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Oops! Something went wrong</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">{error || 'Blog post not found.'}</p>
         <button
           onClick={() => router.push('/admin/blog')}
-          className="px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+          className="px-5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
           Return to Blog List
         </button>
@@ -140,7 +142,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
   }
 
  return (
-    <div className="pt-12 space-y-8 w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-8">
+    <div className="pt-12 space-y-8 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8">
       <div className="border-b border-gray-200 dark:border-gray-800 pb-4 transition-colors duration-300">
         <Link href="/admin/blog" className="inline-flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 mb-4 transition-colors">
           &larr; Back to Blog Posts

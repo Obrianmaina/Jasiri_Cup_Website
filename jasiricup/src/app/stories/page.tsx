@@ -51,9 +51,7 @@ export default async function StoriesPage() {
       <Breadcrumbs items={breadcrumbs} />
       
       <section className="text-center mb-16 mt-4">
-        <span className="inline-block bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4 transition-colors">
-          Real People, Real Change
-        </span>
+        
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 transition-colors">
           Stories of Impact
         </h1>
