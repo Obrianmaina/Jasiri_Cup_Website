@@ -8,6 +8,7 @@ import React, { useState, useEffect } from "react";
 import { useSession, SessionProvider } from "next-auth/react";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/ui/ThemeToggle"; 
+
 import { 
   Home, Wallet, FileText, Layout, BarChart, ShoppingBag, 
   Mail, HelpCircle, Palette, Newspaper, Users, User
@@ -15,6 +16,7 @@ import {
 
 const baseNavLinks = [
   { href: "/admin/dashboard", icon: <Home size={20} />, label: "Dashboard" },
+  { href: "/admin/dashboard/team", icon: <Users size={20} />, label: "Team" }, // <-- Added here for everyone
   { href: "/admin/finances", icon: <Wallet size={20} />, label: "Finances" },
   { href: "/admin/blog", icon: <FileText size={20} />, label: "Blog" },
   { href: "/admin/pages", icon: <Layout size={20} />, label: "Pages" },
@@ -23,7 +25,7 @@ const baseNavLinks = [
   { href: "/admin/messages", icon: <Mail size={20} />, label: "Messages" },
   { href: "/admin/faq", icon: <HelpCircle size={20} />, label: "FAQ" },
   { href: "/admin/brand", icon: <Palette size={20} />, label: "Brand OS" },
-  { href: "/admin/newsletter", icon: <Newspaper size={20} />, label: "Newsletter" }, 
+  { href: "/admin/newsletter", icon: <Newspaper size={20} />, label: "Newsletter" },
 ];
 
 const greetings = [
@@ -72,6 +74,7 @@ const greetings = [
 function AdminDashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession(); // This is now safe to use!
+  
   const [greeting, setGreeting] = useState('Hello');
 
   useEffect(() => {
@@ -83,13 +86,11 @@ function AdminDashboardContent({ children }: { children: React.ReactNode }) {
     window.location.href = '/admin/login';
   };
 
-  const isMaster = (session?.user as unknown as { role?: string })?.role === 'Master';
   const userName = session?.user?.name || 'Admin';
   const userImage = session?.user?.image;
 
-  const navLinks = isMaster 
-    ? [...baseNavLinks, { href: "/admin/dashboard/team", icon: <Users size={20} />, label: "Team Management" }] 
-    : baseNavLinks;
+  // Everyone gets the same navigation layout now!
+  const navLinks = baseNavLinks;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-300">
@@ -150,6 +151,7 @@ function AdminDashboardContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {children}
       </main>
@@ -165,3 +167,4 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </SessionProvider>
   );
 }
+

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import User from '@/lib/models/User'; // Assuming User model for team members
+import User from '@/lib/models/User';
 
 export async function GET(req: Request) {
   await dbConnect();
-
   try {
-    const users = await User.find({});
+    // SECURITY FIX: Only select safe, public-facing fields. 
+    // Never expose passwords, tokens, or 2FA secrets!
+    const users = await User.find({}, 'name email image role').lean();
     return NextResponse.json({ data: users }, { status: 200 });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -16,7 +17,6 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   await dbConnect();
-
   try {
     const body = await req.json();
     const newUser = await User.create(body);
