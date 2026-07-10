@@ -5,6 +5,7 @@ import Subscriber from '@/lib/models/Subscriber';
 import { Resend } from 'resend';
 import { rateLimit } from '@/lib/rate-limit';
 import { generateBrandedEmail } from '@/lib/email-template';
+import { generateUnsubscribeToken } from '@/lib/token';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -48,6 +49,11 @@ export async function POST(req: Request) {
     }
 
     if (isNewSubscription) {
+      // Generate Secure Unsubscribe Link
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const unsubToken = generateUnsubscribeToken(normalizedEmail);
+      const unsubscribeLink = `${baseUrl}/api/newsletter/unsubscribe?email=${encodeURIComponent(normalizedEmail)}&token=${unsubToken}`;
+
       // 1. Send Confirmation Email to the Subscriber
       const greeting = name ? `Hi ${name.trim()},` : 'Hello,';
       const userHtmlContent = `
@@ -56,6 +62,12 @@ export async function POST(req: Request) {
         <p>You can look forward to monthly impact updates, inspiring stories, and new ways to get involved as we work to end period poverty and keep girls in school.</p>
         <br/>
         <p>With gratitude,<br/><strong>The JasiriCup Team</strong></p>
+        
+        <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #f3f4f6;">
+          <p style="font-size: 12px; color: #9ca3af; margin: 0;">
+            Changed your mind? You can <a href="${unsubscribeLink}" style="color: #178E4E; text-decoration: underline;">unsubscribe securely here</a>.
+          </p>
+        </div>
       `;
       
       const userEmailHtml = generateBrandedEmail('Welcome to JasiriCup!', userHtmlContent);
