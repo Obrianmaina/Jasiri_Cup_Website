@@ -103,7 +103,11 @@ export async function rateLimit(
 ): Promise<RateLimitResult> {
   const { windowMs = 60_000, max = 10 } = options;
 
+  // Added check: Bypass Redis entirely when running locally to avoid SSL issues
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   const hasRedis =
+    !isDevelopment && 
     process.env.UPSTASH_REDIS_REST_URL &&
     process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -111,7 +115,7 @@ export async function rateLimit(
     return rateLimitRedis(key, windowMs, max);
   }
 
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !hasRedis) {
     console.warn(
       '[rate-limit] No Redis configured in production. ' +
       'Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN for multi-instance safety.',
@@ -120,7 +124,6 @@ export async function rateLimit(
 
   return rateLimitMemory(key, windowMs, max);
 }
-
 // Convenience wrappers
 export const rateLimitContact = (ip: string) =>
   rateLimit(`contact:${ip}`, { windowMs: 60_000, max: 3 });
