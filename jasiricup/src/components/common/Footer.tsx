@@ -1,14 +1,14 @@
 // src/components/common/Footer.tsx
 import Image from "next/image";
 import Link from "next/link";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaEnvelope } from 'react-icons/fa';
 
 export const Footer = () => {
   // Split links into two categories for better footer layout
   const aboutLinks = [
     { name: 'Home',       href: '/' },
     { name: 'Product',    href: '/product' },
-    { name: 'Guide',  href: '/guide' }, // <--- Added Guide here
+    { name: 'Guide',  href: '/guide' },
     { name: 'Our Impact', href: '/impact' },
     { name: 'Stories',    href: '/stories' },
     { name: 'Team',       href: '/team' },
@@ -30,6 +30,7 @@ export const Footer = () => {
     { icon: FaInstagram,  href: 'https://www.instagram.com/JasiriCup',  label: 'Instagram', hoverClass: 'hover:text-pink-400' },
     { icon: FaLinkedinIn, href: 'https://www.linkedin.com/company/JasiriCup', label: 'LinkedIn', hoverClass: 'hover:text-blue-300' },
     { icon: FaYoutube,    href: 'https://www.youtube.com/JasiriCup',    label: 'YouTube',   hoverClass: 'hover:text-red-400' },
+    { icon: FaEnvelope,   href: 'mailto:correspondence@jasiricup.com', label: 'Email',     hoverClass: 'hover:text-green-400' },
   ];
 
   return (
