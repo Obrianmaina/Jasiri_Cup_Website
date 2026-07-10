@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { rateLimit } from '@/lib/rate-limit';
+import { generateBrandedEmail } from '@/lib/email-template';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -25,10 +26,28 @@ export async function POST(req: Request) {
 
     const selectedRoles = roles && roles.length > 0 ? roles.join(', ') : 'General Application';
 
-    // 3. Send Notification to Zoho
-    const { error } = await resend.emails.send({
+    // 3. Send Confirmation Email to the Applicant
+    const applicantHtml = `
+      <p>Hi ${name.trim()},</p>
+      <p>Thank you so much for your interest in volunteering with JasiriCup!</p>
+      <p>We have received your application for the following roles: <strong>${selectedRoles}</strong>.</p>
+      <p>Our team will review your details and get back to you shortly regarding the next steps.</p>
+      <br/>
+      <p>With gratitude,<br/><strong>The JasiriCup Team</strong></p>
+    `;
+    const brandedApplicantEmail = generateBrandedEmail('Volunteer Application Received', applicantHtml);
+
+    await resend.emails.send({
+      from: 'JasiriCup <notifications@hello.jasiricup.com>',
+      to: email, // Sending directly to the applicant
+      subject: 'We received your JasiriCup volunteer application! 💚',
+      html: brandedApplicantEmail,
+    });
+
+    // 4. Send Notification to Zoho (Admin)
+    await resend.emails.send({
       from: 'JasiriCup Volunteer <notifications@hello.jasiricup.com>',
-      to: process.env.EMAIL_TO || 'hello@jasiricup.com',
+      to: process.env.EMAIL_TO || 'hello@jasiricup.com', // Sending to Zoho
       replyTo: email,
       subject: `New Volunteer Application: ${name}`,
       html: `
@@ -42,11 +61,6 @@ export async function POST(req: Request) {
         <p>${message}</p>
       `,
     });
-
-    if (error) {
-      console.error("Resend API Error:", error);
-      return NextResponse.json({ message: 'Failed to send application.' }, { status: 500 });
-    }
 
     return NextResponse.json({ success: true, message: 'Application submitted successfully!' }, { status: 200 });
 
