@@ -1,79 +1,42 @@
-// src/app/admin/dashboard/layout.tsx
 'use client';
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
-// 1. Import SessionProvider alongside useSession
 import { useSession, SessionProvider } from "next-auth/react";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/ui/ThemeToggle"; 
 
 import { 
   Home, Wallet, FileText, Layout, BarChart, ShoppingBag, 
-  Mail, HelpCircle, Palette, Newspaper, Users, User
+  HelpCircle, Palette, Newspaper, Users, User
 } from "lucide-react";
 
 const baseNavLinks = [
   { href: "/admin/dashboard", icon: <Home size={20} />, label: "Dashboard" },
-  { href: "/admin/dashboard/team", icon: <Users size={20} />, label: "Team" }, // <-- Added here for everyone
+  { href: "/admin/dashboard/team", icon: <Users size={20} />, label: "Team" },
   { href: "/admin/finances", icon: <Wallet size={20} />, label: "Finances" },
   { href: "/admin/blog", icon: <FileText size={20} />, label: "Blog" },
   { href: "/admin/pages", icon: <Layout size={20} />, label: "Pages" },
   { href: "/admin/impact", icon: <BarChart size={20} />, label: "Impact" },
   { href: "/admin/products", icon: <ShoppingBag size={20} />, label: "Products" },
-  { href: "/admin/messages", icon: <Mail size={20} />, label: "Messages" },
   { href: "/admin/faq", icon: <HelpCircle size={20} />, label: "FAQ" },
   { href: "/admin/brand", icon: <Palette size={20} />, label: "Brand OS" },
   { href: "/admin/newsletter", icon: <Newspaper size={20} />, label: "Newsletter" },
 ];
 
 const greetings = [
-  'Hello',        // English
-  'Hi',
-  'Hey',
-  'Jambo',        // Swahili
-  'Habari',       // Swahili
-  'Hujambo',      // Swahili
-  'Bonjour',      // French
-  'Salut',        // French
-  'Hola',         // Spanish
-  'Buenos días',  // Spanish
-  'Ciao',         // Italian
-  'Buongiorno',   // Italian
-  'Hallo',        // German
-  'Guten Tag',    // German
-  'Olá',          // Portuguese
-  'Namaste',      // Hindi/Nepali
-  'Ni Hao',       // Mandarin Chinese
-  'Konnichiwa',   // Japanese
-  'Annyeong',     // Korean
-  'Merhaba',      // Turkish
-  'Shalom',       // Hebrew
-  'Salaam',       // Persian/Urdu
-  'As-salamu alaykum', // Arabic
-  'Sawubona',     // Zulu
-  'Molo',         // Xhosa
-  'Dumela',       // Tswana/Sotho
-  'Ahoj',         // Czech/Slovak
-  'Hej',          // Swedish/Danish
-  'Goddag',       // Danish
-  'Hei',          // Norwegian/Finnish
-  'Zdravo',       // Serbian/Croatian
-  'Privet',       // Russian
-  'Xin chào',     // Vietnamese
-  'Sawasdee',     // Thai
-  'Selamat',      // Indonesian/Malay
-  'Kia Ora',      // Māori
-  'Yassas',       // Greek
-  'Halo',         // Indonesian
-  'Aloha'         // Hawaiian
+  'Hello', 'Hi', 'Hey', 'Jambo', 'Habari', 'Hujambo', 'Bonjour', 'Salut', 
+  'Hola', 'Buenos días', 'Ciao', 'Buongiorno', 'Hallo', 'Guten Tag', 
+  'Olá', 'Namaste', 'Ni Hao', 'Konnichiwa', 'Annyeong', 'Merhaba', 
+  'Shalom', 'Salaam', 'As-salamu alaykum', 'Sawubona', 'Molo', 'Dumela', 
+  'Ahoj', 'Hej', 'Goddag', 'Hei', 'Zdravo', 'Privet', 'Xin chào', 
+  'Sawasdee', 'Selamat', 'Kia Ora', 'Yassas', 'Halo', 'Aloha'
 ];
 
-// 2. Rename the main layout to a "Content" component
 function AdminDashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data: session } = useSession(); // This is now safe to use!
+  const { data: session } = useSession(); 
   
   const [greeting, setGreeting] = useState('Hello');
 
@@ -89,7 +52,6 @@ function AdminDashboardContent({ children }: { children: React.ReactNode }) {
   const userName = session?.user?.name || 'Admin';
   const userImage = session?.user?.image;
 
-  // Everyone gets the same navigation layout now!
   const navLinks = baseNavLinks;
 
   return (
@@ -159,7 +121,6 @@ function AdminDashboardContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-// 3. Export the provider wrapper as the default layout
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
@@ -167,4 +128,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </SessionProvider>
   );
 }
-

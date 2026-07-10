@@ -1,7 +1,5 @@
-// src/app/api/send-order/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import Order from '@/lib/models/Order';
 import Product from '@/lib/models/Product';
 import { Resend } from 'resend';
 import { generateBrandedEmail } from '@/lib/email-template';
@@ -22,8 +20,8 @@ export async function POST(req: NextRequest) {
     await dbConnect();
     const { clientInfo, items } = await req.json();
 
-    await Order.create({ clientInfo, items });
-
+    // 1. Update Product Inventory 
+    // We keep this database call so your website stock levels remain accurate!
     for (const item of items) {
       const updateResult = await Product.updateOne(
         {
@@ -45,6 +43,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 2. Format Email Summaries
     const itemsHtml = items.map((item: OrderItem, index: number) => `
       <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
         <h4 style="margin: 0 0 10px 0; color: #2e003a;">Item ${index + 1}: ${item.productName}</h4>
@@ -74,20 +73,20 @@ export async function POST(req: NextRequest) {
       <p>Best,<br><strong>The JasiriCup Team</strong></p>
     `;
 
-    // 1. Send notification to Admin
+    // 3. Send Notification to Admin (Zoho)
     await resend.emails.send({
       from: 'JasiriCup Orders <notifications@hello.jasiricup.com>',
       to: process.env.EMAIL_TO as string,
-      replyTo: clientInfo.email, // Lets you reply directly to the customer!
+      replyTo: clientInfo.email, 
       subject: 'New Order Received',
       html: generateBrandedEmail('New Order Received', adminHtml),
     });
 
-    // 2. Send branded confirmation to Client
+    // 4. Send Confirmation to Client
     await resend.emails.send({
       from: 'JasiriCup <notifications@hello.jasiricup.com>',
       to: clientInfo.email,
-      replyTo: 'support@jasiricup.com', // Directs customer questions to your support alias
+      replyTo: 'support@jasiricup.com', 
       subject: 'Your JasiriCup Order Confirmation',
       html: generateBrandedEmail('Order Confirmation', clientHtml),
     });

@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { FilePlus, Layout, ShoppingBag, Mail, HelpCircle, Wallet, BarChart, Palette } from "lucide-react";
+import { FilePlus, Layout, ShoppingBag, HelpCircle, Wallet, BarChart, Palette } from "lucide-react";
 
-// Using explicit Tailwind classes prevents the compiler from purging dynamic class names
 const ACTIONS = [
   { href: "/admin/blog/create", icon: FilePlus, title: "New Post", desc: "Draft a new article", wrapperClass: "hover:border-purple-500", iconClass: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400", titleClass: "group-hover:text-purple-600 dark:group-hover:text-purple-400" },
   { href: "/admin/pages", icon: Layout, title: "Pages", desc: "Manage site content", wrapperClass: "hover:border-blue-500", iconClass: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400", titleClass: "group-hover:text-blue-600 dark:group-hover:text-blue-400" },
   { href: "/admin/products", icon: ShoppingBag, title: "Products", desc: "Manage inventory", wrapperClass: "hover:border-green-500", iconClass: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400", titleClass: "group-hover:text-green-600 dark:group-hover:text-green-400" },
-  { href: "/admin/messages", icon: Mail, title: "Messages", desc: "View submissions", wrapperClass: "hover:border-amber-500", iconClass: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400", titleClass: "group-hover:text-amber-600 dark:group-hover:text-amber-400" },
   { href: "/admin/faq", icon: HelpCircle, title: "FAQs", desc: "Update questions", wrapperClass: "hover:border-indigo-500", iconClass: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400", titleClass: "group-hover:text-indigo-600 dark:group-hover:text-indigo-400" },
   { href: "/admin/finances", icon: Wallet, title: "Finances", desc: "Track revenue", wrapperClass: "hover:border-emerald-500", iconClass: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400", titleClass: "group-hover:text-emerald-600 dark:group-hover:text-emerald-400" },
   { href: "/admin/impact", icon: BarChart, title: "Impact", desc: "Update metrics", wrapperClass: "hover:border-cyan-500", iconClass: "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400", titleClass: "group-hover:text-cyan-600 dark:group-hover:text-cyan-400" },

@@ -1,20 +1,19 @@
-// src/app/admin/dashboard/profile/page.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { User, UploadCloud } from 'lucide-react';
+import { User, UploadCloud, ShieldCheck } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 export default function ProfilePage() {
-  const { update } = useSession(); 
-  
+  const { update } = useSession();
+
   // Personal Info State
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [infoStatus, setInfoStatus] = useState<{ type: 'error' | 'success', msg: string } | null>(null);
   const [infoLoading, setInfoLoading] = useState(false);
-  
+
   // Image Upload State
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,6 +24,13 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passStatus, setPassStatus] = useState<{ type: 'error' | 'success', msg: string } | null>(null);
   const [passLoading, setPassLoading] = useState(false);
+
+  // 2FA State
+  const [qrCode, setQrCode] = useState('');
+  const [secret, setSecret] = useState('');
+  const [token, setToken] = useState('');
+  const [twoFactorStep, setTwoFactorStep] = useState<'idle' | 'scanning' | 'success'>('idle');
+  const [twoFactorMessage, setTwoFactorMessage] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -46,15 +52,13 @@ export default function ProfilePage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    
     setUploadingImage(true);
     setInfoStatus(null);
-
+    
     const formData = new FormData();
     formData.append('file', file);
-    
-    // --> ADD THIS ONE LINE HERE <--
-    formData.append('type', 'profile'); 
+    formData.append('type', 'profile');
 
     try {
       const res = await fetch('/api/admin/upload', {
@@ -64,7 +68,7 @@ export default function ProfilePage() {
       const data = await res.json();
       
       if (data.success && data.url) {
-        setImageUrl(data.url); // Set the Cloudinary URL into the input field
+        setImageUrl(data.url);
         setInfoStatus({ type: 'success', msg: 'Image uploaded! Click "Update Info" below to save your profile.' });
       } else {
         setInfoStatus({ type: 'error', msg: data.error || 'Upload failed' });
@@ -73,15 +77,14 @@ export default function ProfilePage() {
       setInfoStatus({ type: 'error', msg: 'An error occurred during upload.' });
     } finally {
       setUploadingImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = ''; // Clear the input so they can upload again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-const handleInfoSubmit = async (e: React.FormEvent) => {
+  const handleInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setInfoLoading(true);
     setInfoStatus(null);
-
     try {
       const res = await fetch('/api/admin/profile', {
         method: 'PATCH',
@@ -89,13 +92,9 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
         body: JSON.stringify({ name, image: imageUrl }),
       });
       const data = await res.json();
-
       if (data.success) {
         setInfoStatus({ type: 'success', msg: 'Profile updated successfully!' });
-        
-        // CHANGE THIS LINE: Pass the new data directly into the NextAuth session
-        await update({ name, image: imageUrl }); 
-        
+        await update({ name, image: imageUrl });
       } else {
         setInfoStatus({ type: 'error', msg: data.error || 'Failed to update profile' });
       }
@@ -112,10 +111,8 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
       setPassStatus({ type: 'error', msg: 'New passwords do not match' });
       return;
     }
-
     setPassLoading(true);
     setPassStatus(null);
-
     try {
       const res = await fetch('/api/admin/profile/password', {
         method: 'POST',
@@ -123,7 +120,6 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       const data = await res.json();
-
       if (data.success) {
         setPassStatus({ type: 'success', msg: 'Password updated successfully!' });
         setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
@@ -134,6 +130,42 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
       setPassStatus({ type: 'error', msg: 'An unexpected error occurred.' });
     } finally {
       setPassLoading(false);
+    }
+  };
+
+  // --- 2FA Handlers ---
+  const generate2FA = async () => {
+    try {
+      const res = await fetch('/api/admin/2fa/generate', { method: 'POST' });
+      const data = await res.json();
+      
+      if (data.success) {
+        setQrCode(data.qrCode);
+        setSecret(data.secret);
+        setTwoFactorStep('scanning');
+      }
+    } catch (error) {
+      setTwoFactorMessage('Failed to generate QR code');
+    }
+  };
+
+  const verify2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/2fa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, secret }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTwoFactorStep('success');
+        setTwoFactorMessage('2FA successfully enabled! You will need your authenticator app for future logins.');
+      } else {
+        setTwoFactorMessage(data.error || 'Invalid code. Try again.');
+      }
+    } catch (error) {
+      setTwoFactorMessage('Verification failed');
     }
   };
 
@@ -150,7 +182,6 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
             {infoStatus.msg}
           </div>
         )}
-
         <form onSubmit={handleInfoSubmit} className="flex flex-col md:flex-row gap-8">
           <div className="flex-1 space-y-5">
             <div>
@@ -158,7 +189,6 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 transition-colors" placeholder="e.g. Mercy" />
             </div>
             
-            {/* NEW UPLOAD ROW */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">Profile Image</label>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -170,16 +200,8 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
                   placeholder="https://..." 
                 />
                 
-                {/* Hidden File Input */}
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  ref={fileInputRef} 
-                  onChange={handleImageUpload} 
-                />
+                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
                 
-                {/* Visual Upload Button */}
                 <button 
                   type="button" 
                   onClick={() => fileInputRef.current?.click()} 
@@ -192,7 +214,6 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
               </div>
               <p className="text-xs text-gray-500 mt-2">Paste a URL, or click &quot;Upload File&quot; to select an image from your device.</p>
             </div>
-
             <button type="submit" disabled={infoLoading || uploadingImage} className="bg-purple-600 text-white font-bold py-3 px-6 rounded-xl mt-2 shadow-md hover:bg-purple-700 disabled:opacity-50 transition-colors">
               {infoLoading ? 'Saving...' : 'Update Info'}
             </button>
@@ -226,7 +247,6 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
             {passStatus.msg}
           </div>
         )}
-
         <form onSubmit={handlePasswordSubmit} className="space-y-5 max-w-md">
           <div>
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">Current Password</label>
@@ -246,6 +266,64 @@ const handleInfoSubmit = async (e: React.FormEvent) => {
           </button>
         </form>
       </div>
+
+      {/* TWO-FACTOR AUTHENTICATION SECTION */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 sm:p-8 transition-colors">
+        <div className="flex items-center gap-3 mb-4">
+          <ShieldCheck className="text-purple-600 dark:text-purple-400" size={24} />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Two-Factor Authentication (2FA)</h2>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl">
+          Protect your admin account by requiring a 6-digit code from Google Authenticator or Authy when logging in with an email and password.
+        </p>
+
+        {twoFactorStep === 'idle' && (
+          <button
+            onClick={generate2FA}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+          >
+            Setup 2FA
+          </button>
+        )}
+
+        {twoFactorStep === 'scanning' && (
+          <div className="flex flex-col items-center border-t border-gray-100 dark:border-gray-800 pt-8 mt-4">
+            <p className="font-bold text-gray-900 dark:text-white text-center mb-4">1. Scan this QR Code with your Authenticator App</p>
+            <div className="bg-white p-4 rounded-xl shadow-sm mb-8 border border-gray-200">
+              {qrCode && <Image src={qrCode} alt="2FA QR Code" width={200} height={200} />}
+            </div>
+            
+            <p className="font-bold text-gray-900 dark:text-white text-center mb-4">2. Enter the 6-digit code to verify</p>
+            <form onSubmit={verify2FA} className="w-full max-w-xs flex flex-col gap-4">
+              <input
+                type="text"
+                value={token}
+                onChange={(e) => setToken(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                className="w-full py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-center text-2xl tracking-widest font-mono text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                placeholder="000000"
+              />
+              <button
+                type="submit"
+                disabled={token.length !== 6}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 shadow-sm"
+              >
+                Verify & Enable
+              </button>
+            </form>
+          </div>
+        )}
+
+        {twoFactorStep === 'success' && (
+          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 p-4 rounded-xl text-center font-medium mt-4">
+            {twoFactorMessage}
+          </div>
+        )}
+
+        {twoFactorMessage && twoFactorStep !== 'success' && (
+          <div className="text-red-500 text-sm mt-4 font-medium">{twoFactorMessage}</div>
+        )}
+      </div>
+
     </div>
   );
 }
