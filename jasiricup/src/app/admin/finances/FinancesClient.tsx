@@ -459,7 +459,7 @@ export default function FinancesClient({ canGenerateReports, userEmail }: { canG
                 <select value={formData.paymentMethod} onChange={(e) => setFormData({...formData, paymentMethod: e.target.value})} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-900 dark:border-gray-700 outline-none focus:ring-2 focus:ring-emerald-500">
                   <option value="Bank Transfer">Bank Transfer</option>
                   <option value="Cash">Cash</option>
-                  <option value="Stripe">Stripe / Card</option>
+                  <option value="Card">Card</option>
                 </select>
               </div>
               <div>
