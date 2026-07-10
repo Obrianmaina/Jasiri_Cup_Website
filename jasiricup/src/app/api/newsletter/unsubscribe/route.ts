@@ -53,17 +53,15 @@ export async function GET(req: NextRequest) {
     }
 
     await connectDB();
-    await Subscriber.findOneAndUpdate(
-      { email: email.toLowerCase().trim() },
-      { active: false },
-      { new: true },
-    );
+    
+    // Hard delete the subscriber from the database
+    await Subscriber.findOneAndDelete({ email: email.toLowerCase().trim() });
 
-    // Return a clean HTML message instead of relying on a redirect
+    // Return a clean HTML message confirming complete removal
     return new NextResponse(
       `<html><body style="font-family: sans-serif; text-align: center; padding: 50px;">
         <h2 style="color: #178E4E;">You have been successfully unsubscribed.</h2>
-        <p>You will no longer receive emails at ${email}.</p>
+        <p>Your email address has been completely removed from our system.</p>
       </body></html>`,
       { status: 200, headers: { 'Content-Type': 'text/html' } }
     );
