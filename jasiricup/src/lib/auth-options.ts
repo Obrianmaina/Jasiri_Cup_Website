@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import speakeasy from "speakeasy";
 import connectDB from "./dbConnect";
 import User from "./models/User";
+import { rateLimit } from "./rate-limit"; // Added rate limiting
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -17,8 +18,16 @@ export const authOptions: NextAuthOptions = {
         token: { label: "2FA Token", type: "text" },
         isRecovery: { label: "Is Recovery", type: "text" }
       },
-      async authorize(credentials) {
-        if (!credentials?.email) throw new Error("Missing credentials");
+      async authorize(credentials, req) {
+        // SECURITY FIX: Explicit type checks block NoSQL Injection objects
+        if (typeof credentials?.email !== 'string' || typeof credentials?.password !== 'string') {
+          throw new Error("Invalid credentials format");
+        }
+
+        // SECURITY FIX: Rate limit login/recovery attempts to prevent brute-forcing
+        const ip = (req?.headers as Record<string, string> | undefined)?.['x-forwarded-for'] ?? 'unknown';
+        const rl = await rateLimit(`login:${ip}:${credentials.email.toLowerCase()}`, { windowMs: 10 * 60_000, max: 8 });
+        if (!rl.success) throw new Error("Too many attempts. Try again later.");
 
         await connectDB();
         const masterEmail = (process.env.MASTER_ADMIN_EMAIL || '').trim().toLowerCase();
@@ -64,7 +73,7 @@ export const authOptions: NextAuthOptions = {
         if (!isValidPassword) throw new Error("Invalid credentials");
 
         if (user.twoFactorEnabled) {
-          if (!credentials.token || credentials.token === 'undefined' || credentials.token.trim() === '') {
+          if (!credentials.token || typeof credentials.token !== 'string' || credentials.token.trim() === '') {
             throw new Error("2FA_REQUIRED");
           }
 
@@ -86,7 +95,6 @@ export const authOptions: NextAuthOptions = {
             await user.save();
         }
 
-        // ADD image: user.image TO THIS RETURN STATEMENT
         return { 
           id: user._id.toString(), 
           name: user.name, 
@@ -99,26 +107,19 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // 1. Initial login: Bake the role and image into the token
       if (user) {
         token.role = (user as { role?: string }).role;
         token.picture = user.image; 
       }
-
-      // 2. Profile Page Update: Overwrite the token with new data instantly
       if (trigger === 'update' && session) {
         if (session.name) token.name = session.name;
         if (session.image) token.picture = session.image;
       }
-
       return token;
     },
     async session({ session, token }) {
       if (session?.user) {
-        // Read the custom role
         (session.user as { role?: string }).role = token.role as string | undefined;
-        
-        // Force the session to use the live token data (bypassing the cache)
         if (token.name) session.user.name = token.name;
         if (token.picture) session.user.image = token.picture as string | null | undefined;
       }

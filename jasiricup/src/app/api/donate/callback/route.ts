@@ -3,6 +3,7 @@ import connectDB from '@/lib/dbConnect';
 import mongoose from 'mongoose';
 import Transaction from '@/lib/models/Transaction';
 import { sendDonationEmail } from '@/lib/sendDonationEmail';
+import crypto from 'crypto';
 
 const DonationSchema = new mongoose.Schema(
   {
@@ -27,7 +28,11 @@ export async function GET(req: NextRequest) {
   const secret = searchParams.get('secret');
   const reference = searchParams.get('ref');
 
-  if (!secret || secret !== process.env.ADMIN_SECRET_TOKEN) {
+  // SECURITY FIX: Timing-safe equality check
+  const providedSecret = Buffer.from(secret || '');
+  const expectedSecret = Buffer.from(process.env.ADMIN_SECRET_TOKEN || '');
+
+  if (providedSecret.length !== expectedSecret.length || !crypto.timingSafeEqual(providedSecret, expectedSecret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

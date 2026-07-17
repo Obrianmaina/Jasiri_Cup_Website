@@ -3,6 +3,7 @@ import dbConnect from '@/lib/dbConnect';
 import Product from '@/lib/models/Product';
 import { Resend } from 'resend';
 import { generateBrandedEmail } from '@/lib/email-template';
+import { rateLimitOrder } from '@/lib/rate-limit'; // Imported rate limit
 
 interface OrderItem {
   productId: string;
@@ -16,12 +17,17 @@ interface OrderItem {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
+  // SECURITY FIX: Rate limit to prevent inventory draining scripts and email spam
+  const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+  const { success } = await rateLimitOrder(ip);
+  if (!success) {
+    return NextResponse.json({ error: 'Too many requests, please try again shortly.' }, { status: 429 });
+  }
+
   try {
     await dbConnect();
     const { clientInfo, items } = await req.json();
 
-    // 1. Update Product Inventory 
-    // We keep this database call so your website stock levels remain accurate!
     for (const item of items) {
       const updateResult = await Product.updateOne(
         {
@@ -43,7 +49,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Format Email Summaries
     const itemsHtml = items.map((item: OrderItem, index: number) => `
       <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
         <h4 style="margin: 0 0 10px 0; color: #2e003a;">Item ${index + 1}: ${item.productName}</h4>
@@ -73,7 +78,6 @@ export async function POST(req: NextRequest) {
       <p>Best,<br><strong>The JasiriCup Team</strong></p>
     `;
 
-    // 3. Send Notification to Admin (Zoho)
     await resend.emails.send({
       from: 'JasiriCup Orders <notifications@hello.jasiricup.com>',
       to: process.env.EMAIL_TO as string,
@@ -82,7 +86,6 @@ export async function POST(req: NextRequest) {
       html: generateBrandedEmail('New Order Received', adminHtml),
     });
 
-    // 4. Send Confirmation to Client
     await resend.emails.send({
       from: 'JasiriCup <notifications@hello.jasiricup.com>',
       to: clientInfo.email,

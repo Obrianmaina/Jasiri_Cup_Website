@@ -1,8 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/lib/models/User';
+import { checkAdminAuth } from '@/lib/auth-middleware';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  // SECURITY FIX: Auth-gate the endpoint to prevent public PII leaks
+  const authCheck = await checkAdminAuth(req);
+  if (!authCheck.isAuthorized) return authCheck.response!;
+
   await dbConnect();
   try {
     // SECURITY FIX: Only select safe, public-facing fields. 
@@ -15,14 +20,5 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
-  await dbConnect();
-  try {
-    const body = await req.json();
-    const newUser = await User.create(body);
-    return NextResponse.json({ message: 'User created successfully!', data: newUser }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating user:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
-  }
-}
+// SECURITY FIX: The POST export has been entirely removed. 
+// Account creation must route safely through /api/admin/invite.

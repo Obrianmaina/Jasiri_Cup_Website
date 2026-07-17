@@ -5,7 +5,7 @@ import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { FaLock, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaLock, FaEnvelope, FaEye, FaEyeSlash, FaUserShield } from 'react-icons/fa';
 
 function AuthTerminal() {
   const router = useRouter();
@@ -155,12 +155,15 @@ function AuthTerminal() {
 
           <button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl mt-4 shadow-md transition-colors">{loading ? 'Authenticating...' : 'Sign In'}</button>
           
-          <div className="flex flex-col items-center gap-3 mt-6">
-            <button type="button" onClick={() => { setMode('setup-password'); setError(''); setSuccessMsg(''); }} className="text-sm font-semibold text-purple-600 hover:text-purple-800 transition-colors">
-              First time logging in? Setup Account
-            </button>
-            <button type="button" onClick={() => { setMode('recovery-init'); setError(''); setSuccessMsg(''); }} className="text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-              Web Master
+          {/* Concealed Web Master Recovery Backdoor */}
+          <div className="flex justify-end mt-3">
+            <button 
+              type="button" 
+              onClick={() => { setMode('recovery-init'); setError(''); setSuccessMsg(''); }} 
+              className="text-gray-100 dark:text-gray-800 hover:text-purple-400 dark:hover:text-purple-500 transition-colors focus:outline-none"
+              title="System Recovery"
+            >
+              <FaUserShield size={12} />
             </button>
           </div>
         </form>
@@ -228,9 +231,9 @@ function AuthTerminal() {
 
   const renderRecoveryInit = () => (
     <>
-      <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8">Enter the Master Admin email to receive a backdoor code.</p>
+      <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8">Enter the Admin Email</p>
       <form onSubmit={handleRecoveryRequest} className="space-y-4">
-        <div><label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">Master Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 transition-colors" /></div>
+        <div><label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 transition-colors" /></div>
         <button type="submit" disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl mt-4 shadow-md transition-colors">{loading ? 'Processing...' : 'Send Recovery Code'}</button>
         <div className="text-center mt-6"><button type="button" onClick={() => { setMode('login'); setError(''); }} className="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Cancel</button></div>
       </form>

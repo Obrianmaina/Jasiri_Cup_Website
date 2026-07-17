@@ -38,13 +38,17 @@ export async function GET(req: NextRequest) {
       query.status = status;
     }
 
+    // SECURITY FIX: Escape regex search string to prevent ReDoS attacks
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
     // Apply text search logic
     if (search.trim()) {
+      const safeSearch = escapeRegex(search);
       query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { author: { $regex: search, $options: "i" } },
-        { metaDescription: { $regex: search, $options: "i" } },
-        { tags: { $regex: search, $options: "i" } },
+        { title: { $regex: safeSearch, $options: "i" } },
+        { author: { $regex: safeSearch, $options: "i" } },
+        { metaDescription: { $regex: safeSearch, $options: "i" } },
+        { tags: { $regex: safeSearch, $options: "i" } },
       ];
     }
 
