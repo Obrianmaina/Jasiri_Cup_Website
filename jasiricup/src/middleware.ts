@@ -11,7 +11,7 @@ const authMiddleware = withAuth({
 // 2. Add NextFetchEvent to your middleware signature
 export default async function middleware(request: NextRequest, event: NextFetchEvent) {
   // Generate a random nonce for this specific request
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const nonce = btoa(crypto.randomUUID());
   
   // Build a strict CSP that uses the nonce
   // ADDED: media-src directive to whitelist Cloudinary videos
