@@ -73,9 +73,14 @@ export const authOptions: NextAuthOptions = {
         if (!isValidPassword) throw new Error("Invalid credentials");
 
         if (user.twoFactorEnabled) {
-          // SECURITY FIX: Explicitly check for coerced string "undefined" and "null" that bypass validation
-          const tokenStr = credentials.token?.trim();
-          if (!tokenStr || tokenStr === '' || tokenStr === 'undefined' || tokenStr === 'null') {
+          // SECURITY FIX: Explicitly check for coerced string "undefined", "null", and enforce type
+          const rawToken = credentials.token;
+          if (!rawToken || typeof rawToken !== 'string') {
+            throw new Error("2FA_REQUIRED");
+          }
+
+          const tokenStr = rawToken.trim();
+          if (tokenStr === '' || tokenStr === 'undefined' || tokenStr === 'null') {
             throw new Error("2FA_REQUIRED");
           }
 
