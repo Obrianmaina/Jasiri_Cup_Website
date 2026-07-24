@@ -105,7 +105,7 @@ export const Header = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden xl:flex items-center justify-center flex-1">
-            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-6 py-2 space-x-6 transition-colors duration-300">
+            <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-full px-6 py-2 space-x-6 transition-colors duration-300">
 
               {/* Standalone Links */}
               {standaloneLinks.map((link) => {
@@ -138,7 +138,7 @@ export const Header = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                       {isActive && (
-                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-green-500 transform translate-y-2"></span>
+                        <span className="absolute bottom-1 left-0 w-full h-0.5 bg-green-500 transform translate-y-2"></span>
                       )}
                     </button>
 

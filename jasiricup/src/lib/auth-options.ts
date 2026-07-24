@@ -73,14 +73,16 @@ export const authOptions: NextAuthOptions = {
         if (!isValidPassword) throw new Error("Invalid credentials");
 
         if (user.twoFactorEnabled) {
-          if (!credentials.token || typeof credentials.token !== 'string' || credentials.token.trim() === '') {
+          // SECURITY FIX: Explicitly check for coerced string "undefined" and "null" that bypass validation
+          const tokenStr = credentials.token?.trim();
+          if (!tokenStr || tokenStr === '' || tokenStr === 'undefined' || tokenStr === 'null') {
             throw new Error("2FA_REQUIRED");
           }
 
           const isValidToken = speakeasy.totp.verify({
             secret: user.twoFactorSecret,
             encoding: 'base32',
-            token: credentials.token,
+            token: tokenStr,
             window: 1
           });
 

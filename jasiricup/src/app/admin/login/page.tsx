@@ -39,7 +39,8 @@ function AuthTerminal() {
       const res = await signIn('credentials', {
         email,
         password: mode === 'recovery-verify' ? 'bypass' : password,
-        token: (loginStep === '2fa' || mode === 'recovery-verify') ? token : undefined,
+        // FIX: Pass empty string '' instead of undefined to prevent NextAuth from converting it to the string "undefined"
+        token: (loginStep === '2fa' || mode === 'recovery-verify') ? token : '',
         isRecovery: mode === 'recovery-verify' ? 'true' : 'false',
         redirect: false,
       });
@@ -155,7 +156,6 @@ function AuthTerminal() {
 
           <button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl mt-4 shadow-md transition-colors">{loading ? 'Authenticating...' : 'Sign In'}</button>
           
-          {/* Concealed Web Master Recovery Backdoor */}
           <div className="flex justify-end mt-3">
             <button 
               type="button" 
