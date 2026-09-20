@@ -25,8 +25,19 @@ export const authOptions: NextAuthOptions = {
         }
 
         // SECURITY FIX: Rate limit login/recovery attempts to prevent brute-forcing
+        // FIX: rateLimit() now fails open internally (see rate-limit.ts), but this
+        // try/catch is defense-in-depth so that even an unexpected error thrown
+        // for any other reason can never block the entire login flow. A broken
+        // rate limiter should degrade gracefully, not lock everyone out of the
+        // admin portal.
         const ip = (req?.headers as Record<string, string> | undefined)?.['x-forwarded-for'] ?? 'unknown';
-        const rl = await rateLimit(`login:${ip}:${credentials.email.toLowerCase()}`, { windowMs: 10 * 60_000, max: 8 });
+        let rl: { success: boolean };
+        try {
+          rl = await rateLimit(`login:${ip}:${credentials.email.toLowerCase()}`, { windowMs: 10 * 60_000, max: 8 });
+        } catch (rlError) {
+          console.warn("Login rate limiter threw unexpectedly, proceeding anyway to avoid blocking logins:", rlError);
+          rl = { success: true };
+        }
         if (!rl.success) throw new Error("Too many attempts. Try again later.");
 
         await connectDB();

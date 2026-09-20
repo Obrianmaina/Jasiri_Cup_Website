@@ -66,34 +66,49 @@ async function rateLimitRedis(
   const windowSec = Math.ceil(windowMs / 1000);
   const redisKey  = `rl:${key}`;
 
-  // MULTI/EXEC equivalent: INCR + EXPIRE
-  const res = await fetch(`${url}/pipeline`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify([
-      ['INCR', redisKey],
-      ['EXPIRE', redisKey, windowSec],
-    ]),
-  });
+  // FIX: the entire network call is now wrapped in try/catch. Previously an
+  // uncaught fetch() rejection here (a TypeError: "fetch failed" — thrown on
+  // DNS failure, connection refusal, bad host, or an unreachable/misconfigured
+  // Upstash endpoint) propagated all the way up through rateLimit() into
+  // authorize() in auth-options.ts, and NextAuth surfaced that raw message
+  // as the login error shown to the user ("fetch failed" on the login screen).
+  // We now fail OPEN: if the rate limiter's backing store is unreachable for
+  // any reason, we allow the request rather than blocking every login.
+  try {
+    // MULTI/EXEC equivalent: INCR + EXPIRE
+    const res = await fetch(`${url}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([
+        ['INCR', redisKey],
+        ['EXPIRE', redisKey, windowSec],
+      ]),
+    });
 
-  if (!res.ok) {
-    // Redis unavailable - allow the request to avoid false-blocking
-    console.warn('Rate-limit Redis unavailable, allowing request');
+    if (!res.ok) {
+      // Redis reachable but returned an error status (e.g. bad/revoked token,
+      // 4xx/5xx from Upstash) - allow the request to avoid false-blocking.
+      console.warn(`Rate-limit Redis responded with status ${res.status}, allowing request`);
+      return { success: true, remaining: max - 1, resetAt: now + windowMs };
+    }
+
+    const data = (await res.json()) as [{ result: number }, { result: number }];
+    const count = data[0].result;
+    const remaining = Math.max(0, max - count);
+
+    if (count > max) {
+      return { success: false, remaining: 0, resetAt: now + windowMs };
+    }
+
+    return { success: true, remaining, resetAt: now + windowMs };
+  } catch (error) {
+    // Network/DNS failure, connection refused, invalid host, timeout, etc.
+    console.warn('Rate-limit Redis unavailable, allowing request:', error);
     return { success: true, remaining: max - 1, resetAt: now + windowMs };
   }
-
-  const data = (await res.json()) as [{ result: number }, { result: number }];
-  const count = data[0].result;
-  const remaining = Math.max(0, max - count);
-
-  if (count > max) {
-    return { success: false, remaining: 0, resetAt: now + windowMs };
-  }
-
-  return { success: true, remaining, resetAt: now + windowMs };
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
